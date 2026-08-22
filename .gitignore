@@ -1,0 +1,54 @@
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.cache/
+.vite/
+
+# Runtime data, test output and local configuration
+*.log
+*.pid
+.env
+.env.*
+!.env.example
+backend/.env
+deploy/.env.production
+deploy/.runtime/
+frontend/public/config/topology.json
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+
+# Secrets and certificates
+deploy/secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*cookie*.txt
+*token*.js
+*credentials*.json
+
+# Backups, exports and temporary files
+artifacts/
+backups/
+*.bak
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.tmp
+*~
+
+# Local tools and operating-system files
+.codex/
+.agents/
+.claude/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,17 @@
+# Wird ausschließlich mit NEXORA_WAZUH_ENABLED=true durch deploy/soc.sh geladen.
+# Der externe Netzwerkname ist absichtlich fest: Die Wazuh-Installation erstellt ihn
+# vor dem Start. Ohne Wazuh bleibt der normale Nexora-Stack unverändert startbar.
+services:
+  api:
+    environment:
+      # Beide Wazuh-Endpunkte werden per SHA-256 gepinnt. Das vermeidet bei
+      # Docker Desktop Bind-Mount-Berechtigungen und bleibt fail-closed.
+      WAZUH_INDEXER_TLS_FINGERPRINT: ${WAZUH_INDEXER_TLS_FINGERPRINT:-}
+    networks:
+      - internal
+      - wazuh
+
+networks:
+  wazuh:
+    external: true
+    name: ${WAZUH_SHARED_NETWORK:-nexora_wazuh}

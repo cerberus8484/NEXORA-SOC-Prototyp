@@ -1,0 +1,298 @@
+# ── SOC Ticket Tool — Produktions-Deployment ──────────────────
+#
+# Starten: docker-compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production up -d
+# Stoppen: docker-compose -f deploy/docker-compose.prod.yml down
+# Logs:    docker-compose -f deploy/docker-compose.prod.yml logs -f api
+
+# Deterministischer Projektname → Volume "soc_pgdata_prod", Netz "soc_internal".
+name: soc
+
+# Gemeinsame DB-Verbindung — API UND Korrelations-Worker sprechen dieselbe Datenbank
+# (der Worker holt Tickets/Jobs, die API liest die Ergebnisse). Einmal definiert, damit
+# beide Services nicht auseinanderlaufen können.
+x-db-env: &db-env
+  DB_ENABLED:  "true"        # echte Postgres-Persistenz scharf (sonst InMemory!)
+  DB_HOST:     postgres
+  DB_PORT:     5432
+  DB_NAME:     ${DB_NAME}
+  DB_USER:     ${DB_USER}
+  DB_PASSWORD: ${DB_PASSWORD}
+  DB_SSL:      "false"       # intern im Docker-Netz: kein extra SSL nötig
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: soc_postgres_prod
+    restart: unless-stopped
+    stop_grace_period: 30s
+    # Ressourcenlimit VORBEREITET, nicht ausgerollt. Postgres verwaltet seinen Speicher
+    # selbst (shared_buffers/work_mem) → großzügig halten; ein zu enges Limit führt zu
+    # OOM-Kills der DB. An die echte VM120-Zuteilung anpassen (container-limits.md).
+    deploy:
+      resources:
+        limits:
+          memory: ${PG_MEM_LIMIT:-1G}
+          cpus: "${PG_CPU_LIMIT:-1.5}"
+    environment:
+      POSTGRES_DB:       ${DB_NAME}
+      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Kein externer Port! Postgres ist nur intern (Docker-Netz) erreichbar.
+
+  # ── Backend API ─────────────────────────────────────────────
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: soc_api_prod
+    restart: unless-stopped
+    # Genug Zeit für den Graceful Shutdown (SHUTDOWN_TIMEOUT_MS, Default 10 s) vor SIGKILL.
+    stop_grace_period: 30s
+    # Ressourcenlimits VORBEREITET, NICHT ausgerollt. An die echte VM120-Zuteilung
+    # anpassen (docs/07-operations/container-limits.md). WICHTIG: der Node-Heap
+    # (NODE_MAX_OLD_SPACE_MB) MUSS deutlich unter API_MEM_LIMIT bleiben (~75 %), damit
+    # Reserve für Non-Heap/Buffers/native Module (pg)/Docker bleibt.
+    deploy:
+      resources:
+        limits:
+          memory: ${API_MEM_LIMIT:-512M}
+          cpus: "${API_CPU_LIMIT:-1.0}"
+    environment:
+      <<: *db-env
+      NODE_ENV:       production
+      PORT:           3000
+      # Heap hart unter dem Container-RAM begrenzen (Default 384 MB ⊂ 512 MB Limit) →
+      # Node beendet sich kontrolliert (Heap-OOM) statt vom Host-OOM-Killer getroffen zu werden.
+      NODE_OPTIONS:   --max-old-space-size=${NODE_MAX_OLD_SPACE_MB:-384}
+      SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-10000}
+      # Korrelation: default verarbeitet die API selbst (unverändert). Läuft der Korrelator
+      # als eigener Container (Profil `full`), setzt der Installer hier `false` — die API
+      # plant dann nur noch (Schedule-on-Read) und der Worker-Container verarbeitet.
+      CORRELATION_WORKER_ENABLED: ${CORRELATION_WORKER_ENABLED:-true}
+      JWT_SECRET:     ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      CORS_ORIGINS:   ${CORS_ORIGINS}
+      # DSGVO Art. 25 — Pseudonymisierung der Audit-Log-IPs. Pflicht in Prod (Fail-fast
+      # in validateEnv): ≥32 zufällige Zeichen in .env.production setzen.
+      AUDIT_IP_SALT:  ${AUDIT_IP_SALT}
+      # Security-Welle 3 — beide default AUS (inert). Aktivierung opt-in via .env.production.
+      #   MFA: schaltet /v1/mfa + Login-Challenge frei (MFA bleibt pro User opt-in).
+      #   PAT: schaltet /v1/tokens (Personal Access Tokens) frei.
+      MFA_ENABLED:        ${MFA_ENABLED:-false}
+      API_TOKENS_ENABLED: ${API_TOKENS_ENABLED:-false}
+      # Outbound-Ticket-Export (P12) — default AUS. Erst aktivieren, wenn ein
+      # Zielsystem (SERVICENOW_*/OTRS_*) konfiguriert ist.
+      EXTERNAL_TICKET_EXPORT_ENABLED: ${EXTERNAL_TICKET_EXPORT_ENABLED:-false}
+      # Outbound-Benachrichtigungen (Slack / generischer Webhook / MS Teams) — default AUS.
+      # URLs bleiben backend-only; das Frontend sieht nur 'configured' (Boolean).
+      NOTIFICATIONS_OUTBOUND_ENABLED: ${NOTIFICATIONS_OUTBOUND_ENABLED:-false}
+      NOTIFY_SLACK_WEBHOOK_URL:       ${NOTIFY_SLACK_WEBHOOK_URL:-}
+      NOTIFY_WEBHOOK_URL:             ${NOTIFY_WEBHOOK_URL:-}
+      NOTIFY_TEAMS_WEBHOOK_URL:       ${NOTIFY_TEAMS_WEBHOOK_URL:-}
+      # E-Mail/SMTP-Kanal — default leer/inert (z.B. eigener Webserver-Relay).
+      NOTIFY_SMTP_HOST:   ${NOTIFY_SMTP_HOST:-}
+      NOTIFY_SMTP_PORT:   ${NOTIFY_SMTP_PORT:-587}
+      NOTIFY_SMTP_SECURE: ${NOTIFY_SMTP_SECURE:-false}
+      NOTIFY_SMTP_USER:   ${NOTIFY_SMTP_USER:-}
+      NOTIFY_SMTP_PASS:   ${NOTIFY_SMTP_PASS:-}
+      NOTIFY_EMAIL_FROM:  ${NOTIFY_EMAIL_FROM:-}
+      NOTIFY_EMAIL_TO:    ${NOTIFY_EMAIL_TO:-}
+      # E-Mail/IMAP-Phishing-Ingest — default leer/inert. Secrets bleiben backend-only.
+      IMAP_HOST:     ${IMAP_HOST:-}
+      IMAP_PORT:     ${IMAP_PORT:-993}
+      IMAP_TLS:      ${IMAP_TLS:-true}
+      IMAP_USER:     ${IMAP_USER:-}
+      IMAP_PASSWORD: ${IMAP_PASSWORD:-}
+      # SSO/OIDC — default leer/inert. Client-Secret bleibt backend-only.
+      OIDC_ENABLED:       ${OIDC_ENABLED:-false}
+      OIDC_ISSUER:        ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID:     ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_REDIRECT_URI:  ${OIDC_REDIRECT_URI:-}
+      OIDC_SCOPE:         ${OIDC_SCOPE:-openid profile email}
+      OIDC_DEFAULT_ROLE:  ${OIDC_DEFAULT_ROLE:-viewer}
+      OIDC_ALLOW_SIGNUP:  ${OIDC_ALLOW_SIGNUP:-false}
+      # WebAuthn/Passkey — default leer/inert. rpId=Domain ohne Schema, origin=mit Schema.
+      WEBAUTHN_ENABLED:    ${WEBAUTHN_ENABLED:-false}
+      WEBAUTHN_RP_ID:      ${WEBAUTHN_RP_ID:-}
+      WEBAUTHN_RP_NAME:    ${WEBAUTHN_RP_NAME:-Nexora SOC}
+      WEBAUTHN_ORIGIN:     ${WEBAUTHN_ORIGIN:-}
+      WEBAUTHN_TIMEOUT_MS: ${WEBAUTHN_TIMEOUT_MS:-60000}
+      # Gefährliche Fähigkeiten — default AUS. Werden hier durchgereicht, damit das
+      # Setzen in .env.production (install.sh-Härtung bzw. Scharfschalten laut Runbook)
+      # den Container auch erreicht. Ohne diese Zeilen bliebe der Wert im Container leer.
+      DEPLOY_ENABLED:                 ${DEPLOY_ENABLED:-false}
+      CONFIG_APPLY_ENABLED:           ${CONFIG_APPLY_ENABLED:-false}
+      AUTONOMY_ENABLED:               ${AUTONOMY_ENABLED:-false}
+      WAZUH_MANAGER_RESTART_ENABLED:  ${WAZUH_MANAGER_RESTART_ENABLED:-false}
+      # Initialer Admin — wird beim Start nur angelegt, wenn er noch nicht existiert.
+      ADMIN_EMAIL:    ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      LOG_LEVEL:      ${LOG_LEVEL:-info}
+      WEBHOOK_SECRET_GENERIC:    ${WEBHOOK_SECRET_GENERIC}
+      WEBHOOK_SECRET_QRADAR:     ${WEBHOOK_SECRET_QRADAR:-}
+      WEBHOOK_SECRET_SPLUNK:     ${WEBHOOK_SECRET_SPLUNK:-}
+      WEBHOOK_SECRET_SERVICENOW: ${WEBHOOK_SECRET_SERVICENOW:-}
+      WEBHOOK_SECRET_WAZUH:      ${WEBHOOK_SECRET_WAZUH:-}
+      WEBHOOK_SECRET_DATAPLANE:  ${WEBHOOK_SECRET_DATAPLANE:-}
+      # Wazuh Push-Tuning + API-Pull (Enrichment)
+      WAZUH_MIN_LEVEL:            ${WAZUH_MIN_LEVEL:-5}
+      WAZUH_CORRELATION_WINDOW_H: ${WAZUH_CORRELATION_WINDOW_H:-24}
+      WAZUH_API_URL:             ${WAZUH_API_URL:-}
+      WAZUH_API_USER:            ${WAZUH_API_USER:-}
+      WAZUH_API_PASSWORD:        ${WAZUH_API_PASSWORD:-}
+      WAZUH_API_TLS_FINGERPRINT: ${WAZUH_API_TLS_FINGERPRINT:-}
+      WAZUH_INDEXER_URL:         ${WAZUH_INDEXER_URL:-}
+      WAZUH_INDEXER_USER:        ${WAZUH_INDEXER_USER:-}
+      WAZUH_INDEXER_PASSWORD:    ${WAZUH_INDEXER_PASSWORD:-}
+      WAZUH_INDEXER_TLS_FINGERPRINT: ${WAZUH_INDEXER_TLS_FINGERPRINT:-}
+      WAZUH_INDEXER_INDEX:       ${WAZUH_INDEXER_INDEX:-wazuh-alerts-*}
+      WAZUH_TLS_REJECT_UNAUTHORIZED: ${WAZUH_TLS_REJECT_UNAUTHORIZED:-true}
+      QRADAR_TLS_REJECT_UNAUTHORIZED: ${QRADAR_TLS_REJECT_UNAUTHORIZED:-true}
+      WAZUH_FP_APPLY_ENABLED:    ${WAZUH_FP_APPLY_ENABLED:-false}
+      # CE-5.3 FQDN-Resolver (DNS forward-confirm) — read-only, default AUS.
+      FQDN_RESOLVER_ENABLED:     ${FQDN_RESOLVER_ENABLED:-false}
+      FQDN_DNS_SERVER:           ${FQDN_DNS_SERVER:-}
+      FQDN_DOMAIN:               ${FQDN_DOMAIN:-}
+      ABUSEIPDB_API_KEY:         ${ABUSEIPDB_API_KEY:-}
+      ABUSEIPDB_MAX_AGE_DAYS:    ${ABUSEIPDB_MAX_AGE_DAYS:-90}
+      VIRUSTOTAL_API_KEY:        ${VIRUSTOTAL_API_KEY:-}
+      # Owned-Asset-Kontext fuer KI-Analysen: eigene Honeypots/interne Netze
+      # werden im Evidence Bundle getaggt, damit Decoy-Traffic nicht als
+      # Cross-Domain-C2/Exfiltration missgedeutet wird. Leer = inert.
+      OWNED_HONEYPOT_IPS:         ${OWNED_HONEYPOT_IPS:-}
+      OWNED_INTERNAL_CIDRS:       ${OWNED_INTERNAL_CIDRS:-}
+      # KI-Agent (P19): Provider 'stub' (Default) oder 'ollama' (lokales LLM)
+      AGENT_LLM_PROVIDER:        ${AGENT_LLM_PROVIDER:-stub}
+      OLLAMA_BASE_URL:           ${OLLAMA_BASE_URL:-http://ollama.example:11434}
+      OLLAMA_MODEL:              ${OLLAMA_MODEL:-llama3.1:8b}
+      OLLAMA_TIMEOUT_MS:         ${OLLAMA_TIMEOUT_MS:-60000}
+      OLLAMA_NUM_PREDICT:        ${OLLAMA_NUM_PREDICT:-512}
+      # RAG — P19b (Qdrant LXC 104 + Ollama nomic-embed-text)
+      RAG_ENABLED:               ${RAG_ENABLED:-false}
+      QDRANT_URL:                ${QDRANT_URL:-http://qdrant.example:6333}
+      RAG_EMBED_MODEL:           ${RAG_EMBED_MODEL:-nomic-embed-text}
+      RAG_TOP_K:                 ${RAG_TOP_K:-3}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    # Kein externer Port! Nur über nginx erreichbar.
+
+  # ── Korrelations-Engine (eigener Container) ─────────────────
+  # GLEICHES Image wie die API, anderer Befehl — kein zweiter Build, kein zweites
+  # Artefakt zu pflegen. Nur im Profil `full` aktiv:
+  #     docker compose --profile full up -d
+  # Dann gehört in .env.production zusätzlich: CORRELATION_WORKER_ENABLED=false
+  # (sonst verarbeiten API UND Worker — funktioniert, ist aber doppelt).
+  #
+  # Warum getrennt: Worker-Neustart ohne API-Downtime, Fehler-Isolation (ein hängender
+  # Job reißt die API nicht mit) und die Korrelations-Last ist getrennt sichtbar.
+  # Migrationen laufen bewusst NUR in der API — genau ein Migrationspfad.
+  correlation-worker:
+    profiles: ["full"]
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: production
+    # WICHTIG: denselben Image-Tag wie `api` erzwingen. Ohne das vergibt Compose pro
+    # Service einen EIGENEN Tag (soc-api vs. soc-correlation-worker) — dann läuft der
+    # Worker nach `build api` weiter auf einem ALTEN Image, während die API neu ist.
+    # Das fällt nicht auf (beide Container laufen), aber der Worker korreliert mit
+    # veraltetem Code — ein stiller Fehlschlag. Gemeinsamer Tag = kein Drift möglich.
+    image: soc-api
+    container_name: soc_correlation_worker
+    restart: unless-stopped
+    command: ["node", "src/correlationWorkerMain.js"]
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: ${CORRELATION_MEM_LIMIT:-384M}
+          cpus: "${CORRELATION_CPU_LIMIT:-1.0}"
+    environment:
+      <<: *db-env
+      NODE_ENV:      production
+      NODE_OPTIONS:  --max-old-space-size=${CORRELATION_MAX_OLD_SPACE_MB:-256}
+      SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-10000}
+      LOG_LEVEL:     ${LOG_LEVEL:-info}
+      # validateEnv() verlangt dieselben Pflichtwerte wie die API (ein Env-Vertrag).
+      JWT_SECRET:    ${JWT_SECRET}
+      AUDIT_IP_SALT: ${AUDIT_IP_SALT}
+      WEBHOOK_SECRET_GENERIC: ${WEBHOOK_SECRET_GENERIC}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    # Der Worker hat bewusst KEINEN HTTP-Server — der aus dem Dockerfile geerbte
+    # HTTP-Healthcheck der API würde hier IMMER fehlschlagen und den Container dauerhaft
+    # als "unhealthy" ausweisen, obwohl er einwandfrei arbeitet. Ein dauerhaft falsches
+    # Signal ist schlimmer als keines (man gewöhnt sich daran), deshalb explizit aus.
+    # Lebenszeichen stattdessen über correlation_worker_container_started + Job-Logs.
+    healthcheck:
+      disable: true
+
+  # ── Ollama — lokales LLM (P19a) ─────────────────────────────
+  # Läuft optional als separater Ollama-Service (z. B. ollama.example:11434).
+  # Kein interner Compose-Service mehr. Aktivieren via .env.production:
+  #   AGENT_LLM_PROVIDER=ollama
+  #   OLLAMA_BASE_URL=http://ollama.example:11434
+  #   OLLAMA_MODEL=llama3.2:3b
+
+  # ── nginx Reverse Proxy + React-Frontend ────────────────────
+  # Baut das React-SPA (frontend/) und serviert dist/ + proxyt /api → api.
+    # Build-Kontext = Repo-Root, damit Frontend und nginx-Konfiguration verfügbar sind.
+  web:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+      target: web
+      args:
+        VITE_WIKI_BASE_URL: ${VITE_WIKI_BASE_URL:-}
+    container_name: soc_web_prod
+    restart: unless-stopped
+    # nginx + statisches SPA = leicht. Limit vorbereitet, an VM120 anpassbar.
+    deploy:
+      resources:
+        limits:
+          memory: ${WEB_MEM_LIMIT:-128M}
+          cpus: "${WEB_CPU_LIMIT:-0.5}"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # nginx.conf ist ins Image gebacken; nur TLS-Zertifikate vom Host mounten
+      - ${TLS_CERT_PATH}:/etc/ssl/certs/server.crt:ro
+      - ${TLS_KEY_PATH}:/etc/ssl/private/server.key:ro
+    depends_on:
+      - api
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  pgdata_prod:
+    driver: local

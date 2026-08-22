@@ -1,0 +1,13 @@
+{
+  "common": { "save": "Speichern", "cancel": "Abbrechen", "close": "Schließen", "loading": "Wird geladen …", "retry": "Erneut versuchen", "back": "Zurück" },
+  "auth": {
+    "email": "E-Mail", "password": "Passwort", "signIn": "Anmelden", "signingIn": "Anmeldung …", "failed": "Anmeldung fehlgeschlagen",
+    "mfaRequired": "Zwei-Faktor-Bestätigung erforderlich", "verificationCode": "Bestätigungscode", "mfaCodeHint": "6-stelliger Code aus deiner Authenticator-App oder ein Recovery-Code", "verify": "Bestätigen", "verifying": "Wird geprüft …",
+    "mfaRequiredSetup": "MFA ist für alle Benutzer verpflichtend — bitte jetzt einrichten", "authenticatorSecret": "Authenticator-Secret", "authenticatorHint": "In Google Authenticator / Authy hinzufügen (manuell oder per otpauth-URI).", "setupCodeHint": "6-stelliger Code aus der App, um die Einrichtung zu bestätigen", "activateMfa": "MFA aktivieren", "activating": "Wird aktiviert …",
+    "mfaEnabled": "MFA aktiviert — Recovery-Codes sichern", "recoveryNotice": "Bewahre diese Codes sicher auf. Jeder Code funktioniert einmalig, falls du keinen Authenticator hast. Sie werden nur jetzt angezeigt.", "continueToDashboard": "Codes gespeichert — weiter zum Dashboard", "ssoFailed": "SSO-Anmeldung fehlgeschlagen. Bitte erneut versuchen oder mit Passwort anmelden.", "or": "oder", "signInWithSso": "Mit SSO anmelden", "signInWithPasskey": "Mit Passkey anmelden", "passkeyFailed": "Passkey-Anmeldung fehlgeschlagen. Bitte erneut versuchen.", "verificationFailed": "Code-Verifikation fehlgeschlagen", "mfaSetupFailed": "MFA-Einrichtung fehlgeschlagen"
+  },
+  "nav": {
+    "dashboard": "Dashboard", "operations": "Operationen", "analysis": "Analyse", "tickets": "Tickets", "evidence": "Evidence Center", "settings": "Einstellungen", "profile": "Profil", "logout": "Abmelden", "menu": "Menü", "back": "Zurück zur vorherigen Seite", "systemStatus": "Systemstatus", "allSystemsNormal": "Alle Systeme normal", "userMenu": "Benutzerprofil und Abmelden", "userMenuLabel": "Benutzermenü", "analyst": "Analyst", "collapseSidebar": "Sidebar einklappen", "expandSidebar": "Sidebar ausklappen", "language": "Sprache"
+  },
+  "dashboard": { "title": "Dashboard", "subtitle": "Lagebild — Tickets und aktive Threat Hunts", "openTickets": "Offene Tickets", "activeHunts": "Aktive Hunts", "quickAccess": "Schnellzugriff", "loading": "Lagebild wird geladen …" }
+}

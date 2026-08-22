@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔐 Sicherheitslücke melden (Responsible Disclosure)
+    url: https://github.com/cerberus8484/SOC-Orchestrator/security/policy
+    about: Sicherheitsrelevante Funde bitte NICHT als öffentliches Issue — siehe SECURITY.md.
+  - name: 💬 Frage / Diskussion
+    url: https://github.com/cerberus8484/SOC-Orchestrator/discussions
+    about: Allgemeine Fragen, Ideen und Architektur-Diskussionen.

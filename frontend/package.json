@@ -1,0 +1,53 @@
+{
+  "name": "soc-orchestrator-frontend",
+  "version": "0.1.0",
+  "description": "SOC Orchestrator — Enterprise Frontend (React + TS + Vite)",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:real": "playwright test --config playwright.real.config.ts",
+    "test:e2e:ui": "playwright test --ui",
+    "lint": "eslint src --max-warnings 999",
+    "lint:fix": "eslint src --fix --max-warnings 999"
+  },
+  "dependencies": {
+    "@simplewebauthn/browser": "^13.3.0",
+    "i18next": "^25.10.10",
+    "jspdf": "^4.2.1",
+    "lucide-react": "^0.453.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^15.7.4",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.48.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/coverage-v8": "^2.0.5",
+    "eslint": "^9.39.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "^25.0.0",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.61.1",
+    "vite": "^5.4.3",
+    "vitest": "^2.0.5"
+  }
+}

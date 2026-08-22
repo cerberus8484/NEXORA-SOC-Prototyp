@@ -1,0 +1,13 @@
+{
+  "common": { "save": "Save", "cancel": "Cancel", "close": "Close", "loading": "Loading …", "retry": "Retry", "back": "Back" },
+  "auth": {
+    "email": "Email", "password": "Password", "signIn": "Sign in", "signingIn": "Signing in …", "failed": "Sign-in failed",
+    "mfaRequired": "Two-factor verification required", "verificationCode": "Verification code", "mfaCodeHint": "6-digit code from your authenticator app or a recovery code", "verify": "Verify", "verifying": "Verifying …",
+    "mfaRequiredSetup": "MFA is required for all users — set it up now", "authenticatorSecret": "Authenticator secret", "authenticatorHint": "Add it to Google Authenticator or Authy (manually or using the otpauth URI).", "setupCodeHint": "6-digit code from the app to confirm the setup", "activateMfa": "Activate MFA", "activating": "Activating …",
+    "mfaEnabled": "MFA enabled — secure your recovery codes", "recoveryNotice": "Store these codes safely. Each code works once if you do not have your authenticator. They are shown only now.", "continueToDashboard": "Codes stored — continue to dashboard", "ssoFailed": "SSO sign-in failed. Please try again or sign in with your password.", "or": "or", "signInWithSso": "Sign in with SSO", "signInWithPasskey": "Sign in with a passkey", "passkeyFailed": "Passkey sign-in failed. Please try again.", "verificationFailed": "Code verification failed", "mfaSetupFailed": "MFA setup failed"
+  },
+  "nav": {
+    "dashboard": "Dashboard", "operations": "Operations", "analysis": "Analysis", "tickets": "Tickets", "evidence": "Evidence Center", "settings": "Settings", "profile": "Profile", "logout": "Sign out", "menu": "Menu", "back": "Back to the previous page", "systemStatus": "System status", "allSystemsNormal": "All systems normal", "userMenu": "User profile and sign out", "userMenuLabel": "User menu", "analyst": "Analyst", "collapseSidebar": "Collapse sidebar", "expandSidebar": "Expand sidebar", "language": "Language"
+  },
+  "dashboard": { "title": "Dashboard", "subtitle": "Situation overview — tickets and active threat hunts", "openTickets": "Open tickets", "activeHunts": "Active hunts", "quickAccess": "Quick access", "loading": "Loading dashboard …" }
+}

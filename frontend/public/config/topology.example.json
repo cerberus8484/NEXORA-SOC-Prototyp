@@ -1,0 +1,34 @@
+{
+  "_comment": "OPERATOR-VORLAGE — nach 'topology.json' im selben Ordner kopieren und mit den lokalen Werten füllen. Die reale topology.json ist git-ignoriert und wird NIE committet. Fehlt sie, nutzt das Dashboard die Platzhalter aus dem Code. 'agent' MUSS dem Wazuh-Agent-Namen entsprechen, sonst bleibt der Host-Status grau. Quick-Link-URLs nur http/https. ALLE Werte hier sind Platzhalter — KEINE echten Infrastruktur-Adressen eintragen.",
+  "zones": [
+    {
+      "key": "vlan10",
+      "label": "VLAN 10 — Servers",
+      "color": "var(--accent)",
+      "subnet": "10.10.10.0/24 · GW 10.10.10.1 · vmbr10",
+      "agents": ["wazuh-server", "Nexora", "OPNsense-fw", "opensourcebackup", "ids-sensor"],
+      "hosts": [
+        { "label": "Wazuh Manager", "ip": "10.10.10.77", "agent": "wazuh-server" },
+        { "label": "Nexora SOC", "ip": "10.10.10.75", "agent": "Nexora" },
+        { "label": "BackupServer", "ip": "10.10.10.72", "agent": "opensourcebackup" },
+        { "label": "IDS-Sensor · Suricata", "ip": "10.10.10.60", "agent": "ids-sensor" },
+        { "label": "OPNsense GW", "ip": "10.10.10.1", "agent": "OPNsense-fw" }
+      ]
+    },
+    {
+      "key": "vlan99",
+      "label": "VLAN 99 — Mgmt",
+      "color": "var(--success)",
+      "subnet": "10.99.98.0/24",
+      "agents": ["Proxmox"],
+      "hosts": [
+        { "label": "Proxmox VE", "ip": "10.99.98.100", "agent": "Proxmox" }
+      ]
+    }
+  ],
+  "quickLinks": [
+    { "label": "OPNsense UI", "url": "https://opnsense.example.local", "desc": "Firewall · VLANs · filterlog" },
+    { "label": "Proxmox VE", "url": "https://proxmox.example.local:8006", "desc": "Hypervisor" },
+    { "label": "Wazuh Dashboard", "url": "https://wazuh.example.local", "desc": "SIEM · Alerts · Agents" }
+  ]
+}
