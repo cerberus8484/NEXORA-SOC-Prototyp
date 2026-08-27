@@ -31,7 +31,11 @@ services:
       test: ["CMD-SHELL", "pg_isready -U soc_api -d soc_tickets_dev"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      # A brand-new PostgreSQL volume can need more than the default 25 seconds
+      # on a resource-constrained Docker host. Do not fail dependent services
+      # while initdb is still completing its first-run setup.
+      start_period: 90s
+      retries: 12
 
   # ── PostgreSQL (Jest-Integrationstests, Port 5433) ──────────
   postgres_test:
@@ -49,7 +53,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U soc_api -d soc_tickets_test"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      start_period: 90s
+      retries: 12
 
   # ── Backend API (nodemon, Hot-Reload) ───────────────────────
   # bookworm-slim statt alpine: bcrypt hat glibc-Prebuilds — auf
