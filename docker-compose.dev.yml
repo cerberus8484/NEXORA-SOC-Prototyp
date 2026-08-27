@@ -83,6 +83,9 @@ services:
       ADMIN_PASSWORD: DevAdmin123!
       WEBHOOK_SECRET_GENERIC: dev-webhook-secret
       LOG_LEVEL: debug
+      # Dev runs API and queue in one container. Keep correlation processing in
+      # the dedicated worker role so its heartbeat cannot contend with logins.
+      CORRELATION_WORKER_ENABLED: "false"
       # Datei-Watching über Windows-Bind-Mounts braucht Polling
       CHOKIDAR_USEPOLLING: "true"
     volumes:
