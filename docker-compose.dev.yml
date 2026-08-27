@@ -28,7 +28,9 @@ services:
     volumes:
       - pgdata_dev:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U soc_api -d soc_tickets_dev"]
+      # The image runs a temporary PostgreSQL process while it initializes a
+      # new volume. Do not probe that process: it can delay its clean shutdown.
+      test: ["CMD-SHELL", "test \"$$(cat /proc/1/comm)\" = \"postgres\" && pg_isready -U soc_api -d soc_tickets_dev"]
       interval: 5s
       timeout: 5s
       # A brand-new PostgreSQL volume can need more than the default 25 seconds
@@ -50,7 +52,7 @@ services:
     volumes:
       - pgdata_test:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U soc_api -d soc_tickets_test"]
+      test: ["CMD-SHELL", "test \"$$(cat /proc/1/comm)\" = \"postgres\" && pg_isready -U soc_api -d soc_tickets_test"]
       interval: 5s
       timeout: 5s
       start_period: 90s
