@@ -29,7 +29,9 @@ deploy/secrets/
 *.p12
 *.pfx
 *cookie*.txt
-*token*.js
+# Keep runtime secrets out of the repository without excluding source modules
+# such as backend/src/services/EnrollmentTokenService.js.
+deploy/.runtime/*token*.js
 *credentials*.json
 
 # Backups, exports and temporary files
