@@ -12,14 +12,14 @@ test.describe('Auth gegen echtes Backend', () => {
   test('unauthentifiziert → RequireAuth leitet auf /login', async ({ page }) => {
     await page.goto('/tickets');
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
   });
 
   test('korrekte Admin-Credentials → echte Session → Dashboard', async ({ page }) => {
     await page.goto('/login');
-    await page.getByLabel('E-Mail').fill(ADMIN_EMAIL);
-    await page.getByLabel('Passwort').fill(ADMIN_PASSWORD);
-    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await page.getByLabel('Email').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByRole('button', { name: 'Sign in' }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
@@ -27,9 +27,9 @@ test.describe('Auth gegen echtes Backend', () => {
 
   test('falsches Passwort → echte 401, bleibt auf /login', async ({ page }) => {
     await page.goto('/login');
-    await page.getByLabel('E-Mail').fill(ADMIN_EMAIL);
-    await page.getByLabel('Passwort').fill('definitiv-falsch');
-    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await page.getByLabel('Email').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill('definitely-incorrect');
+    await page.getByRole('button', { name: 'Sign in' }).click();
 
     await expect(page.getByRole('alert')).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
@@ -37,9 +37,9 @@ test.describe('Auth gegen echtes Backend', () => {
 
   test('Session überlebt Reload (httpOnly-Cookie, echtes /auth/me)', async ({ page }) => {
     await page.goto('/login');
-    await page.getByLabel('E-Mail').fill(ADMIN_EMAIL);
-    await page.getByLabel('Passwort').fill(ADMIN_PASSWORD);
-    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await page.getByLabel('Email').fill(ADMIN_EMAIL);
+    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+    await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
 
     await page.reload();

@@ -8,18 +8,18 @@ test.describe('Authentifizierung (JWT-Login-Flow)', () => {
 
     // RequireAuth → Navigate('/login')
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
-    await expect(page.getByLabel('E-Mail')).toBeVisible();
-    await expect(page.getByLabel('Passwort')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByLabel('Password')).toBeVisible();
   });
 
   test('meldet gültige Zugangsdaten an und leitet zum Dashboard weiter', async ({ page }) => {
     await mockApi(page);
     await page.goto('/login');
 
-    await page.getByLabel('E-Mail').fill(VALID_EMAIL);
-    await page.getByLabel('Passwort').fill(VALID_PASSWORD);
-    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await page.getByLabel('Email').fill(VALID_EMAIL);
+    await page.getByLabel('Password').fill(VALID_PASSWORD);
+    await page.getByRole('button', { name: 'Sign in' }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
@@ -29,12 +29,11 @@ test.describe('Authentifizierung (JWT-Login-Flow)', () => {
     await mockApi(page);
     await page.goto('/login');
 
-    await page.getByLabel('E-Mail').fill(VALID_EMAIL);
-    await page.getByLabel('Passwort').fill('falsches-passwort');
-    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await page.getByLabel('Email').fill(VALID_EMAIL);
+    await page.getByLabel('Password').fill('incorrect-password');
+    await page.getByRole('button', { name: 'Sign in' }).click();
 
-    // apiClient bildet jeden 401 auf die feste Meldung "Nicht authentifiziert" ab.
-    await expect(page.getByText('Nicht authentifiziert')).toBeVisible();
+    await expect(page.getByText('Not authenticated')).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
   });
 });
