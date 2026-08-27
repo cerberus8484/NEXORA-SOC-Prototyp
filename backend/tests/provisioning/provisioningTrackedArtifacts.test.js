@@ -3,15 +3,27 @@
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 
-describe('provisioning release artifacts', () => {
-  test('tracks the enrollment token service required during application startup', () => {
+describe('startup release artifacts', () => {
+  test('tracks token modules required during application startup', () => {
     const repositoryRoot = path.resolve(__dirname, '../../..');
-    const trackedPath = execFileSync(
-      'git',
-      ['ls-files', '--error-unmatch', 'backend/src/services/EnrollmentTokenService.js'],
-      { cwd: repositoryRoot, encoding: 'utf8' },
-    );
+    const requiredPaths = [
+      'backend/src/domain/ApiToken.js',
+      'backend/src/middleware/apiTokenAuth.js',
+      'backend/src/repositories/InMemoryApiTokenRepository.js',
+      'backend/src/repositories/PostgresApiTokenRepository.js',
+      'backend/src/repositories/apiTokenRepositoryFactory.js',
+      'backend/src/routes/apiTokens.js',
+      'backend/src/services/ApiTokenService.js',
+      'backend/src/services/EnrollmentTokenService.js',
+    ];
 
-    expect(trackedPath.trim()).toBe('backend/src/services/EnrollmentTokenService.js');
+    for (const requiredPath of requiredPaths) {
+      const trackedPath = execFileSync(
+        'git',
+        ['ls-files', '--error-unmatch', requiredPath],
+        { cwd: repositoryRoot, encoding: 'utf8' },
+      );
+      expect(trackedPath.trim()).toBe(requiredPath);
+    }
   });
 });
