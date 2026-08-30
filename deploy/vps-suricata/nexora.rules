@@ -1,0 +1,9 @@
+# Nexora — schlankes Suricata-Regelset für den Honeypot-VPS (1-Core/kleiner RAM).
+# Bewusst KEIN ET-Open-Ruleset (~40k Regeln, speicherhungrig). Eine Regel genügt, um
+# pro Angreifer-Verbindung ein IDS-Alert zu erzeugen → setzt in der Fusion hasIdsAlert=true
+# (→ mit SIEM-high oder Firewall-Block = confirmed_malicious).
+#
+# Exklusiv laden: suricata -S /etc/suricata/nexora.rules (ignoriert suricata.yaml rule-files).
+# $HOME_NET via --set vars.address-groups.HOME_NET=[<HONEYPOT_PUBLIC_IP>] setzen.
+
+alert tcp any any -> $HOME_NET [22,2222] (msg:"NEXORA SSH connect to honeypot"; flow:to_server,not_established; flags:S; sid:9000001; rev:1; classtype:attempted-recon;)

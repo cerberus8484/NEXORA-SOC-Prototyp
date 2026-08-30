@@ -1,0 +1,41 @@
+import type { ReactNode } from 'react';
+import { Inbox } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+interface EmptyStateProps {
+  title?: string;
+  message?: ReactNode;
+  icon?: ReactNode;
+  action?: ReactNode;
+}
+
+export function EmptyState({ title, message, icon, action }: EmptyStateProps) {
+  const { t: tr } = useTranslation();
+  const titleText = title ?? tr('app.noDataAvailableYet');
+  return (
+    <div className="empty-state">
+      <span className="es-icon">{icon ?? <Inbox size={28} />}</span>
+      <span className="es-title">{titleText}</span>
+      {message && <span style={{ fontSize: 13 }}>{message}</span>}
+      {action}
+    </div>
+  );
+}
+
+export function Spinner({ label }: { label?: string }) {
+  const { t: tr } = useTranslation();
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-dim)', padding: 24, fontSize: 13 }}>
+      <span className="spinner" />
+      {label ?? tr('ui.loading')}
+    </div>
+  );
+}
+
+export function ErrorCard({ message }: { message: string }) {
+  return (
+    <div className="card card-pad" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+      {message}
+    </div>
+  );
+}

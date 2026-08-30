@@ -1,0 +1,4 @@
+# Mailserver-Laufzeitdaten: Konten, Mails, DKIM-Keys, State — nie ins Repo (ADR-037).
+data/        # (alt: Stalwart)
+dms/         # docker-mailserver: mail-data/mail-state/mail-logs/config
+*.env

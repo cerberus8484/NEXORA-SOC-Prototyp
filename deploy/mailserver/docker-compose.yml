@@ -1,0 +1,44 @@
+# Nexora SOC — Self-hosted Mailserver (docker-mailserver) — ADR-037 (rev: Stalwart → DMS)
+#
+# Gewechselt von Stalwart, weil dessen wizard-first-Setup nicht headless automatisierbar ist
+# (kein CLI im Release, Management-API erst nach Web-Wizard). docker-mailserver ist
+# vollständig über setup.sh-CLI + Config-Dateien steuerbar → Claude kann alles headless aufsetzen.
+#
+# Postfix + Dovecot + OpenDKIM. Intern ohne TLS/Smarthost lauffähig; für externe
+# Zustellung später SSL_TYPE + Smarthost (RELAY_HOST) ergänzen.
+# LXC auf Proxmox mit Docker (nesting=1,keyctl=1).
+
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest
+    container_name: nexora-mail
+    hostname: mail.nexora.local
+    restart: unless-stopped
+    ports:
+      - "25:25"      # SMTP (lokale Zustellung + Nexora-Notify, intern ohne Auth via PERMIT_DOCKER)
+      - "143:143"    # IMAP (Nexora Phishing-Poller, intern ohne TLS)
+      - "465:465"    # SMTPS (für später, mit TLS)
+      - "587:587"    # Submission (für später, mit TLS)
+      - "993:993"    # IMAPS (für später, mit TLS)
+    volumes:
+      - ./dms/mail-data:/var/mail
+      - ./dms/mail-state:/var/mail-state
+      - ./dms/mail-logs:/var/log/mail
+      - ./dms/config:/tmp/docker-mailserver   # Konten, DKIM, postfix-Overrides — sichern!
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - OVERRIDE_HOSTNAME=mail.nexora.local
+      - POSTMASTER_ADDRESS=postmaster@nexora.local
+      - SSL_TYPE=                       # leer = kein TLS (intern); für extern: self-signed/letsencrypt
+      - ENABLE_RSPAMD=0
+      - ENABLE_CLAMAV=0
+      - ENABLE_FAIL2BAN=0
+      - ENABLE_OPENDKIM=1               # DKIM-Key bereit für spätere externe Zustellung
+      - PERMIT_DOCKER=connected-networks # LAN/Docker darf einliefern (Nexora-Notify ohne Auth)
+      - POSTFIX_INET_PROTOCOLS=ipv4
+      - LOG_LEVEL=info
+    cap_add:
+      - NET_ADMIN
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8

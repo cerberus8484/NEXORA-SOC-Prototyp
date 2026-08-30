@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOC Ticket Tool — HUNT-009: AD Enumeration</title>
+<style>
+  :root{--bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;--accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;--purple:#9b59f5;--text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;--font-mono:'JetBrains Mono','Courier New',monospace;--font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:18px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .sb-badge{display:inline-block;margin:10px 16px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--crit);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:12px 16px 4px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:5px 16px;font-size:11px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .hid{font-size:9px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);min-width:36px;flex-shrink:0;}
+  #content{margin-left:var(--sw);flex:1;padding:40px 50px 80px;max-width:1000px;}
+  .cover{margin-bottom:36px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+  .hunt-id-cover{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.25);color:var(--crit);margin-bottom:8px;}
+  .cover h1{font-size:24px;font-weight:800;color:var(--text-head);letter-spacing:1px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:6px;}
+  .doc-section{margin-bottom:44px;}
+  h2{font-size:16px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  h3{font-size:12px;font-weight:700;color:var(--text-head);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px;}
+  p{margin-bottom:10px;color:var(--text);font-size:13px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-radius:5px;padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:6px 0 14px;white-space:pre;}
+  pre.qradar{border-left:3px solid var(--accent);}
+  pre.splunk{border-left:3px solid var(--warn);}
+  pre.sysmon{border-left:3px solid var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:12px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:11px;}
+  code{font-family:var(--font-mono);font-size:11px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:22px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  ul.dl{list-style:none;padding:0;margin:8px 0 14px;}
+  ul.dl li{padding:3px 0 3px 16px;position:relative;font-size:12px;color:var(--text);}
+  ul.dl li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;}
+  ul.dl li.tp::before{content:'+';color:var(--accent2);}
+  ul.dl li.fp::before{content:'✗';color:var(--crit);}
+  ul.dl li.var::before{content:'~';color:var(--purple);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>SOC Ticket Tool</h1><p>Hunt Reference</p></div>
+  <span class="sb-badge">🎯 Hunt Docs</span>
+  <div class="sb-section">Übersicht</div>
+  <a class="sb-link" href="index.html"><span class="hid">—</span> Alle Hunts</a>
+  <div class="sb-section">Discovery</div>
+  <a class="sb-link active" href="hunt-009.html"><span class="hid">H-009</span> AD Enumeration</a>
+  <div class="sb-section">Weitere Hunts</div>
+  <a class="sb-link" href="hunt-001.html"><span class="hid">H-001</span> C2 / Beaconing</a>
+  <a class="sb-link" href="hunt-002.html"><span class="hid">H-002</span> Credential Theft</a>
+  <a class="sb-link" href="hunt-003.html"><span class="hid">H-003</span> Lateral Movement</a>
+  <a class="sb-link" href="hunt-004.html"><span class="hid">H-004</span> Persistence</a>
+  <a class="sb-link" href="hunt-005.html"><span class="hid">H-005</span> LOLBins / Evasion</a>
+  <a class="sb-link" href="hunt-006.html"><span class="hid">H-006</span> Exfiltration / DNS</a>
+  <a class="sb-link" href="hunt-007.html"><span class="hid">H-007</span> Ransomware</a>
+  <a class="sb-link" href="hunt-008.html"><span class="hid">H-008</span> Privilege Escalation</a>
+  <a class="sb-link" href="hunt-010.html"><span class="hid">H-010</span> Initial Access</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="index.html">← Hunt-Übersicht</a>
+  <div class="cover">
+    <div class="hunt-id-cover">HUNT-009</div>
+    <h1>AD Enumeration</h1>
+    <div class="meta">MITRE: T1087.002 · T1069.002 · T1018 · T1558.003 · T1003.006 &nbsp;|&nbsp; Taktik: Discovery &nbsp;|&nbsp; Basis-Konfidenz: 50</div>
+  </div>
+
+  <section class="doc-section">
+    <h2>Beschreibung</h2>
+    <p>Erkennt Active Directory Enumeration durch Angreifer die nach privilegierten Accounts, Gruppen, ACLs und Angriffspfaden suchen. BloodHound/SharpHound stellen sehr charakteristische LDAP-Abfragen. PowerView-Funktionen wie <code>Get-DomainUser</code> haben erkennbare Commandline-Patterns. <code>net.exe</code>-Abfragen mit <code>/domain</code>-Flag von Workstations sind verdächtig.</p>
+    <p>Ziel: Angreifer vor DCSync, Kerberoasting oder Lateral Movement erkennen. AD Enumeration ist fast immer ein Vorläufer einer tieferen Kompromittierung — wer das Environment kartiert, plant den nächsten Schritt.</p>
+  </section>
+
+  <section class="doc-section">
+    <h2>QRadar AQL</h2>
+    <h3>LDAP-Abfragen von Nicht-Admin-Workstations (BloodHound-Pattern)</h3>
+    <pre class="qradar">-- LDAP-Abfragen von Nicht-Admin-Workstations (BloodHound-Pattern)
+SELECT sourceip, username, destinationip,
+       COUNT(*) AS ldap_query_count,
+       UNIQUECOUNT(LDAPFilter) AS unique_filters
+FROM events
+WHERE category = 'LDAP'
+  AND sourceip NOT IN (SELECT ip FROM reference_set:'Domain Controllers')
+  AND sourceip NOT IN (SELECT ip FROM reference_set:'Admin Workstations')
+  AND (LDAPFilter ILIKE '%(samAccountType=805306368)%'
+    OR LDAPFilter ILIKE '%(objectCategory=groupPolicyContainer)%'
+    OR LDAPFilter ILIKE '%(ms-ds-machineaccountquota=*)%'
+    OR LDAPFilter ILIKE '%(userAccountControl:1.2.840.113556.1.4.803:=4194304)%')
+GROUP BY sourceip, username, destinationip
+HAVING ldap_query_count > 50
+LAST 1 HOURS
+
+-- net.exe Domain-Abfragen von Workstations
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND ProcessName ILIKE '%net%'
+  AND (CommandLine ILIKE '%user /domain%'
+    OR CommandLine ILIKE '%group "Domain Admins"%'
+    OR CommandLine ILIKE '%group "Enterprise Admins"%'
+    OR CommandLine ILIKE '%localgroup administrators%')
+  AND sourceip NOT IN (SELECT ip FROM reference_set:'Admin Workstations')
+LAST 24 HOURS
+
+-- nltest / dsquery / Active Directory Module
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND (
+    (ProcessName ILIKE '%nltest%' AND CommandLine ILIKE '%dclist%')
+    OR (ProcessName ILIKE '%dsquery%' AND CommandLine ILIKE '%-limit 0%')
+    OR CommandLine ILIKE '%Get-ADUser -Filter *%'
+    OR CommandLine ILIKE '%Get-ADGroupMember%'
+  )
+LAST 24 HOURS</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Splunk SPL</h2>
+    <pre class="splunk">-- BloodHound/SharpHound LDAP-Abfragen erkennen
+index=wineventlog EventCode=4662
+| where match(Properties,"(?i)(samAccountType|objectCategory|ms-ds-machineaccountquota)")
+  AND NOT match(SubjectUserName,"\\$")
+| stats count as query_count, values(Properties) as queried_attrs
+  by SubjectUserName, SubjectDomainName, src_ip, _time span=5m
+| where query_count > 20
+| eval bloodhound_score=case(
+    query_count > 200, 90,
+    query_count > 100, 75,
+    query_count > 50,  60,
+    1==1, 40)
+
+-- PowerView-Patterns in PowerShell
+index=sysmon EventCode=1 Image="*\\powershell.exe"
+| where match(CommandLine,
+    "(?i)(Get-DomainUser|Get-DomainGroup|Get-DomainTrust|Get-DomainController|Invoke-Kerberoast|Find-LocalAdminAccess|Get-NetLocalGroupMember|Get-DomainComputer)")
+| table _time, ComputerName, User, CommandLine
+
+-- Massenhafter Kerberos TGT Request (AS-REQ Recon)
+index=wineventlog EventCode=4768
+| stats count as ticket_count by src_ip, TargetUserName, _time span=10m
+| where ticket_count > 30
+| eval comment="Möglicher AS-REP Roasting Recon oder BloodHound"</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Sysmon / Windows Security Events</h2>
+    <pre class="sysmon">-- Typische BloodHound/SharpHound LDAP-Filter:
+--   (samAccountType=805306368)   → alle User-Accounts
+--   (samAccountType=268435456)   → alle Gruppen
+--   (objectCategory=computer)   → alle Computer
+--   (ms-ds-machineaccountquota=*) → Machine Account Quota
+--   (userAccountControl:...:=4194304) → DONT_REQUIRE_PREAUTH (AS-REP Roasting)
+
+-- Sysmon Event 1: Prozess-Erstellung
+-- SharpHound.exe direkt: Prozessname "SharpHound" erkennbar
+-- Umbenannt: Commandline enthält "--CollectionMethod All" oder "--ZipFilename"
+
+-- WinSec Event 4662: Objekt-Zugriff
+-- Sehr viele 4662 Events in kurzer Zeit = LDAP Enumeration
+-- Besonders verdächtig wenn: SubjectUserName kein Service-Account
+
+-- net.exe Patterns:
+--   net user /domain              → alle Domain-User
+--   net group "Domain Admins" /domain
+--   net accounts /domain          → Passwort-Policy (Kerberoasting-Info)
+
+-- nltest Patterns:
+--   nltest /dclist:domain.local   → alle DCs auflisten
+--   nltest /dsgetsite             → Site-Informationen</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>True Positives</h2>
+    <ul class="dl">
+      <li class="tp"><strong>SharpHound.exe direkt ausgeführt von Workstation</strong> (Konfidenz: 98) — Prozessname oder Commandline enthält SharpHound, --CollectionMethod All oder --ZipFilename von Nicht-Admin-Workstation</li>
+      <li class="tp"><strong>&gt;200 LDAP-Queries mit BloodHound-Filtern in 5 Min</strong> (Konfidenz: 90) — Massenhafter Abruf von samAccountType, objectCategory und verwandten Filtern von einer einzigen Workstation</li>
+      <li class="tp"><strong>PowerView Get-DomainUser + Get-DomainGroup in einer PS-Session</strong> (Konfidenz: 88) — Mehrere PowerView-Funktionen sequenziell in einer PowerShell-Session deuten auf systematische Enumeration hin</li>
+      <li class="tp"><strong>net user /domain + net group "Domain Admins" von Standard-User</strong> (Konfidenz: 75) — net.exe-Abfragen mit /domain-Flag von einer Workstation ohne Admin-Whitelist</li>
+      <li class="tp"><strong>nltest /dclist von Workstation</strong> (Konfidenz: 70) — DC-Auflistung durch einen Standard-User ist kein legitimes Szenario</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>False Positives &amp; Whitelist</h2>
+    <ul class="dl">
+      <li class="fp"><strong>Legitime AD-Management durch Domain-Admins</strong> — Whitelist: Admin-Workstations + Admin-Accounts, die täglich AD verwalten</li>
+      <li class="fp"><strong>Monitoring Tools (SCOM, Nagios)</strong> — Diese Systeme fragen AD regelmäßig ab. Whitelist: Monitoring-Server IPs und bekannte Service-Accounts</li>
+      <li class="fp"><strong>HR-Software mit LDAP-Integration</strong> — Bekannte Business-Applikationen mit festen, wiederkehrenden LDAP-Filtern. Whitelist: Applikations-Server + Filtermuster</li>
+      <li class="fp"><strong>Identity Management Tools (AD Connect, etc.)</strong> — Whitelist: bekannte Service-Accounts dieser Tools, die im Normalfall sehr hohe LDAP-Aktivität erzeugen</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Varianten &amp; Evasion-Techniken</h2>
+    <ul class="dl">
+      <li class="var"><strong>VAR-001: ldapdomaindump Python</strong> (Conf-Modifier: -10) — Python-Tool, kein .NET, anderes User-Agent-Pattern in LDAP-Verbindung. Kein SharpHound-Prozess sichtbar</li>
+      <li class="var"><strong>VAR-002: ADRecon PowerShell</strong> (Conf-Modifier: -5) — Sehr ähnliche Patterns wie BloodHound, aber andere LDAP-Filter-Reihenfolge. PowerShell Commandline erkennbar</li>
+      <li class="var"><strong>VAR-003: CrackMapExec --users</strong> (Conf-Modifier: 0) — SMB-basierte Enumeration statt LDAP. Andere Event-IDs (4624, 4776), kein LDAP-Traffic</li>
+      <li class="var"><strong>VAR-004: Stufenweise Enumeration (niedrig und langsam)</strong> (Conf-Modifier: -30) — Queries über Stunden verteilt um Schwellwerte zu unterschreiten. Erfordert Baseline-Analyse statt einfacher Zählung</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Test Cases</h2>
+    <table class="doc-table">
+      <thead><tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th><th>Min. Conf.</th></tr></thead>
+      <tbody>
+        <tr><td>TP-001</td><td>TP</td><td>SharpHound.exe direkt ausgeführt</td><td>Erkannt</td><td>98</td></tr>
+        <tr><td>TP-002</td><td>TP</td><td>&gt;200 LDAP-Queries mit BloodHound-Filtern</td><td>Erkannt</td><td>90</td></tr>
+        <tr><td>TP-003</td><td>TP</td><td>PowerView Get-DomainUser + Get-DomainGroup</td><td>Erkannt</td><td>88</td></tr>
+        <tr><td>TP-004</td><td>TP</td><td>net user /domain von Standard-User Workstation</td><td>Erkannt</td><td>75</td></tr>
+        <tr><td>FP-001</td><td>FP</td><td>SCOM Monitoring LDAP-Abfragen</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>FP-002</td><td>FP</td><td>Domain-Admin macht legitime AD-Abfragen</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>VAR-001</td><td>VAR</td><td>ldapdomaindump Python-Tool</td><td>Erkannt</td><td>75</td></tr>
+        <tr><td>VAR-004</td><td>VAR</td><td>Low-and-slow Enumeration (über 2 Stunden)</td><td>Erkannt (reduziert)</td><td>45</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

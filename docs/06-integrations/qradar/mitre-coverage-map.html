@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MITRE ATT&CK Coverage Map — Nexora SOC / QRadar</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Nexora <span>SOC</span></div>
+    <div class="sub">QRadar Use-Case-Bibliothek</div>
+    <h2>Navigation</h2>
+    <a href="index.html">Übersicht</a>
+    <a class="active" href="mitre-coverage-map.html">MITRE ATT&amp;CK Coverage Map</a>
+    <a href="../qradar-usecase-anlegen.html">Klick-Anleitung (GUI)</a>
+    <h2>Szenarien</h2>
+    <a href="szenarien/uc-cred-002-kerberoasting.html"><span class="id">UC-CRED-002</span> Kerberoasting ★</a>
+    <a href="szenarien/uc-cred-001-lsass.html"><span class="id">UC-CRED-001</span> LSASS Dump</a>
+    <a href="szenarien/uc-auth-001-ssh-brute-force.html"><span class="id">UC-AUTH-001</span> SSH Brute Force</a>
+    <a href="szenarien/uc-auth-002-password-spraying.html"><span class="id">UC-AUTH-002</span> Password Spraying</a>
+    <a href="szenarien/uc-lat-001-psexec.html"><span class="id">UC-LAT-001</span> PsExec</a>
+    <a href="szenarien/uc-lat-002-rdp-pivoting.html"><span class="id">UC-LAT-002</span> RDP Pivoting</a>
+    <a href="szenarien/uc-priv-001-privilege-execution.html"><span class="id">UC-PRIV-001</span> Sudo/SUID/pkexec</a>
+    <a href="szenarien/uc-imp-001-data-destruction.html"><span class="id">UC-IMP-001</span> Data Destruction</a>
+    <a href="szenarien/uc-imp-002-data-encrypted.html"><span class="id">UC-IMP-002</span> Ransomware</a>
+  </nav>
+
+  <main>
+    <div class="breadcrumb"><a href="index.html">Bibliothek</a> / MITRE ATT&amp;CK Coverage Map</div>
+    <header class="hero">
+      <div class="kicker">MITRE ATT&CK Enterprise · Detection Coverage</div>
+      <h1>ATT&amp;CK Coverage Map</h1>
+      <p>Die 14 Taktiken der ATT&amp;CK-Enterprise-Matrix als Spalten, mit den detektionsrelevanten Haupttechniken. <span style="color:var(--accent-green)">Grün hervorgehobene</span> Techniken sind durch einen Nexora-Use-Case abgedeckt — Klick führt zum Szenario.</p>
+      <div class="callout warn"><strong>Lesehinweis zur Vollständigkeit:</strong> ATT&amp;CK Enterprise enthält mehrere hundert (Sub-)Techniken. Diese Matrix zeigt pro Taktik die <strong>kuratierten, SOC-detektionsrelevanten Haupttechniken</strong> — nicht jede einzelne Sub-Technik. Kanonische Vollreferenz: <a href="https://attack.mitre.org" target="_blank" rel="noopener">attack.mitre.org</a> (Enterprise v15+).</div>
+    </header>
+
+    <h2 class="section" id="status">Abdeckungs-Status</h2>
+    <table style="max-width:640px">
+      <tr><th>Kennzahl</th><th>Wert</th></tr>
+      <tr><td>Abgedeckte Techniken</td><td><b>9</b> (T1110.001, T1110.003, T1003.001, T1558.003, T1021.001, T1021.002, T1548, T1485, T1486)</td></tr>
+      <tr><td>Abgedeckte Taktiken</td><td>4 von 14 — <b>Credential Access</b>, <b>Lateral Movement</b>, <b>Privilege Escalation</b>, <b>Impact</b></td></tr>
+      <tr><td>Use Cases live/draft</td><td>9 (Status DRAFT → in Testumgebung validieren)</td></tr>
+      <tr><td>Größte Lücken</td><td>Execution, Defense Evasion, Discovery, C2, Exfiltration</td></tr>
+    </table>
+    <div class="legend">
+      <span><span class="box" style="background:linear-gradient(160deg,rgba(0,255,136,.4),rgba(0,255,136,.1));border:1px solid rgba(0,255,136,.5)"></span>abgedeckt (Use Case vorhanden)</span>
+      <span><span class="box" style="background:var(--bg-card);border:1px solid var(--border-soft)"></span>nicht abgedeckt</span>
+    </div>
+
+    <h2 class="section" id="matrix">Die Matrix</h2>
+    <p class="lead">Horizontal scrollbar. Jede Spalte = eine Taktik (Angriffsziel). Jede Kachel = eine Technik (Methode).</p>
+
+    <div class="matrix-wrap">
+      <div class="matrix">
+
+        <!-- 1 Reconnaissance -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-recon)">Reconnaissance<span class="tid">TA0043</span></div>
+          <div class="tcount">0 / 6 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1595</span>Active Scanning</div>
+          <div class="tech"><span class="tcode">T1592</span>Gather Victim Host Info</div>
+          <div class="tech"><span class="tcode">T1589</span>Gather Victim Identity Info</div>
+          <div class="tech"><span class="tcode">T1590</span>Gather Victim Network Info</div>
+          <div class="tech"><span class="tcode">T1598</span>Phishing for Information</div>
+          <div class="tech"><span class="tcode">T1597</span>Search Closed Sources</div>
+        </div>
+
+        <!-- 2 Resource Development -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-resdev)">Resource Development<span class="tid">TA0042</span></div>
+          <div class="tcount">0 / 5 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1583</span>Acquire Infrastructure</div>
+          <div class="tech"><span class="tcode">T1586</span>Compromise Accounts</div>
+          <div class="tech"><span class="tcode">T1587</span>Develop Capabilities</div>
+          <div class="tech"><span class="tcode">T1588</span>Obtain Capabilities</div>
+          <div class="tech"><span class="tcode">T1608</span>Stage Capabilities</div>
+        </div>
+
+        <!-- 3 Initial Access -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-initial)">Initial Access<span class="tid">TA0001</span></div>
+          <div class="tcount">0 / 7 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1566</span>Phishing</div>
+          <div class="tech"><span class="tcode">T1190</span>Exploit Public-Facing App</div>
+          <div class="tech"><span class="tcode">T1133</span>External Remote Services</div>
+          <div class="tech"><span class="tcode">T1078</span>Valid Accounts</div>
+          <div class="tech"><span class="tcode">T1200</span>Hardware Additions</div>
+          <div class="tech"><span class="tcode">T1091</span>Replication via Removable Media</div>
+          <div class="tech"><span class="tcode">T1195</span>Supply Chain Compromise</div>
+        </div>
+
+        <!-- 4 Execution -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-exec)">Execution<span class="tid">TA0002</span></div>
+          <div class="tcount">0 / 8 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1059</span>Command &amp; Scripting Interpreter</div>
+          <div class="tech"><span class="tcode">T1059.001</span>PowerShell</div>
+          <div class="tech"><span class="tcode">T1059.003</span>Windows Command Shell</div>
+          <div class="tech"><span class="tcode">T1204</span>User Execution</div>
+          <div class="tech"><span class="tcode">T1047</span>Windows Management Instrumentation</div>
+          <div class="tech"><span class="tcode">T1053</span>Scheduled Task/Job</div>
+          <div class="tech"><span class="tcode">T1569</span>System Services</div>
+          <div class="tech"><span class="tcode">T1106</span>Native API</div>
+        </div>
+
+        <!-- 5 Persistence -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-persist)">Persistence<span class="tid">TA0003</span></div>
+          <div class="tcount">0 / 8 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1547</span>Boot/Logon Autostart</div>
+          <div class="tech"><span class="tcode">T1053</span>Scheduled Task/Job</div>
+          <div class="tech"><span class="tcode">T1543</span>Create/Modify System Process</div>
+          <div class="tech"><span class="tcode">T1546</span>Event Triggered Execution</div>
+          <div class="tech"><span class="tcode">T1136</span>Create Account</div>
+          <div class="tech"><span class="tcode">T1098</span>Account Manipulation</div>
+          <div class="tech"><span class="tcode">T1505</span>Server Software Component</div>
+          <div class="tech"><span class="tcode">T1078</span>Valid Accounts</div>
+        </div>
+
+        <!-- 6 Privilege Escalation -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-privesc)">Privilege Escalation<span class="tid">TA0004</span></div>
+          <div class="tcount">1 / 6 abgedeckt</div>
+          <div class="tech covered"><span class="tcode">T1548</span>Abuse Elevation Control<a class="uc" href="szenarien/uc-priv-001-privilege-execution.html">UC-PRIV-001</a></div>
+          <div class="tech"><span class="tcode">T1134</span>Access Token Manipulation</div>
+          <div class="tech"><span class="tcode">T1068</span>Exploitation for Priv Esc</div>
+          <div class="tech"><span class="tcode">T1055</span>Process Injection</div>
+          <div class="tech"><span class="tcode">T1484</span>Domain Policy Modification</div>
+          <div class="tech"><span class="tcode">T1574</span>Hijack Execution Flow</div>
+        </div>
+
+        <!-- 7 Defense Evasion -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-defev)">Defense Evasion<span class="tid">TA0005</span></div>
+          <div class="tcount">0 / 9 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1562</span>Impair Defenses</div>
+          <div class="tech"><span class="tcode">T1070</span>Indicator Removal</div>
+          <div class="tech"><span class="tcode">T1027</span>Obfuscated Files/Info</div>
+          <div class="tech"><span class="tcode">T1218</span>System Binary Proxy Exec (LOLBins)</div>
+          <div class="tech"><span class="tcode">T1036</span>Masquerading</div>
+          <div class="tech"><span class="tcode">T1140</span>Deobfuscate/Decode</div>
+          <div class="tech"><span class="tcode">T1112</span>Modify Registry</div>
+          <div class="tech"><span class="tcode">T1497</span>Virtualization/Sandbox Evasion</div>
+          <div class="tech"><span class="tcode">T1055</span>Process Injection</div>
+        </div>
+
+        <!-- 8 Credential Access -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-cred)">Credential Access<span class="tid">TA0006</span></div>
+          <div class="tcount">4 / 9 abgedeckt</div>
+          <div class="tech covered"><span class="tcode">T1003.001</span>OS Cred Dumping: LSASS<a class="uc" href="szenarien/uc-cred-001-lsass.html">UC-CRED-001</a></div>
+          <div class="tech"><span class="tcode">T1003.006</span>OS Cred Dumping: DCSync</div>
+          <div class="tech covered"><span class="tcode">T1558.003</span>Kerberoasting<a class="uc" href="szenarien/uc-cred-002-kerberoasting.html">UC-CRED-002 ★</a></div>
+          <div class="tech"><span class="tcode">T1558.004</span>AS-REP Roasting</div>
+          <div class="tech covered"><span class="tcode">T1110.001</span>Brute Force: Password Guessing<a class="uc" href="szenarien/uc-auth-001-ssh-brute-force.html">UC-AUTH-001</a></div>
+          <div class="tech covered"><span class="tcode">T1110.003</span>Brute Force: Password Spraying<a class="uc" href="szenarien/uc-auth-002-password-spraying.html">UC-AUTH-002</a></div>
+          <div class="tech"><span class="tcode">T1555</span>Credentials from Password Stores</div>
+          <div class="tech"><span class="tcode">T1552</span>Unsecured Credentials</div>
+          <div class="tech"><span class="tcode">T1040</span>Network Sniffing</div>
+        </div>
+
+        <!-- 9 Discovery -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-disc)">Discovery<span class="tid">TA0007</span></div>
+          <div class="tcount">0 / 9 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1087</span>Account Discovery</div>
+          <div class="tech"><span class="tcode">T1083</span>File &amp; Directory Discovery</div>
+          <div class="tech"><span class="tcode">T1018</span>Remote System Discovery</div>
+          <div class="tech"><span class="tcode">T1046</span>Network Service Scanning</div>
+          <div class="tech"><span class="tcode">T1057</span>Process Discovery</div>
+          <div class="tech"><span class="tcode">T1082</span>System Information Discovery</div>
+          <div class="tech"><span class="tcode">T1069</span>Permission Groups Discovery</div>
+          <div class="tech"><span class="tcode">T1016</span>System Network Config</div>
+          <div class="tech"><span class="tcode">T1033</span>System Owner/User</div>
+        </div>
+
+        <!-- 10 Lateral Movement -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-lat)">Lateral Movement<span class="tid">TA0008</span></div>
+          <div class="tcount">2 / 6 abgedeckt</div>
+          <div class="tech covered"><span class="tcode">T1021.001</span>Remote Services: RDP<a class="uc" href="szenarien/uc-lat-002-rdp-pivoting.html">UC-LAT-002</a></div>
+          <div class="tech covered"><span class="tcode">T1021.002</span>Remote Services: SMB/Admin Shares<a class="uc" href="szenarien/uc-lat-001-psexec.html">UC-LAT-001</a></div>
+          <div class="tech"><span class="tcode">T1021.006</span>Remote Services: WinRM</div>
+          <div class="tech"><span class="tcode">T1570</span>Lateral Tool Transfer</div>
+          <div class="tech"><span class="tcode">T1550</span>Use Alternate Auth Material</div>
+          <div class="tech"><span class="tcode">T1563</span>Remote Service Session Hijacking</div>
+        </div>
+
+        <!-- 11 Collection -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-coll)">Collection<span class="tid">TA0009</span></div>
+          <div class="tcount">0 / 7 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1560</span>Archive Collected Data</div>
+          <div class="tech"><span class="tcode">T1005</span>Data from Local System</div>
+          <div class="tech"><span class="tcode">T1039</span>Data from Network Shared Drive</div>
+          <div class="tech"><span class="tcode">T1113</span>Screen Capture</div>
+          <div class="tech"><span class="tcode">T1056</span>Input Capture</div>
+          <div class="tech"><span class="tcode">T1114</span>Email Collection</div>
+          <div class="tech"><span class="tcode">T1119</span>Automated Collection</div>
+        </div>
+
+        <!-- 12 Command and Control -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-c2)">Command &amp; Control<span class="tid">TA0011</span></div>
+          <div class="tcount">0 / 9 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1071</span>Application Layer Protocol</div>
+          <div class="tech"><span class="tcode">T1071.004</span>DNS</div>
+          <div class="tech"><span class="tcode">T1095</span>Non-Application Layer Protocol</div>
+          <div class="tech"><span class="tcode">T1573</span>Encrypted Channel</div>
+          <div class="tech"><span class="tcode">T1572</span>Protocol Tunneling</div>
+          <div class="tech"><span class="tcode">T1090</span>Proxy</div>
+          <div class="tech"><span class="tcode">T1105</span>Ingress Tool Transfer</div>
+          <div class="tech"><span class="tcode">T1219</span>Remote Access Software</div>
+          <div class="tech"><span class="tcode">T1571</span>Non-Standard Port</div>
+        </div>
+
+        <!-- 13 Exfiltration -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-exfil)">Exfiltration<span class="tid">TA0010</span></div>
+          <div class="tcount">0 / 6 abgedeckt</div>
+          <div class="tech"><span class="tcode">T1041</span>Exfiltration over C2 Channel</div>
+          <div class="tech"><span class="tcode">T1048</span>Exfil over Alternative Protocol</div>
+          <div class="tech"><span class="tcode">T1567</span>Exfil over Web Service</div>
+          <div class="tech"><span class="tcode">T1011</span>Exfil over Other Network Medium</div>
+          <div class="tech"><span class="tcode">T1052</span>Exfil over Physical Medium</div>
+          <div class="tech"><span class="tcode">T1029</span>Scheduled Transfer</div>
+        </div>
+
+        <!-- 14 Impact -->
+        <div class="tcol">
+          <div class="thead" style="background:var(--t-impact)">Impact<span class="tid">TA0040</span></div>
+          <div class="tcount">2 / 8 abgedeckt</div>
+          <div class="tech covered"><span class="tcode">T1486</span>Data Encrypted for Impact<a class="uc" href="szenarien/uc-imp-002-data-encrypted.html">UC-IMP-002</a></div>
+          <div class="tech"><span class="tcode">T1490</span>Inhibit System Recovery</div>
+          <div class="tech"><span class="tcode">T1489</span>Service Stop</div>
+          <div class="tech covered"><span class="tcode">T1485</span>Data Destruction<a class="uc" href="szenarien/uc-imp-001-data-destruction.html">UC-IMP-001</a></div>
+          <div class="tech"><span class="tcode">T1491</span>Defacement</div>
+          <div class="tech"><span class="tcode">T1498</span>Network Denial of Service</div>
+          <div class="tech"><span class="tcode">T1499</span>Endpoint Denial of Service</div>
+          <div class="tech"><span class="tcode">T1529</span>System Shutdown/Reboot</div>
+        </div>
+
+      </div>
+    </div>
+
+    <h2 class="section" id="roadmap">Empfohlene nächste Use Cases (Lücken schließen)</h2>
+    <p class="lead">Priorisiert nach Angriffshäufigkeit und vorhandenen Log-Quellen:</p>
+    <table>
+      <tr><th>Technik</th><th>Use Case (Vorschlag)</th><th>Taktik</th><th>Quelle vorhanden?</th></tr>
+      <tr><td><span class="chip mitre">T1070</span></td><td>Clear Linux/Windows Logs (Synergie mit UC-IMP-001 C)</td><td>Defense Evasion</td><td>auditd / Windows</td></tr>
+      <tr><td><span class="chip mitre">T1003.006</span></td><td>DCSync-Erkennung (4662 Replication GUID)</td><td>Credential Access</td><td>Windows DC</td></tr>
+      <tr><td><span class="chip mitre">T1558.004</span></td><td>AS-REP Roasting (4768 PreAuth=0)</td><td>Credential Access</td><td>Windows DC</td></tr>
+      <tr><td><span class="chip mitre">T1021.006</span></td><td>WinRM Remote Exec (wsmprovhost)</td><td>Lateral Movement</td><td>Sysmon</td></tr>
+      <tr><td><span class="chip mitre">T1490</span></td><td>Inhibit Recovery (<code>vssadmin delete</code> / snapper)</td><td>Impact</td><td>Sysmon / auditd</td></tr>
+      <tr><td><span class="chip mitre">T1071.004</span></td><td>DNS-Tunneling / Exfiltration</td><td>C2 / Exfil</td><td>DNS-Logs, Suricata</td></tr>
+      <tr><td><span class="chip mitre">T1218</span></td><td>LOLBins-Missbrauch (rundll32/mshta/regsvr32)</td><td>Defense Evasion</td><td>Sysmon</td></tr>
+    </table>
+
+    <footer>
+      <p>MITRE ATT&amp;CK® ist eine Marke der MITRE Corporation. Diese Matrix ist eine kuratierte Detektions-Sicht, keine vollständige Wiedergabe. Quelle: <a href="https://attack.mitre.org" target="_blank" rel="noopener">attack.mitre.org</a>.</p>
+      <p>Nexora SOC · <code>docs/06-integrations/qradar/mitre-coverage-map.html</code> · erstellt 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

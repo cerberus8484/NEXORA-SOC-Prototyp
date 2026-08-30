@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC-AUTH-001 SSH Brute Force — Nexora SOC / QRadar</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Nexora <span>SOC</span></div>
+    <div class="sub">UC-AUTH-001 · SSH Brute Force</div>
+    <h2>Auf dieser Seite</h2>
+    <a href="#szenario">1 · Szenario</a>
+    <a href="#ablauf">2 · Angriffsablauf</a>
+    <a href="#mitre">3 · MITRE-Einordnung</a>
+    <a href="#voraussetzungen">4 · Voraussetzungen</a>
+    <a href="#logik">5 · Erkennungslogik</a>
+    <a href="#response">6 · Rule Response</a>
+    <a href="#fp">7 · False Positives</a>
+    <a href="#confidence">8 · Confidence Scoring</a>
+    <a href="#validierung">9 · Validierung</a>
+    <a href="#handlung">10 · Analyst-Handlung</a>
+    <h2>Bibliothek</h2>
+    <a href="../index.html">Übersicht</a>
+    <a href="../mitre-coverage-map.html">Coverage Map</a>
+    <a href="../../qradar-usecase-anlegen.html">Klick-Anleitung</a>
+  </nav>
+
+  <main>
+    <div class="breadcrumb"><a href="../index.html">Bibliothek</a> / <a href="../mitre-coverage-map.html">Credential Access</a> / UC-AUTH-001</div>
+    <header class="hero">
+      <div class="kicker">Brute Force / Authentication</div>
+      <h1>UC-AUTH-001 — SSH Brute Force</h1>
+      <p>Ein Angreifer probiert von einer Quelle viele Passwörter gegen einen oder wenige SSH-Accounts durch. Typisch gegen exponierte Linux-Hosts, Honeypots (Cowrie) und Firewall-Management-Interfaces. Erkennbar an der Häufung fehlgeschlagener Logins von derselben Quell-IP.</p>
+      <div class="meta">
+        <span><b>MITRE:</b> <span class="chip mitre">T1110.001</span></span>
+        <span><b>Taktik:</b> Credential Access</span>
+        <span><b>Confidence:</b> <span class="conf high">75–90</span></span>
+        <span><b>Status:</b> DRAFT → zu validieren</span>
+        <span><b>Quelle:</b> <span class="chip src">Cowrie / sshd / OPNsense</span></span>
+      </div>
+    </header>
+
+    <h2 class="section" id="szenario">1 · Szenario</h2>
+    <p>Automatisierte Tools (Hydra, Medusa, ncrack, Botnetze) fahren Wörterbuch- oder Credential-Stuffing-Angriffe gegen SSH (Port 22). Auf exponierten Systemen ist das Dauer-Grundrauschen; relevant wird es bei <em>fokussierten</em> Angriffen auf interne Hosts oder bei plötzlichem Volumen-Anstieg.</p>
+
+    <h2 class="section" id="ablauf">2 · Angriffsablauf</h2>
+    <ol class="killchain">
+      <li><b>Zielwahl:</b> Angreifer findet einen erreichbaren SSH-Dienst (Scan, Shodan).</li>
+      <li><b>Credential-Durchlauf:</b> Schnelle Folge von Login-Versuchen mit Passwort-Listen → viele <code>User Login Failure</code>-Events von einer Quell-IP.</li>
+      <li><b>Treffer:</b> Bei Erfolg ein <code>Login Success</code> nach vielen Failures → Folge-Use-Case „Failure followed by Success".</li>
+      <li><b>Verwertung:</b> Shell-Zugriff → Persistenz, Lateral Movement, Krypto-Miner.</li>
+    </ol>
+
+    <h2 class="section" id="mitre">3 · MITRE-Einordnung</h2>
+    <table style="max-width:720px">
+      <tr><th>Feld</th><th>Wert</th></tr>
+      <tr><td>Technik</td><td><span class="chip mitre">T1110.001</span> Brute Force: Password Guessing</td></tr>
+      <tr><td>Taktik</td><td>Credential Access (TA0006)</td></tr>
+      <tr><td>Verwandt</td><td>T1110.004 (Credential Stuffing), T1078 (Valid Accounts bei Erfolg)</td></tr>
+    </table>
+
+    <h2 class="section" id="voraussetzungen">4 · Voraussetzungen</h2>
+    <ul class="steps">
+      <li><b>Log-Quelle</b> liefert SSH-Login-Failures, gemappt auf QID-Kategorie <code>Authentication &gt; User Login Failure</code>.</li>
+      <li><b>Reference Set:</b> <span class="chip refset">RS:TrustedAuthSources</span> (Type IP) — Scanner-, Monitoring- und Admin-IPs.</li>
+    </ul>
+
+    <h2 class="section" id="logik">5 · Erkennungslogik</h2>
+    <p class="lead">Actions → <b>New Event Rule</b> · Rule Group <b>Authentication</b> · Name <code>UC-AUTH-001 SSH Brute Force</code>.</p>
+<pre class="code"><span class="kw">Apply</span> UC-AUTH-001 SSH Brute Force <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event category for the event is one of the following <span class="lnk">Authentication &gt; User Login Failure</span>
+<span class="kw">and when</span> the destination port is one of the following <span class="lnk">22</span>
+<span class="kw">and when</span> at least <span class="lnk">8</span> events are seen with the same <span class="lnk">Source IP</span> in <span class="lnk">5 minutes</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:TrustedAuthSources</span></pre>
+    <div class="callout tip"><strong>Verschärfung „Failure → Success":</strong> Zweite Regel, die nach dieser Offense ein erfolgreiches <code>Login Success</code> von derselben Source IP/auf demselben Ziel erkennt → Confidence stark hoch (möglicher Kompromiss).</div>
+
+    <h2 class="section" id="response">6 · Rule Response</h2>
+    <table style="max-width:760px">
+      <tr><th>Einstellung</th><th>Wert</th></tr>
+      <tr><td>Offense</td><td>✓ — <b>Index by:</b> Source IP</td></tr>
+      <tr><td>Severity</td><td>6</td></tr>
+      <tr><td>Add to Reference Set</td><td>optional: Source IP → <code>RS:BruteForce-Sources</code> (für Korrelation)</td></tr>
+      <tr><td>Response Limiter</td><td>1× pro 10 min pro Source IP</td></tr>
+    </table>
+
+    <h2 class="section" id="fp">7 · False Positives / Whitelist</h2>
+    <table>
+      <tr><th>FP-Quelle</th><th>Maßnahme</th></tr>
+      <tr><td>Vuln-Scanner / Monitoring</td><td>IP in <span class="chip refset">RS:TrustedAuthSources</span></td></tr>
+      <tr><td>Fehlkonfigurierter Client / abgelaufener Key</td><td>Schwelle 8/5min; ggf. „same Username" ergänzen</td></tr>
+      <tr><td>NAT-Gateway (viele User hinter einer IP)</td><td>Schwelle höher oder Ziel-/User-Granularität</td></tr>
+    </table>
+    <div class="callout warn"><strong>Internet-exponierte Hosts:</strong> Hier ist Brute Force Dauerrauschen. Für solche Hosts (z. B. Honeypot) entweder höhere Schwelle/Severity-Senkung oder nur „Failure → Success" alarmieren, nicht jeden Brute-Force-Burst.</div>
+
+    <h2 class="section" id="confidence">8 · Confidence Scoring</h2>
+    <table style="max-width:640px">
+      <tr><th>Bedingung</th><th>Score</th></tr>
+      <tr><td>Brute Force gefolgt von Login Success</td><td><span class="conf crit">90</span></td></tr>
+      <tr><td>&gt; 50 Failures in 5 min auf internen Host</td><td><span class="conf high">80</span></td></tr>
+      <tr><td>8–50 Failures, kein Erfolg</td><td><span class="conf med">60</span></td></tr>
+      <tr><td>Quelle in TrustedAuthSources</td><td>ausschließen</td></tr>
+    </table>
+
+    <h2 class="section" id="validierung">9 · Validierung</h2>
+    <table>
+      <tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th></tr>
+      <tr><td>TP-001</td><td>TP</td><td>Hydra, 30 Failures in 2 min von einer IP</td><td>Offense, Conf ≥ 60</td></tr>
+      <tr><td>TP-002</td><td>TP</td><td>30 Failures + danach 1 Success</td><td>Eskalation, Conf 90</td></tr>
+      <tr><td>FP-001</td><td>FP</td><td>Nessus-Scan (IP in Reference Set)</td><td>NICHT erkannt</td></tr>
+      <tr><td>FP-002</td><td>FP</td><td>3 Tippfehler eines Users</td><td>NICHT erkannt (unter Schwelle)</td></tr>
+    </table>
+
+    <h2 class="section" id="handlung">10 · Analyst-Handlung</h2>
+    <ul class="steps">
+      <li>Source IP → Geo/Reputation (Threat-Intel-Anreicherung).</li>
+      <li>Gab es einen Login Success? Wenn ja → Konto als kompromittiert behandeln.</li>
+      <li>Zielsystem: extern erreichbar? SSH härten (Key-only, fail2ban, Portänderung, Allowlist).</li>
+    </ul>
+
+    <footer>
+      <p>UC-AUTH-001 · <code>…/szenarien/uc-auth-001-ssh-brute-force.html</code> · 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

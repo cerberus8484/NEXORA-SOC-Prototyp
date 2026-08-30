@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOC Ticket Tool — HUNT-006: Exfiltration / DNS Tunneling</title>
+<style>
+  :root{--bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;--accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;--purple:#9b59f5;--text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;--font-mono:'JetBrains Mono','Courier New',monospace;--font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:18px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .sb-badge{display:inline-block;margin:10px 16px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--crit);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:12px 16px 4px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:5px 16px;font-size:11px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .hid{font-size:9px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);min-width:36px;flex-shrink:0;}
+  #content{margin-left:var(--sw);flex:1;padding:40px 50px 80px;max-width:1000px;}
+  .cover{margin-bottom:36px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+  .hunt-id-cover{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.25);color:var(--crit);margin-bottom:8px;}
+  .cover h1{font-size:24px;font-weight:800;color:var(--text-head);letter-spacing:1px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:6px;}
+  .doc-section{margin-bottom:44px;}
+  h2{font-size:16px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  h3{font-size:12px;font-weight:700;color:var(--text-head);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px;}
+  p{margin-bottom:10px;color:var(--text);font-size:13px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-radius:5px;padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:6px 0 14px;white-space:pre;}
+  pre.qradar{border-left:3px solid var(--accent);}
+  pre.splunk{border-left:3px solid var(--warn);}
+  pre.sysmon{border-left:3px solid var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:12px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:11px;}
+  code{font-family:var(--font-mono);font-size:11px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:22px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  ul.dl{list-style:none;padding:0;margin:8px 0 14px;}
+  ul.dl li{padding:3px 0 3px 16px;position:relative;font-size:12px;color:var(--text);}
+  ul.dl li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;}
+  ul.dl li.tp::before{content:'+';color:var(--accent2);}
+  ul.dl li.fp::before{content:'✗';color:var(--crit);}
+  ul.dl li.var::before{content:'~';color:var(--purple);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>SOC Ticket Tool</h1><p>Hunt Reference</p></div>
+  <span class="sb-badge">🎯 Hunt Docs</span>
+  <div class="sb-section">Übersicht</div>
+  <a class="sb-link" href="index.html"><span class="hid">—</span> Alle Hunts</a>
+  <div class="sb-section">Exfiltration</div>
+  <a class="sb-link active" href="hunt-006.html"><span class="hid">H-006</span> Exfiltration / DNS</a>
+  <div class="sb-section">Weitere Hunts</div>
+  <a class="sb-link" href="hunt-001.html"><span class="hid">H-001</span> C2 / Beaconing</a>
+  <a class="sb-link" href="hunt-002.html"><span class="hid">H-002</span> Credential Theft</a>
+  <a class="sb-link" href="hunt-003.html"><span class="hid">H-003</span> Lateral Movement</a>
+  <a class="sb-link" href="hunt-004.html"><span class="hid">H-004</span> Persistence</a>
+  <a class="sb-link" href="hunt-005.html"><span class="hid">H-005</span> LOLBins / Evasion</a>
+  <a class="sb-link" href="hunt-007.html"><span class="hid">H-007</span> Ransomware</a>
+  <a class="sb-link" href="hunt-008.html"><span class="hid">H-008</span> Privilege Escalation</a>
+  <a class="sb-link" href="hunt-009.html"><span class="hid">H-009</span> AD Enumeration</a>
+  <a class="sb-link" href="hunt-010.html"><span class="hid">H-010</span> Initial Access</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="index.html">← Hunt-Übersicht</a>
+  <div class="cover">
+    <div class="hunt-id-cover">HUNT-006</div>
+    <h1>Exfiltration / DNS Tunneling</h1>
+    <div class="meta">MITRE: T1048.003 · T1071.004 · T1041 · T1567.002 &nbsp;|&nbsp; Taktik: Exfiltration &nbsp;|&nbsp; Basis-Konfidenz: 50</div>
+  </div>
+
+  <section class="doc-section">
+    <h2>Beschreibung</h2>
+    <p>Erkennt unerlaubten Datenabfluss über DNS-Tunneling (DNScat2, Iodine — Daten in Subdomains versteckt), HTTPS-Uploads zu neuen/unbekannten Zielen, Cloud Storage Exfiltration (OneDrive/Dropbox an ungewöhnliche IPs) und ICMP-basierte Exfiltration.</p>
+    <p>DNS-Tunneling ist besonders gefährlich weil DNS-Traffic meist nicht überwacht wird und durch Firewalls geht.</p>
+  </section>
+
+  <section class="doc-section">
+    <h2>QRadar AQL</h2>
+    <h3>DNS Tunneling: hohe Abfragefrequenz + verdächtige Subdomains</h3>
+    <pre class="qradar">-- DNS Tunneling: hohe Abfragefrequenz + verdächtige Subdomains
+SELECT sourceip, destinationip,
+       COUNT(*) AS query_count,
+       AVG(LENGTH(QueryName)) AS avg_subdomain_length,
+       UNIQUECOUNT(QueryName) AS unique_subdomains
+FROM events
+WHERE EventID = 'DNS Query'
+  AND RecordType IN ('TXT','NULL','CNAME','MX')
+  AND QueryName NOT ILIKE '%.microsoft.com'
+  AND QueryName NOT ILIKE '%.windows.com'
+  AND QueryName NOT ILIKE '%.google.com'
+GROUP BY sourceip, destinationip, BaseDomain
+HAVING query_count > 100
+  AND avg_subdomain_length > 25
+LAST 1 HOURS
+
+-- Große ausgehende Transfers zu neuen Zielen
+SELECT sourceip, destinationip, destinationport,
+       SUM(BytesSent) AS total_sent,
+       COUNT(*) AS session_count
+FROM events
+WHERE category = 'Firewall Permit'
+  AND destinationip NOT INCIDR '10.0.0.0/8'
+  AND destinationip NOT INCIDR '172.16.0.0/12'
+  AND destinationip NOT INCIDR '192.168.240.0/16'
+GROUP BY sourceip, destinationip, destinationport
+HAVING total_sent > 104857600
+LAST 24 HOURS</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Splunk SPL</h2>
+    <pre class="splunk">-- DNS Tunneling: Entropy-Analyse der Subdomains (Sysmon Event 22)
+index=sysmon EventCode=22
+| rex field=QueryName "^(?&lt;subdomain&gt;[^.]+)\."
+| eval subdomain_len=len(subdomain)
+| where subdomain_len > 25
+| stats count as query_count,
+        avg(subdomain_len) as avg_len,
+        dc(QueryName) as unique_queries
+  by ComputerName, QueryName
+| where query_count > 50 OR avg_len > 30
+| eval dns_tunnel_score=case(
+    query_count > 200 AND avg_len > 35, 90,
+    query_count > 100 AND avg_len > 25, 75,
+    query_count > 50,  60,
+    1==1, 40)
+| sort -dns_tunnel_score
+
+-- Große HTTPS-Uploads zu neuen Zielen
+index=firewall action=allow dest_port=443
+| where NOT match(dest_ip,"^(10\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.|192\\.168\\.)")
+| stats sum(bytes_out) as total_out by src_ip, dest_ip, _time span=1h
+| where total_out > 104857600
+| eval mb_sent=round(total_out/1048576,1)</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Sysmon / Windows Security Events</h2>
+    <pre class="sysmon">-- Sysmon Event 22: DNS-Abfrage
+--   QueryName = abgefragte Domain
+--   Hohe Entropy in Subdomains = Base32/Base64 Encoding
+--   Beispiel DNScat2: 4a6f686e-3132332e4578616d.evil.com (Hex-kodiert)
+
+-- DNS Record Types für Tunneling:
+--   TXT  → größte Payloads möglich (255 Bytes pro TXT Record)
+--   NULL → selten legitim, perfekt für Tunneling
+--   CNAME → indirekte Weiterleitung
+--   A    → IP-Kodierung als Subdomain
+
+-- ICMP Tunneling Indikatoren:
+--   ICMP Echo Request mit Payload > 64 Bytes (normal: 32-64 Bytes)
+--   Frequenz: > 10 ICMP/min zur gleichen Ziel-IP
+
+-- Legitimate Cloud Storage vs. Exfiltration:
+--   Whitelist: api.onedrive.com, www.dropbox.com (bekannte IPs)
+--   Verdächtig: OneDrive-ähnliche Domains auf fremden IPs</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>True Positives</h2>
+    <ul class="dl">
+      <li class="tp"><strong>DNS: &gt;100 TXT-Queries/min an eine Domain mit Subdomains &gt;30 Zeichen</strong> (Konfidenz: 85)</li>
+      <li class="tp"><strong>DNS: NULLRecord-Anfragen von Workstation (sehr ungewöhnlich)</strong> (Konfidenz: 90)</li>
+      <li class="tp"><strong>HTTPS: &gt;100 MB Upload zu neuer IP ohne bekannten Geschäftszweck</strong> (Konfidenz: 70)</li>
+      <li class="tp"><strong>ICMP: Echo Request mit Payload &gt;100 Bytes, &gt;20/min zur selben IP</strong> (Konfidenz: 75)</li>
+      <li class="tp"><strong>Cloud: OneDrive/Dropbox Traffic zu unbekannten IP-Ranges</strong> (Konfidenz: 65)</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>False Positives &amp; Whitelist</h2>
+    <ul class="dl">
+      <li class="fp"><strong>CDN-Traffic: Cloudflare, Akamai</strong> — viele DNS-Abfragen sind normal. Whitelist: bekannte CDN IP-Ranges</li>
+      <li class="fp"><strong>Legitime Cloud-Storage-Nutzung</strong> — Whitelist: bekannte Cloud-Anbieter Domains und IPs</li>
+      <li class="fp"><strong>Software-Updates</strong> — Whitelist: bekannte Update-Server, Windows Update IPs</li>
+      <li class="fp"><strong>Video-Conferencing (Teams, Zoom)</strong> — hoher ausgehender Traffic. Whitelist: Vendor-IP-Ranges</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Varianten &amp; Evasion-Techniken</h2>
+    <ul class="dl">
+      <li class="var"><strong>VAR-001: DNS über HTTPS/DoH</strong> (Conf-Modifier: -40) — Umgeht DNS-Monitoring komplett, erscheint als normaler HTTPS-Traffic</li>
+      <li class="var"><strong>VAR-002: ICMP Tunneling</strong> (Conf-Modifier: -15) — Daten in ICMP-Payload, nur erkennbar mit Deep Packet Inspection</li>
+      <li class="var"><strong>VAR-003: HTTP/HTTPS an bekannte Domains (Domain Fronting)</strong> (Conf-Modifier: -25) — Traffic über CDN verschleiert</li>
+      <li class="var"><strong>VAR-004: Steganographie in Bildern</strong> (Conf-Modifier: -45) — Daten in JPEG/PNG versteckt, kaum erkennbar</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Test Cases</h2>
+    <table class="doc-table">
+      <thead><tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th><th>Min. Conf.</th></tr></thead>
+      <tbody>
+        <tr><td>TP-001</td><td>TP</td><td>DNS: 200 TXT-Queries/min, Subdomain-Länge 40+</td><td>Erkannt</td><td>85</td></tr>
+        <tr><td>TP-002</td><td>TP</td><td>NULL-Record DNS von Workstation</td><td>Erkannt</td><td>90</td></tr>
+        <tr><td>TP-003</td><td>TP</td><td>HTTPS Upload 200MB zu unbekannter IP</td><td>Erkannt</td><td>70</td></tr>
+        <tr><td>TP-004</td><td>TP</td><td>ICMP mit 200 Bytes Payload, 30/min</td><td>Erkannt</td><td>75</td></tr>
+        <tr><td>FP-001</td><td>FP</td><td>CDN-Traffic (viele DNS-Abfragen)</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>FP-002</td><td>FP</td><td>Teams/Zoom ausgehender Video-Traffic</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>VAR-001</td><td>VAR</td><td>DNS over HTTPS (DoH)</td><td>Erkannt (nur mit Proxy)</td><td>45</td></tr>
+        <tr><td>VAR-002</td><td>VAR</td><td>ICMP Tunneling</td><td>Erkannt</td><td>60</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

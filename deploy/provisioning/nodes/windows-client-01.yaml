@@ -1,0 +1,32 @@
+# Beispiel A — normaler Agent, sicherer Bootstrap (DHCP nur read-only erkannt).
+# Der Installer installiert + enrollt + meldet read-only. Er ändert KEIN Netzwerk.
+node:
+  name: windows-client-01
+  role: normal_agent
+  labels:
+    environment: lab
+    owner: soc
+
+install:
+  mode: bootstrap_only
+  changeNetwork: false
+
+network:
+  discovery: read_only
+  expectedMode: dhcp
+  applyDuringInstall: false
+
+features:
+  inventory: true
+  logCollection: true
+  commandConsole: false
+  sniffing:
+    requested: false
+    applyDuringInstall: false
+  nat:
+    requested: false
+    applyDuringInstall: false
+
+nexora:
+  serverUrl: https://nexora.example
+  enrollmentProfile: lab-agent

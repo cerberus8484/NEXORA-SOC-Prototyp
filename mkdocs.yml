@@ -1,0 +1,318 @@
+# =============================================================================
+# Nexora SOC — Dokumentations-Website (MkDocs Material)
+#
+# Diese Konfiguration bündelt die vorhandene Doku unter docs/ zu EINER
+# durchsuchbaren Website mit linker Navigation — im Stil von
+# docs.securityonion.net (Getting Started → Konsole → Detection → Architektur …).
+#
+# Lokal starten:   python -m mkdocs serve   → http://127.0.0.1:8000
+# Bauen:           python -m mkdocs build   → statische Site nach ./site/
+# Abhängigkeiten:  pip install -r requirements-docs.txt
+# =============================================================================
+
+site_name: Nexora SOC — Dokumentation
+site_description: >-
+  Self-hosted SOC-Orchestrierungsplattform für Tier 1–3 — Incident-Ticketing,
+  Threat Hunting, Evidence/Chain-of-Custody, KI-Triage mit Human-Approval.
+site_author: Nexora SOC
+docs_dir: docs
+site_dir: site
+use_directory_urls: true
+
+# --- Theme -------------------------------------------------------------------
+theme:
+  name: material
+  language: de
+  # Keine externen Google-Fonts laden → offline-/air-gapped-tauglich (self-hosted SOC).
+  font: false
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Zu hellem Design wechseln
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: cyan
+      toggle:
+        icon: material/weather-night
+        name: Zu dunklem Design wechseln
+  icon:
+    logo: material/shield-lock-outline
+    repo: fontawesome/brands/github
+  features:
+    - navigation.indexes      # Sektions-Startseiten (index.md je Ordner)
+    - navigation.tracking     # URL folgt der aktiven Überschrift
+    - navigation.top          # "nach oben"-Button
+    - navigation.footer       # Zurück/Weiter im Footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.tabs.link
+
+# --- Markdown-Erweiterungen --------------------------------------------------
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - def_list
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+# --- Plugins -----------------------------------------------------------------
+plugins:
+  - search:
+      lang:
+        - de
+        - en
+  - i18n:
+      docs_structure: suffix        # datei.en.md = englische Fassung; ohne Suffix = Deutsch
+      fallback_to_default: true     # untersetzte Seiten fallen auf Deutsch zurück
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: de
+          default: true
+          name: Deutsch
+          build: true
+        - locale: en
+          name: English
+          build: true
+          nav_translations:
+            Start: Home
+            "Überblick (Was Nexora macht)": "Overview (What Nexora Does)"
+            "Produkt & Funktionsumfang": "Product & Capabilities"
+            Feature-Status: Feature Status
+            Roadmap: Roadmap
+            Installation: Installation
+            "Übersicht": "Overview"
+            "Migration (alt → neu)": "Migration (old → new)"
+            "Bedienung (Analysten-Konsole)": "Usage (Analyst Console)"
+            User-Guide: User Guide
+            Seiten-Referenz: Page Reference
+            Administration: Administration
+            "Allgemein & Lizenz": "General & License"
+            "Benutzer & Rollen (RBAC)": "Users & Roles (RBAC)"
+            Integrationen: Integrations
+            "Sicherheit (Auth, MFA, SSO)": "Security (Auth, MFA, SSO)"
+            "API & Webhooks": "API & Webhooks"
+            Benachrichtigungen: Notifications
+            "Speicherung & Retention": "Storage & Retention"
+            "Branding & Thema": "Branding & Theme"
+            "Audit & Compliance": "Audit & Compliance"
+            KI-Agent-Konfiguration: AI Agent Configuration
+            Autonomie-Richtlinien: Autonomy Policies
+            "Provisioning & Enrollment": "Provisioning & Enrollment"
+            Correlation Engine: Correlation Engine
+            ML-Evaluation: ML Evaluation
+            Detection & Threat Hunting: Detection & Threat Hunting
+            Regel-Katalog: Rules Catalog
+            Architektur: Architecture
+            Korrelations-Datenmodell: Correlation Data Model
+            Lokale-LLM-Architektur: Local LLM Architecture
+            Server-Implementierungsplan: Server Implementation Plan
+            Machine Learning: Machine Learning
+            "Integrationen (Referenz)": "Integrations (Reference)"
+            "Sicherheit (Konzept & Reviews)": "Security (Concept & Reviews)"
+            Sicherheits-Verbindungen: Security Connections
+            "Betrieb (Operations)": Operations
+            "Netzwerk & Lab": "Network & Lab"
+            Entwicklung: Development
+            API-Referenz: API Reference
+            Agent-Orchestrierung: Agent Orchestration
+            "Entscheidungen (ADR)": "Decisions (ADR)"
+            Decision Records: Decision Records
+
+# --- Nicht veröffentlichen (operator-privat / interne Planung / veraltet) ----
+exclude_docs: |
+  /README.md
+  01-architecture/uml.md
+  01-architecture/uml.html
+  00-overview/README.md
+  00-overview/abarbeitungsplan-2026-06-27.md
+  00-overview/dataplane-inventar-2026-06-25.md
+  00-overview/hardening-und-collector-plan-2026-06-26.md
+  00-overview/master-roadmap-2026-06-26.md
+  00-overview/offene-punkte-2026-06-26.md
+  00-overview/schulden-report-2026-06-26.md
+  02-user-guide/pages/README.md
+  07-operations/network/CHANGELOG-honeypot.md
+  _private/
+  agent-runs/
+  assets/screenshots/README.md
+  cost-analysis.md
+  dev-journal.md
+  plan-montag.md
+
+validation:
+  # Navigations-Fehler bleiben sichtbar (fängt eigene Verdrahtungsfehler ab).
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: info
+  # Bestandsdocs verlinken bewusst auf Repo-Root-Dateien (README/ROADMAP/CHANGELOG)
+  # außerhalb der Site sowie auf handgeschriebene Alt-Anker → als Info, nicht als Warnung.
+  links:
+    not_found: info
+    anchors: info
+    absolute_links: info
+    unrecognized_links: ignore
+
+# --- Navigation (drei Säulen: Was macht es · Installieren · Administrieren) ---
+nav:
+  - Start: index.md
+
+  - Überblick (Was Nexora macht):
+      - ueberblick/index.md
+      - "Produkt & Funktionsumfang": 00-overview/produkt-erklaerung.md
+      - Feature-Status: 00-overview/feature-status.md
+      - Release Notes: 00-overview/changelog.md
+      - Roadmap: 08-roadmap/README.md
+
+  - Installation:
+      - Übersicht: 03-admin-guide/README.md
+      - Installation: 03-admin-guide/installation.md
+      - ENV-Schalter-Inventar: 03-admin-guide/env-schalter-inventar.md
+      - "Migration (alt → neu)": 03-admin-guide/migration-old-to-new.md
+
+  - Administration:
+      - administration/index.md
+      - "Allgemein & Lizenz": administration/allgemein.md
+      - "Benutzer & Rollen (RBAC)": administration/benutzer-rollen.md
+      - Integrationen: administration/integrationen.md
+      - "Sicherheit (Auth, MFA, SSO)": administration/sicherheit.md
+      - "API & Webhooks": administration/api-webhooks.md
+      - Benachrichtigungen: administration/benachrichtigungen.md
+      - "Speicherung & Retention": administration/speicherung-retention.md
+      - "Branding & Thema": administration/branding.md
+      - "Audit & Compliance": administration/audit-compliance.md
+      - KI-Agent-Konfiguration: administration/ki-agent.md
+      - Autonomie-Richtlinien: administration/autonomy-policies.md
+      - "Provisioning & Enrollment": administration/provisioning.md
+      - Services (Dienste steuern): administration/services.md
+      - Correlation Engine: administration/correlation-engine.md
+      - ML-Evaluation: administration/ml-evaluation.md
+
+  - Bedienung (Analysten-Konsole):
+      - Übersicht: 02-user-guide/README.md
+      - User-Guide: 02-user-guide/user-guide.md
+      - Seiten-Referenz:
+          - Login: 02-user-guide/pages/Login.md
+          - Dashboard: 02-user-guide/pages/Dashboard.md
+          - Tickets: 02-user-guide/pages/Tickets.md
+          - Ticket-Editor: 02-user-guide/pages/TicketEditor.md
+          - Analyse-Workbench: 02-user-guide/pages/Analysis.md
+          - QRadar-Analyse: 02-user-guide/pages/QRadarAnalysis.md
+          - Evidence-Center: 02-user-guide/pages/EvidenceCenter.md
+          - KI-Agent: 02-user-guide/pages/KiAgent.md
+          - Threat Hunts: 02-user-guide/pages/ThreatHunts.md
+          - Hunt-Konsole: 02-user-guide/pages/HuntConsole.md
+          - Hunt-Bibliothek: 02-user-guide/pages/HuntLibrary.md
+          - Detection-Bibliothek: 02-user-guide/pages/DetectionLibrary.md
+          - YARA: 02-user-guide/pages/YARA.md
+          - Use-Case-Developer: 02-user-guide/pages/UseCaseDeveloper.md
+          - MITRE ATT&CK: 02-user-guide/pages/MITRE.md
+          - Hosts: 02-user-guide/pages/Hosts.md
+          - Wazuh-Dashboard: 02-user-guide/pages/WazuhDashboard.md
+          - Collectors-Status: 02-user-guide/pages/CollectorsStatus.md
+          - Korrelatoren: 02-user-guide/pages/Correlators.md
+          - Data-Plane: 02-user-guide/pages/DataPlane.md
+          - Provisioning: 02-user-guide/pages/Provisioning.md
+          - Autonomie-Policies: 02-user-guide/pages/AutonomyPolicies.md
+          - SOC-Metriken: 02-user-guide/pages/SocMetrics.md
+          - ML-Evaluation: 02-user-guide/pages/MlEval.md
+          - System-Status: 02-user-guide/pages/SystemStatus.md
+          - NIS2-Readiness: 02-user-guide/pages/Nis2Readiness.md
+          - Audit-Log: 02-user-guide/pages/AuditLog.md
+          - Einstellungen: 02-user-guide/pages/Settings.md
+          - Profil: 02-user-guide/pages/Profile.md
+
+  - Detection & Threat Hunting:
+      - detection/index.md
+      - Regel-Katalog: detection/rules-catalog.md
+
+  - Architektur:
+      - Übersicht: 01-architecture/README.md
+      - arc42: 01-architecture/arc42.md
+      - Korrelations-Datenmodell: 01-architecture/correlation-data-model.md
+      - CE-5 FQDN-Source-Discovery: 01-architecture/ce5-fqdn-source-discovery.md
+      - Hunt-Response-Konsole: 01-architecture/hunt-response-console.md
+      - Lokale-LLM-Architektur: 01-architecture/local-llm-architecture.md
+      - GitOps-Provisioning: 01-architecture/gitops-provisioning.md
+      - Server-Implementierungsplan: 01-architecture/server-implementation-plan.md
+      - Wazuh-Frontend-Replacement: 01-architecture/wazuh-frontend-replacement.md
+      - Deployment-Center:
+          - Konzept: 01-architecture/deployment-center-concept.md
+          - Architektur: 01-architecture/deployment-center-architecture.md
+          - Modul-Authoring: 01-architecture/deployment-center-module-authoring.md
+          - Implementierungsplan: 01-architecture/deployment-center-implementation-plan.md
+          - Runbook: 01-architecture/deployment-center-runbook.md
+          - Node-Update-Runbook: 01-architecture/deployment-center-node-update-runbook.md
+      - Deployment-Capability-Map: 01-architecture/deployment-capability-map.md
+      - ADR-042 Containment-Runbook: 01-architecture/adr-042-containment-runbook.md
+      - Machine Learning:
+          - Label-Contract: 01-architecture/ml-label-contract.md
+          - Eval-Schema: 01-architecture/ml-eval-schema.md
+          - Training-Plan: 01-architecture/ml-training-plan.md
+          - Routing-Policy-Runbook: 01-architecture/ml-routing-policy-runbook.md
+
+  - Integrationen (Referenz):
+      - Übersicht: 06-integrations/README.md
+      - QRadar Go-Live: 06-integrations/qradar-go-live.md
+
+  - Sicherheit (Konzept & Reviews):
+      - Übersicht: 05-security/README.md
+      - Sicherheits-Verbindungen: 05-security/security-connections.md
+      - Apply-Channel Threat-Model: 05-security/apply-channel-threat-model.md
+      - "Security-Review (2026-06-29)": 05-security/security-review-2026-06-29.md
+      - Zero-Trust-Access-Plan: 05-security/zero-trust-access-plan.md
+
+  - Betrieb (Operations):
+      - Übersicht: 07-operations/README.md
+      - Observability: 07-operations/observability.md
+      - Container-Limits: 07-operations/container-limits.md
+      - Lasttest-Ergebnisse: 07-operations/loadtest-results.md
+      - Production-Readiness-Checklist: 07-operations/production-readiness-checklist.md
+      - Netzwerk & Lab:
+          - Übersicht: 07-operations/network/README.md
+          - Lab-Build-Guide: 07-operations/network/lab-build-guide.md
+          - AD-Lab-Setup: 07-operations/network/ad-lab-setup.md
+          - DC01-Konfiguration: 07-operations/network/dc01-config.md
+          - WEC01-Konfiguration: 07-operations/network/wec01-config.md
+          - WEF-Pipeline: 07-operations/network/wef-pipeline.md
+          - Monitoring-Coverage: 07-operations/network/monitoring-coverage.md
+          - Suricata Unicast-Tap: 07-operations/network/suricata-unicast-tap.md
+          - VLAN-Migration: 07-operations/network/vlan-migration.md
+          - VPN-Setup: 07-operations/network/vpn-setup.md
+          - Proxmox-Cluster: 07-operations/network/proxmox-cluster.md
+          - Storage-Plan: 07-operations/network/storage-plan.md
+          - Admin-Befehle: 07-operations/network/admin-commands.md
+
+  - Entwicklung:
+      - Übersicht: 04-developer-guide/README.md
+      - Developer-Guide: 04-developer-guide/developer-guide.md
+      - API-Referenz: 04-developer-guide/api-reference.md
+      - Agent-Orchestrierung: 04-developer-guide/agent-orchestration.md
+
+  - Entscheidungen (ADR):
+      - Übersicht: adr/README.md
+      - Decision Records: adr/decisions.md

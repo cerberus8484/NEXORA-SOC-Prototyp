@@ -1,0 +1,40 @@
+{
+  "_comment": "Beispiel-Config für den internen Collector-Hub (ADR-036). Platzhalter <…> ersetzen. credential = NAME einer ENV-Variable mit dem Token (per-Collector). Neue Quelle = ein Eintrag mehr.",
+  "intakeUrl": "http://intake:8081/v1/intake/events",
+  "collectors": [
+    {
+      "name": "hp-cowrie",
+      "kind": "cowrie",
+      "options": { "honeypotIp": "<HONEYPOT_PUBLIC_IP>" },
+      "credential": "CRED_HP_COWRIE",
+      "source": {
+        "mode": "tail",
+        "ssh": { "host": "<HONEYPOT_TUNNEL_IP>", "user": "<SSH_USER>", "port": 64222, "identityFile": "/keys/honeypot", "proxyJump": "<JUMP_USER>@<JUMP_HOST>", "proxyJumpKey": "/keys/jump" },
+        "logPath": "/home/cowrie/cowrie/var/log/cowrie/cowrie.json"
+      }
+    },
+    {
+      "name": "hp-suricata",
+      "kind": "suricata",
+      "options": { "assetIps": ["<HONEYPOT_PUBLIC_IP>"] },
+      "credential": "CRED_HP_SURICATA",
+      "source": {
+        "mode": "tail",
+        "ssh": { "host": "<HONEYPOT_TUNNEL_IP>", "user": "<SSH_USER>", "port": 64222, "identityFile": "/keys/honeypot", "proxyJump": "<JUMP_USER>@<JUMP_HOST>", "proxyJumpKey": "/keys/jump" },
+        "logPath": "/var/log/suricata/eve.json"
+      }
+    },
+    {
+      "name": "lab-wazuh",
+      "kind": "wazuh",
+      "options": { "minLevel": 10 },
+      "credential": "CRED_LAB_WAZUH",
+      "source": {
+        "mode": "tail",
+        "_hinweis": "Direkter LAN-SSH (kein proxyJump). Empfohlen: dedizierter, command-restricted Key (authorized_keys: command=\"tail -n0 -F /var/ossec/logs/alerts/alerts.json\") + Service-User in der wazuh-Gruppe (Lesezugriff auf alerts.json, mode 640).",
+        "ssh": { "host": "<WAZUH_MANAGER_IP>", "user": "<WAZUH_SSH_USER>", "identityFile": "/keys/wazuh_tail" },
+        "logPath": "/var/ossec/logs/alerts/alerts.json"
+      }
+    }
+  ]
+}

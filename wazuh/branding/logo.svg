@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="208" height="44" viewBox="0 0 208 44" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="2" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f1d2d"/>
+      <stop offset="1" stop-color="#0b1726"/>
+    </linearGradient>
+    <linearGradient id="ac" x1="10" y1="8" x2="34" y2="36" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00d4ff"/>
+      <stop offset="1" stop-color="#00a3c8"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="40" height="40" rx="10" fill="url(#bg)"/>
+  <rect x="2.5" y="2.5" width="39" height="39" rx="9.5" stroke="#1e344d"/>
+  <path d="M22 8l11 4v8c0 6.6-4.6 12.2-11 14-6.4-1.8-11-7.4-11-14v-8l11-4z" fill="none" stroke="url(#ac)" stroke-width="2"/>
+  <circle cx="22" cy="22" r="4.5" fill="none" stroke="url(#ac)" stroke-width="2"/>
+  <path d="M22 13v3M22 28v3M13 22h3M28 22h3" stroke="url(#ac)" stroke-width="2" stroke-linecap="round"/>
+  <text x="56" y="28" font-family="Inter, Segoe UI, system-ui, sans-serif" font-size="20" font-weight="700" letter-spacing="1.5" fill="#d7e2ee">NEXORA</text>
+  <text x="159" y="28" font-family="Inter, Segoe UI, system-ui, sans-serif" font-size="20" font-weight="700" letter-spacing="1.5" fill="#00d4ff">SOC</text>
+</svg>

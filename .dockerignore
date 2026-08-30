@@ -1,0 +1,24 @@
+# Local dependencies and generated build output are restored inside Docker stages.
+**/node_modules/
+**/dist/
+**/coverage/
+**/.vite/
+**/*.tsbuildinfo
+**/__pycache__/
+**/*.py[cod]
+
+# Never send repository history, local agent worktrees, or private configuration to Docker.
+.git/
+.claude/
+.codex/
+.agents/
+**/.env
+**/.env.*
+!**/.env.example
+deploy/.runtime/
+
+# Generated operator artefacts are not required to build the web image or documentation.
+output/
+docs/_export/
+**/~$*.docx
+**/~WRL*.tmp

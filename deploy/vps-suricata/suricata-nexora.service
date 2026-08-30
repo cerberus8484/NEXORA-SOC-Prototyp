@@ -1,0 +1,25 @@
+# systemd-Unit-Vorlage: schlanke Suricata-IDS-Instanz auf dem Honeypot-VPS.
+# Platzhalter <…> ersetzen. Datei nach /etc/systemd/system/ kopieren.
+#
+# Läuft als root — Paket-Capture (af-packet) braucht CAP_NET_RAW/CAP_NET_ADMIN. Bewusst EINE
+# eigene Regel + knappe memcaps (1-Core/kleiner RAM). Das mitgelieferte suricata.service
+# vorher deaktivieren (systemctl disable --now suricata), damit nur diese Instanz läuft.
+
+[Unit]
+Description=Nexora lean Suricata IDS (honeypot)
+Documentation=https://github.com/cerberus8484/Nexora-Control-Plane (deploy/vps-suricata)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=/bin/mkdir -p /var/log/suricata
+# -i <iface>: af-packet-Capture; -S: NUR unsere Regel; HOME_NET = Honeypot-IP; knappe memcaps.
+ExecStart=/usr/bin/suricata -i <CAPTURE_IFACE> -S /etc/suricata/nexora.rules -l /var/log/suricata \
+  --set vars.address-groups.HOME_NET=[<HONEYPOT_PUBLIC_IP>] \
+  --set stream.memcap=32mb --set stream.reassembly.memcap=64mb --set flow.memcap=32mb
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

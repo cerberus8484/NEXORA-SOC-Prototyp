@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC - Hunt Response Console</title>
+<style>
+  :root{
+    --bg:#080c14;--bg-card:#141824;--bg-soft:#0e1320;--border:#1f293a;
+    --text:#e6edf6;--text-dim:#8a98ac;--accent:#00d4ff;--accent2:#00ff88;--warn:#ffb300;
+    --font:Inter,system-ui,Segoe UI,Roboto,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
+  #wrap{display:flex;min-height:100vh} a{color:var(--accent);text-decoration:none}
+  aside{position:sticky;top:0;align-self:flex-start;width:290px;height:100vh;overflow-y:auto;background:var(--bg-card);border-right:1px solid var(--border);padding:22px 16px}
+  aside h1{margin:0;font-size:15px} aside p{margin:6px 0 18px;color:var(--text-dim);font-size:12px}
+  aside nav a{display:block;padding:7px 10px;margin:2px 0;border-radius:8px;color:var(--text-dim);font-size:12.5px}
+  aside nav a:hover,aside nav a.active{background:rgba(0,212,255,.08);color:var(--accent)}
+  main{flex:1;max-width:980px;padding:36px 44px 100px}
+  .hero{border:1px solid var(--border);background:linear-gradient(180deg,rgba(0,212,255,.08),rgba(0,212,255,.02));border-radius:14px;padding:24px;margin-bottom:28px}
+  .hero h1{margin:0 0 8px;font-size:28px;color:var(--accent)}
+  .hero p{margin:6px 0;color:var(--text-dim)}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid rgba(0,255,136,.35);color:var(--accent2);background:rgba(0,255,136,.08);font-size:11px;font-family:var(--mono)}
+  section{margin:30px 0;scroll-margin-top:20px}
+  h2{font-size:20px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);color:var(--accent)}
+  h3{font-size:14px;color:var(--accent2);margin:20px 0 8px}
+  p,li{font-size:13.5px}
+  .note{border-left:3px solid var(--accent);background:rgba(0,212,255,.05);padding:10px 14px;border-radius:0 8px 8px 0;color:var(--text-dim);font-size:13px}
+  table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent)}
+  code,pre{font-family:var(--mono)} code{background:rgba(0,212,255,.08);padding:1px 5px;border-radius:4px}
+  pre{background:var(--bg-soft);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:8px;padding:14px;overflow:auto;font-size:12px}
+  ul{padding-left:20px}
+</style>
+<script>
+window.addEventListener('load', () => {
+  const links = [...document.querySelectorAll('aside nav a')];
+  const map = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      links.forEach((link) => link.classList.remove('active'));
+      const link = map.get(entry.target.id);
+      if (link) link.classList.add('active');
+    });
+  }, { rootMargin: '-10% 0px -75% 0px' });
+  document.querySelectorAll('section[id]').forEach((section) => obs.observe(section));
+});
+</script>
+</head>
+<body>
+<div id="wrap">
+  <aside>
+    <h1>Hunt Response Console</h1>
+    <p>Nexora SOC Architektur- und Sicherheitskonzept</p>
+    <nav>
+      <a href="#zielbild">01 Zielbild</a>
+      <a href="#stufen">02 Drei-Stufen-Modell</a>
+      <a href="#capabilities">03 Capabilities</a>
+      <a href="#datenmodell">04 Datenmodell</a>
+      <a href="#api">05 API</a>
+      <a href="#agent">06 Agent-Vertrag</a>
+      <a href="#threat-model">07 Threat Model</a>
+      <a href="#audit">08 Audit</a>
+      <a href="#roadmap">09 Umsetzung</a>
+      <a href="#entscheidungen">10 Offene Entscheidungen</a>
+    </nav>
+  </aside>
+  <main>
+    <div class="hero">
+      <div class="badge">Stufe 2 live, Stufe 3 offen</div>
+      <h1>Hunt Response Console</h1>
+      <p>Sicherer Weg von read-only Diagnosen zu genehmigten Response-Aktionen mit Audit-Trail.</p>
+      <p>Reale Endpoint-Wirkung bleibt ohne Agent aus. Optional kann <code>HUNT_RESPONSE_AUTO_EXECUTE_MOCK=true</code> genehmigte Containment-Aktionen fuer Demo- und Testzwecke als Mock bis <code>completed</code> durchlaufen lassen.</p>
+    </div>
+
+    <section id="zielbild">
+      <h2>01 Zielbild</h2>
+      <ol>
+        <li>Read-only Diagnose-Befehle gegen einen Host laufen lassen.</li>
+        <li>Bei Verdacht einen Host isolieren, aber nur mit Genehmigung.</li>
+        <li>Auf dem isolierten Host privilegiert arbeiten, ebenfalls nur mit Genehmigung.</li>
+      </ol>
+      <div class="note">Kernprinzip: Anfrage -> menschliche Genehmigung -> Ausfuehrung -> Audit.</div>
+    </section>
+
+    <section id="stufen">
+      <h2>02 Drei-Stufen-Modell</h2>
+      <table>
+        <thead><tr><th>Stufe</th><th>Inhalt</th><th>Wirkung</th><th>Voraussetzung</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Safe Commands</td><td>Sofort, mock-backed, spaeter echt</td><td>-</td></tr>
+          <tr><td>2</td><td>Approval Gate fuer Isolation und privilegierte Commands</td><td>Live: Anfrage, Vier-Augen-Freigabe, Audit; optional Mock fuer Containment</td><td>Capability + zweite Genehmigung</td></tr>
+          <tr><td>3</td><td>Reale Ausfuehrung</td><td>Echte Wirkung am Endpoint</td><td>Agent/Collector + signierte Queue</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="capabilities">
+      <h2>03 Capabilities</h2>
+      <pre>canRunSafeCommand
+canRequestPrivilegedCommand
+canRequestHostIsolation
+canApproveResponseAction
+canExecuteResponseAction
+canReleaseHostIsolation</pre>
+      <ul>
+        <li>Vier-Augen-Prinzip: <code>requestedBy !== approvedBy</code>.</li>
+        <li>Serverseitige Pruefung, nie nur im Frontend.</li>
+        <li>Rollen-Mapping zentral, spaeter pro Nutzer uebersteuerbar.</li>
+      </ul>
+    </section>
+
+    <section id="datenmodell">
+      <h2>04 Datenmodell</h2>
+      <pre>ResponseAction
+  kind: safe_command | privileged_command | isolate_host | release_isolation
+  status: requested | approved | rejected | executing | completed | failed | expired
+  riskTier: read_only | privileged | containment</pre>
+      <p>Ohne Agent endet Stufe 2 bei <code>approved</code> mit Hinweis <code>pending agent</code>. Mit <code>HUNT_RESPONSE_AUTO_EXECUTE_MOCK=true</code> duerfen nur <code>isolate_host</code> und <code>release_isolation</code> als Mock ueber <code>executing -> completed</code> laufen. <code>privileged_command</code> bleibt genehmigt, aber nicht ausgefuehrt.</p>
+    </section>
+
+    <section id="api">
+      <h2>05 API</h2>
+      <pre>POST /v1/hunts/:id/response-actions
+GET  /v1/hunts/:id/response-actions
+POST /v1/response-actions/:id/approve
+POST /v1/response-actions/:id/reject</pre>
+      <p>Alle schreibenden Endpunkte erzeugen Audit-Eintraege mit Actor, Aktion, Ziel und Capability.</p>
+    </section>
+
+    <section id="agent">
+      <h2>06 Agent-Vertrag</h2>
+      <ul>
+        <li>Allowlist auch am Agent, keine generische Shell-Weiterleitung.</li>
+        <li>Pull-Modell statt offenem Inbound-Port.</li>
+        <li>Signierte Commands, Agent verifiziert.</li>
+        <li>Isolation bleibt reversibel via <code>release-isolation</code>.</li>
+      </ul>
+    </section>
+
+    <section id="threat-model">
+      <h2>07 Threat Model</h2>
+      <table>
+        <thead><tr><th>Risiko</th><th>Gegenmassnahme</th></tr></thead>
+        <tbody>
+          <tr><td>Missbrauch privilegierter Commands</td><td>Allowlist, Vier-Augen-Freigabe, Capability, Audit</td></tr>
+          <tr><td>Kompromittierter Analyst-Account</td><td>Zweite Freigabe, Audit, Session-Expiry</td></tr>
+          <tr><td>Command-Injection</td><td>Server-Allowlist, kein Shell-Passthrough</td></tr>
+          <tr><td>Versehentliche Isolation</td><td>Pflichtbegruendung, reversibel, Audit</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="audit">
+      <h2>08 Audit</h2>
+      <p><code>RESPONSE_REQUESTED</code>, <code>RESPONSE_APPROVED</code>, <code>RESPONSE_REJECTED</code>, <code>RESPONSE_EXECUTED</code>, <code>HOST_ISOLATED</code> und <code>HOST_ISOLATION_RELEASED</code> werden inklusive Kontext protokolliert.</p>
+    </section>
+
+    <section id="roadmap">
+      <h2>09 Umsetzung</h2>
+      <ol>
+        <li>Safe-Command-Console</li>
+        <li>Capability-Layer</li>
+        <li>Approval-Gate fuer Response-Actions, optionaler Mock fuer Containment</li>
+        <li>Realer Agent mit signierter Command-Queue</li>
+      </ol>
+    </section>
+
+    <section id="entscheidungen">
+      <h2>10 Offene Entscheidungen</h2>
+      <ul>
+        <li>Capability-Speicherung: statische Rollen-Map oder pro Nutzer in DB.</li>
+        <li>Agent-Technologie und Sicherheitsabnahme.</li>
+        <li>Eskalationspfad fuer ausstehende Freigaben.</li>
+        <li>Isolation nur Host-Firewall oder auch Netzwerk-Ebene.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>NEXORA SOC — Branding Preview</title>
+<style>
+  :root{--bg:#07111f;--card:#0f1d2d;--card2:#0b1726;--border:#1e344d;--accent:#00d4ff;--text:#d7e2ee;--muted:#8fa1b5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,system-ui,sans-serif;padding:32px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin:32px 0 12px}
+  .row{display:flex;gap:24px;flex-wrap:wrap}
+  .tile{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:12px;padding:24px;display:flex;align-items:center;justify-content:center}
+  .header{width:100%;background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:12px;padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between}
+  .header .right{display:flex;gap:14px;align-items:center;color:var(--muted);font-size:13px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#7ee22b;box-shadow:0 0 8px #7ee22b}
+  .login{width:380px;background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:16px;padding:36px;text-align:center}
+  .login input{width:100%;margin-top:14px;background:#081321;border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-size:14px}
+  .login button{width:100%;margin-top:16px;background:var(--accent);color:#04121a;border:0;border-radius:8px;padding:12px;font-weight:700;font-size:14px;cursor:pointer}
+  .login p{color:var(--muted);font-size:12px;margin:6px 0 0}
+  img{display:block}
+</style>
+</head>
+<body>
+  <h2>Vollständiges Logo</h2>
+  <div class="row"><div class="tile"><img src="logo.svg" alt="logo"></div></div>
+
+  <h2>Kompaktes Symbol (Mark)</h2>
+  <div class="row"><div class="tile"><img src="mark.svg" width="40" height="40" alt="mark"></div></div>
+
+  <h2>Header (so sieht's oben im Dashboard aus)</h2>
+  <div class="header">
+    <img src="logo.svg" alt="logo">
+    <div class="right"><span class="dot"></span> Alle Systeme normal · <span>admin</span></div>
+  </div>
+
+  <h2>Login-Seite</h2>
+  <div class="row">
+    <div class="login">
+      <img src="logo.svg" alt="logo" style="margin:0 auto 8px">
+      <p>Security Operations Center</p>
+      <input placeholder="Benutzername" value="admin">
+      <input placeholder="Passwort" type="password" value="········">
+      <button>Anmelden</button>
+    </div>
+  </div>
+</body>
+</html>

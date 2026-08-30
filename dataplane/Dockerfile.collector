@@ -1,0 +1,20 @@
+# Nexora Data Plane — generischer Kollektor als eigenständiger Service.
+# Ein Image für alle Kollektoren; COLLECTOR_KIND (conntrack|suricata|opnsense|wazuh)
+# wählt das Plugin. Gleiche Codebasis wie der Intake, eigener Entrypoint + Lifecycle.
+# Lab: Replay-Quelle (REPLAY_FILE). VPS: stdin der Quelle (+ ggf. --network host).
+FROM node:20-alpine
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm install --omit=dev && npm cache clean --force
+
+COPY src ./src
+
+# Health-/Liveness-Port (vom Entrypoint bedient, wenn HEALTH_PORT gesetzt).
+ENV HEALTH_PORT=8082
+EXPOSE 8082
+
+HEALTHCHECK --interval=15s --timeout=3s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:'+ (process.env.HEALTH_PORT||8082) +'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["node", "src/collector/collectorMain.js"]

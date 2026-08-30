@@ -1,0 +1,31 @@
+# P_CORR_0 — Wegwerfbares PostgreSQL NUR für die Queue-Integrationstests.
+#
+# KEIN Produktiv-Postgres, KEINE echten Daten. Daten liegen in tmpfs (reiner RAM) →
+# beim Stoppen ist alles weg. Eigener Port 55432, damit nichts mit einer lokalen
+# Dev-DB kollidiert.
+#
+# Nutzung:
+#   docker compose -f test-integration/docker-compose.queue.yml up -d
+#   npm run test:queue:integration
+#   docker compose -f test-integration/docker-compose.queue.yml down -v
+#
+# Die Integrationstests laden das echte (ESM-)pg-boss → laufen unter `node --test`
+# in normalem Node (nicht unter Jest). Siehe test-integration/README.md.
+
+services:
+  queue-test-db:
+    image: postgres:16-alpine
+    container_name: nexora_queue_test_db
+    environment:
+      POSTGRES_USER: queue_test
+      POSTGRES_PASSWORD: queue_test
+      POSTGRES_DB: queue_test
+    ports:
+      - "55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data   # rein im RAM → wirklich wegwerfbar
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U queue_test -d queue_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

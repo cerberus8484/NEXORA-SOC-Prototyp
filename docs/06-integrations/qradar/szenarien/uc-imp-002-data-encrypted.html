@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC-IMP-002 Data Encrypted for Impact (uc_014) — Nexora SOC / QRadar</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Nexora <span>SOC</span></div>
+    <div class="sub">UC-IMP-002 · uc_014</div>
+    <h2>Auf dieser Seite</h2>
+    <a href="#hintergrund">1 · Hintergrund (T1486)</a>
+    <a href="#verdacht">2 · Wann verdächtig?</a>
+    <a href="#mitre">3 · MITRE-Einordnung</a>
+    <a href="#voraussetzungen">4 · Voraussetzungen</a>
+    <a href="#regeln">5 · Regeln A–F</a>
+    <a href="#regel-a">· A — Read-Write-Delete</a>
+    <a href="#regel-a2">· A2 — Massenänderung (Fallback)</a>
+    <a href="#regel-b">· B — Ransomware-Endungen</a>
+    <a href="#regel-c">· C — CPU-Last (out of scope)</a>
+    <a href="#regel-d">· D — Massen-Rename</a>
+    <a href="#regel-e">· E — Verzeichnis-Streuung</a>
+    <a href="#regel-f">· F — Honeyfile ★</a>
+    <a href="#aufwand">6 · Aufwand &amp; Empfehlung</a>
+    <a href="#validierung">7 · Validierung</a>
+    <a href="#handlung">8 · Analyst-Handlung</a>
+    <h2>Bibliothek</h2>
+    <a href="../index.html">Übersicht</a>
+    <a href="../mitre-coverage-map.html">Coverage Map</a>
+    <a href="../../qradar-usecase-anlegen.html">Klick-Anleitung</a>
+  </nav>
+
+  <main>
+    <div class="breadcrumb"><a href="../index.html">Bibliothek</a> / <a href="../mitre-coverage-map.html">Impact</a> / UC-IMP-002 (uc_014)</div>
+    <header class="hero">
+      <div class="kicker">Impact · Linux (SLES) · Ransomware</div>
+      <h1>UC-IMP-002 — Data Encrypted for Impact</h1>
+      <p>Überwachung der Verschlüsselung vieler Daten in kurzer Zeit. Ein Prozess liest massenhaft Dateien, verschlüsselt sie im Speicher und schreibt sie als neue, unlesbare Dateien zurück (oft mit neuer Endung wie <code>.crypt</code>). Quelle: GMK <code>uc_014_imp_data_encrypted</code>.</p>
+      <div class="meta">
+        <span><b>MITRE:</b> <span class="chip mitre">T1486</span> Data Encrypted for Impact</span>
+        <span><b>Taktik:</b> Impact</span>
+        <span><b>GMK-ID:</b> uc_014</span>
+        <span><b>Quelle:</b> <span class="chip src">Linux auditd (openat/write/rename/unlink) / Wazuh FIM</span></span>
+      </div>
+    </header>
+
+    <h2 class="section" id="hintergrund">1 · Hintergrund der Technik (T1486)</h2>
+    <p>Sobald der Angreifer administrative Rechte hat (siehe <a href="uc-priv-001-privilege-execution.html">uc_010</a>) und Backups manipuliert hat (siehe <a href="uc-imp-001-data-destruction.html">uc_013</a>), werden Daten verschlüsselt, um sie unbrauchbar zu machen — Ziel ist die Erpressung von Lösegeld durch Entzug der Datenverfügbarkeit.</p>
+
+    <h2 class="section" id="verdacht">2 · Wann ist Verschlüsselung verdächtig?</h2>
+    <p class="lead">Auf Linux-Servern gibt es legitime Verschlüsselung (Backups, Datenbanken, TLS). Verdächtig wird es durch Muster und Kontext:</p>
+    <table>
+      <tr><th>Merkmal</th><th>Harmlos</th><th>Verdächtig</th></tr>
+      <tr><td>Muster</td><td>gezielte Verschlüsselung einzelner Archive</td><td>Read → Write → Delete auf tausenden Dateien</td></tr>
+      <tr><td>Menge</td><td>einzelne Dateien / geplante Jobs</td><td>tausende Dateien in kurzer Zeit</td></tr>
+      <tr><td>User</td><td>dedizierter Backup-/System-Account</td><td>normaler User / kompromittierter Service-Account</td></tr>
+      <tr><td>Pfad</td><td>Backup-Verzeichnisse</td><td>Home-Verzeichnisse, Shares, <code>/etc</code></td></tr>
+      <tr><td>Systemlast</td><td>kurze, bekannte Lastspitzen</td><td>massive, langanhaltende CPU-Last</td></tr>
+      <tr><td>Dateiendungen</td><td>unverändert</td><td>neue/ungewöhnliche Endungen (<code>.enc</code>, <code>.locked</code>)</td></tr>
+    </table>
+
+    <h2 class="section" id="mitre">3 · MITRE-Einordnung</h2>
+    <table style="max-width:760px">
+      <tr><th>Feld</th><th>Wert</th></tr>
+      <tr><td>Technik</td><td><span class="chip mitre">T1486</span> Data Encrypted for Impact</td></tr>
+      <tr><td>Verwandt</td><td>T1485 (Data Destruction, <a href="uc-imp-001-data-destruction.html">uc_013</a>), T1490 (Inhibit System Recovery)</td></tr>
+      <tr><td>Taktik</td><td>Impact (TA0040)</td></tr>
+    </table>
+
+    <h2 class="section" id="voraussetzungen">4 · Voraussetzungen</h2>
+    <ul class="steps">
+      <li><b>Log-Quelle:</b> auditd / Wazuh-FIM mit Datei-Operations-Events (<code>openat</code>, <code>write</code>, <code>rename</code>, <code>unlink</code>) an QRadar.</li>
+      <li><b>Custom Event Properties:</b> <span class="chip src">syscall</span> <span class="chip src">File Path</span> <span class="chip src">Process Name</span> <span class="chip src">Audit User (auid)</span></li>
+      <li><b>Reference Sets:</b> <span class="chip refset">RS:Backup-Crypto-Procs</span> (borg, restic, gpg, tar, gzip, mysqldump) <span class="chip refset">RS:Ransomware-Extensions</span> (Set) <span class="chip refset">RS:Honeyfile-Paths</span> (Set)</li>
+    </ul>
+
+    <h2 class="section" id="regeln">5 · Regeln A–F</h2>
+
+    <h3 class="section" id="regel-a">Regel A — Ransomware-Verhaltensmuster (Read-Write-Delete)</h3>
+    <div class="meta"><span><b>Aufwand:</b> hoch</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span> (Kernregel)</span></div>
+    <p><b>Beobachtung:</b> schnelle Abfolge Öffnen-zum-Lesen → neue Datei erstellen → alte Datei löschen, in einem Verzeichnis. <b>Warum:</b> Ransomware ersetzt das Original durch die verschlüsselte Version — dieser „Austausch-Rhythmus" ist das sicherste Merkmal.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-002-A Ransomware Read-Write-Delete
+<span class="kw">and when</span> a sequence of <span class="lnk">openat</span> → <span class="lnk">write/create</span> → <span class="lnk">unlink</span> occurs
+        for the same <span class="lnk">Process</span> on hundreds of files in <span class="lnk">60 seconds</span></pre>
+    <div class="callout crit"><strong>Ehrlicher Status:</strong> Sehr präzise, aber <strong>technisch schwer umsetzbar</strong> — die Event-Korrelation ist anspruchsvoll (Events kommen verzögert, in falscher Reihenfolge). Erfordert DSM-Anpassungen, ggf. Custom Action Scripts (zeitintensiv). In der Praxis oft über Regel A2 als pragmatischen Ersatz abgebildet.</div>
+
+    <h3 class="section" id="regel-a2">Regel A2 — Vereinfachte Massenänderung (Fallback / Alternative zu A)</h3>
+    <div class="meta"><span><b>Aufwand:</b> mittel (Baseline-intensiv)</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span> (Alternative zu A)</span></div>
+    <p><b>Beobachtung:</b> hohe Anzahl Schreib-/Umbenennungs-Operationen. <b>Warum:</b> einfacher umzusetzende Alternative zur Sequenz-Erkennung.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-002-A2 Mass File Modification <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">syscall</span> (custom) is one of the following <span class="lnk">write, rename, openat(O_CREAT)</span>
+<span class="kw">and when</span> the <span class="lnk">Process Name</span> is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Backup-Crypto-Procs</span>
+<span class="kw">and when</span> at least <span class="lnk">1000</span> events are seen with the same <span class="lnk">Process</span> in <span class="lnk">60 seconds</span></pre>
+    <div class="callout warn"><strong>Baseline nötig:</strong> Schwelle je System über einen Zeitraum ermitteln (was ist „normal"?). 1000/60 s ist Startwert.</div>
+
+    <h3 class="section" id="regel-b">Regel B — Bekannte Ransomware-Dateiendungen</h3>
+    <div class="meta"><span><b>Aufwand:</b> gering („Low-Hanging-Fruit")</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span></span></div>
+    <p><b>Beobachtung:</b> Erstellung von Dateien mit typischen Ransomware-Endungen. <b>Warum:</b> viele Skripte hängen eine feste Endung an.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-002-B Ransomware Extensions <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">syscall</span> (custom) is one of the following <span class="lnk">rename, openat(O_CREAT)</span>
+<span class="kw">and when</span> <span class="lnk">File Path</span> (custom) matches the regex
+        <span class="lnk">(?i)\.(locked|crypt|crypted|enc|locky|wannacry|wcry|crypt7|cerber)$</span></pre>
+    <div class="callout tip"><strong>Pflege über Reference Set:</strong> Endungen in <code>RS:Ransomware-Extensions</code> halten, statt Regex hartzukodieren → leicht erweiterbar. <strong>Response:</strong> Offense, Severity 9.</div>
+
+    <h3 class="section" id="regel-c">Regel C — Überhöhte CPU-Last durch unbekannte Prozesse</h3>
+    <div class="meta"><span><b>Aufwand:</b> —</span><span><b>Empfehlung:</b> <span class="conf low">Erweitert — derzeit NICHT umsetzbar</span></span></div>
+    <p><b>Beobachtung:</b> ein Prozess verbraucht über längere Zeit ungewöhnlich viel CPU (Kryptographie ist rechenintensiv).</p>
+    <div class="callout crit"><strong>Out of scope (ehrlich):</strong> Diese Regel erfordert die Integration von <strong>System-Monitoring-/Performance-Daten</strong> ins SIEM. Laut GMK-Vorgabe gilt: <em>„Wir machen kein System-Monitoring."</em> Regel C ist damit an die <strong>zukünftige</strong> Bereitstellung von Performance-Metriken gebunden und derzeit nicht baubar. Hier dokumentiert, damit die Lücke bewusst bleibt — nicht als aktiver Use Case.</div>
+
+    <h3 class="section" id="regel-d">Regel D — Massenhafte Umbenennung von Dateien</h3>
+    <div class="meta"><span><b>Aufwand:</b> mittel (Baseline)</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span></span></div>
+    <p><b>Beobachtung:</b> viele <code>rename</code>-Events in kurzer Zeit. <b>Warum:</b> viele Ransomware-Varianten ändern Dateinamen systematisch.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-002-D Mass File Rename <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">syscall</span> (custom) is one of the following <span class="lnk">rename, renameat, renameat2</span>
+<span class="kw">and when</span> the <span class="lnk">Process Name</span> is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Backup-Crypto-Procs</span>
+<span class="kw">and when</span> at least <span class="lnk">500</span> events are seen with the same <span class="lnk">Process</span> in <span class="lnk">60 seconds</span></pre>
+    <div class="callout warn"><strong>Baseline je System</strong> über einen Zeitraum auswerten, um die Schwelle robust zu setzen.</div>
+
+    <h3 class="section" id="regel-e">Regel E — Zugriff auf ungewöhnlich viele Verzeichnisse</h3>
+    <div class="meta"><span><b>Aufwand:</b> Teil der Erweiterung (Streuungs-Logik)</span><span><b>Empfehlung:</b> <span class="conf low">Erweitert</span></span></div>
+    <p><b>Beobachtung:</b> ein Prozess verteilt Dateioperationen über viele unterschiedliche Verzeichnisse und überschreitet sein übliches Arbeitsverzeichnis. <b>Warum:</b> normale Prozesse sind lokal begrenzt, Ransomware arbeitet systemweit.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-002-E Directory Spread <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">syscall</span> (custom) is one of the following <span class="lnk">write, rename, unlink</span>
+<span class="kw">and when</span> at least <span class="lnk">50</span> events are seen with the same <span class="lnk">Process</span>
+        and different <span class="lnk">Directory (File Path parent)</span> in <span class="lnk">60 seconds</span></pre>
+    <div class="callout tip"><strong>Kern der Erweiterung:</strong> der Aufwand fließt primär in die Logik zur Verzeichnis-Streuung — systemweite von lokal begrenzten Dienst-Aktivitäten unterscheiden. Erkennt auch „getarnte"/langsame Verschlüsselung unterhalb der Massen-Schwellen.</div>
+
+    <h3 class="section" id="regel-f">Regel F — Honeyfile-Zugriffe ★</h3>
+    <div class="meta"><span><b>Aufwand:</b> gering</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span> (höchste Präzision)</span></div>
+    <p><b>Beobachtung:</b> jeglicher Schreib-/Umbenennungs-/Löschzugriff auf speziell präparierte Honeyfile-Verzeichnisse. <b>Warum:</b> kein legitimer User und kein Systemdienst kennt diese versteckten Ordner. Ransomware scannt das Dateisystem alphabetisch ab und stolpert zwangsläufig darüber.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-002-F Honeyfile Access <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">syscall</span> (custom) is one of the following <span class="lnk">write, rename, unlink, openat</span>
+<span class="kw">and when</span> <span class="lnk">File Path</span> (custom) is contained in <span class="lnk">RS:Honeyfile-Paths</span></pre>
+    <div class="callout tip"><strong>100 %-Indikator ohne Fehlalarme.</strong> Versteckte Ordner anlegen (z. B. <code>.backup</code>, früh im Alphabet einsortiert) und per auditd überwachen. Jede write-Operation darauf = Alarm. <strong>Voraussetzung:</strong> Honeyfiles auf den Hosts ausbringen + auditd-Watch + Pfade in <code>RS:Honeyfile-Paths</code>. Auch für <a href="uc-imp-001-data-destruction.html">uc_013</a> nutzbar.</div>
+
+    <h2 class="section" id="aufwand">6 · Aufwand &amp; Empfehlung (GMK-Fazit)</h2>
+    <div class="callout tip"><strong>Basis-Absicherung (A, A2, B, D, F):</strong> aktive Verschlüsselungsvorgänge (Read-Write-Delete-Muster, Massenänderungen, auffällige Endungen) + hochpräziser Honeyfile-UC. <strong>Aufwand ca. 110–130 h</strong> — enthält komplexe Korrelation (v. a. Sequenz für A), robuste Schwellwerte, Baseline-Ermittlung und umfangreiches Whitelisting (Backup-Software, DB, Komprimierungstools).</div>
+    <div class="callout warn"><strong>Erweiterte Detektion (E, [C]):</strong> anomales Prozessverhalten &amp; getarnte/langsame Verschlüsselung. <strong>Aufwand ca. 30–40 h</strong> — primär die Verzeichnis-Streuungs-Logik (E). <strong>Regel C ist an künftige Performance-Metriken gebunden</strong> (kein System-Monitoring) und derzeit nicht enthalten.</div>
+    <table>
+      <tr><th>Regel</th><th>Empfehlung</th><th>Hinweis</th></tr>
+      <tr><td>A — Read-Write-Delete</td><td>Basis</td><td>technisch schwer (Korrelation)</td></tr>
+      <tr><td>A2 — Massenänderung</td><td>Basis</td><td>Alternative zu A, Baseline</td></tr>
+      <tr><td>B — Ransomware-Endungen</td><td>Basis</td><td>Low-Hanging-Fruit</td></tr>
+      <tr><td>D — Massen-Rename</td><td>Basis</td><td>Baseline</td></tr>
+      <tr><td>F — Honeyfile</td><td>Basis ★</td><td>100 %-Indikator, geringer Aufwand</td></tr>
+      <tr><td>E — Verzeichnis-Streuung</td><td>Erweitert</td><td>getarnte Verschlüsselung</td></tr>
+      <tr><td>C — CPU-Last</td><td>—</td><td><b>derzeit nicht umsetzbar</b> (kein Monitoring)</td></tr>
+      <tr><td><b>Basis-Paket</b></td><td><b>≈ 110–130 h</b></td><td>Erweiterung (E) ≈ 30–40 h</td></tr>
+    </table>
+
+    <h2 class="section" id="validierung">7 · Validierung</h2>
+    <table>
+      <tr><th>ID</th><th>Typ</th><th>Regel</th><th>Beschreibung</th><th>Erwartet</th></tr>
+      <tr><td>TP-F1</td><td>TP</td><td>F</td><td>jeglicher Schreibzugriff auf Honeyfile <code>/srv/.backup/</code></td><td>Offense (Conf 99)</td></tr>
+      <tr><td>TP-B1</td><td>TP</td><td>B</td><td>Massen-Erstellung von <code>*.locked</code></td><td>Offense</td></tr>
+      <tr><td>TP-A21</td><td>TP</td><td>A2</td><td>1500 write/rename eines Prozesses in 40 s</td><td>Offense</td></tr>
+      <tr><td>FP-A21</td><td>FP</td><td>A2</td><td>borg-Backup mit hoher Schreibrate (in RS)</td><td>NICHT erkannt</td></tr>
+      <tr><td>FP-D1</td><td>FP</td><td>D</td><td>Log-/Datei-Rotation durch Systemdienst</td><td>NICHT erkannt</td></tr>
+    </table>
+
+    <h2 class="section" id="handlung">8 · Analyst-Handlung</h2>
+    <ul class="steps">
+      <li><b>Sofort:</b> verursachenden Prozess identifizieren und stoppen (Process Name / auid), Host isolieren — bei aktiver Verschlüsselung zählt jede Sekunde.</li>
+      <li>Umfang feststellen: betroffene Pfade/Verzeichnisse, Dateiendung, Startzeit.</li>
+      <li>Rückkette prüfen: vorher Rechteausweitung (<a href="uc-priv-001-privilege-execution.html">uc_010</a>) und Backup-/Snapshot-Löschung (<a href="uc-imp-001-data-destruction.html">uc_013</a>)?</li>
+      <li>Wiederherstellung aus sauberem, offline gehaltenem Backup; Eintrittsvektor schließen.</li>
+    </ul>
+
+    <footer>
+      <p>UC-IMP-002 (GMK uc_014) · Detection-Logik aus SOC-Hunt-Framework (HUNT-007, Linux-adaptiert) · <code>…/szenarien/uc-imp-002-data-encrypted.html</code> · 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

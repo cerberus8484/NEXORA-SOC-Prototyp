@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC - Network as Code (Deployment Center)</title>
+<style>
+  :root{
+    --bg:#080c14;--bg-card:#141824;--bg-soft:#0f1521;--border:#1f293a;
+    --text:#e6edf6;--text-dim:#8a98ac;--accent:#00d4ff;--accent2:#00ff88;--warn:#ffb454;
+    --font:Inter,system-ui,Segoe UI,Roboto,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
+  #wrap{display:flex;min-height:100vh} a{color:var(--accent);text-decoration:none}
+  aside{position:sticky;top:0;align-self:flex-start;width:280px;height:100vh;overflow-y:auto;background:var(--bg-card);border-right:1px solid var(--border);padding:22px 16px}
+  aside h1{margin:0;font-size:15px} aside p{margin:6px 0 18px;color:var(--text-dim);font-size:12px}
+  aside nav a{display:block;padding:7px 10px;margin:2px 0;border-radius:8px;color:var(--text-dim);font-size:12.5px}
+  aside nav a:hover,aside nav a.active{background:rgba(0,212,255,.08);color:var(--accent)}
+  main{flex:1;max-width:980px;padding:36px 44px 100px}
+  .hero{border:1px solid var(--border);background:linear-gradient(180deg,rgba(0,212,255,.08),rgba(0,212,255,.02));border-radius:14px;padding:24px;margin-bottom:28px}
+  .hero h1{margin:0 0 8px;font-size:28px;color:var(--accent)}
+  .hero p{margin:6px 0;color:var(--text-dim)}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid rgba(0,255,136,.35);color:var(--accent2);background:rgba(0,255,136,.08);font-size:11px;font-family:var(--mono)}
+  .badge.warn{border-color:rgba(255,180,84,.4);color:var(--warn);background:rgba(255,180,84,.08)}
+  section{margin:32px 0;scroll-margin-top:20px}
+  h2{font-size:20px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);color:var(--accent)}
+  h3{font-size:15px;margin:20px 0 8px;color:var(--text)}
+  p,li{font-size:13.5px} ul,ol{padding-left:20px}
+  table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent)}
+  code{font-family:var(--mono);font-size:12px;background:var(--bg-soft);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--accent2)}
+  pre{background:var(--bg-soft);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55;color:var(--text)}
+  pre .c{color:var(--text-dim)} pre .k{color:var(--accent)} pre .s{color:var(--accent2)}
+  .note{border-left:3px solid var(--accent);background:rgba(0,212,255,.05);padding:10px 14px;border-radius:0 8px 8px 0;color:var(--text-dim);font-size:13px;margin:14px 0}
+  .note.warn{border-left-color:var(--warn);background:rgba(255,180,84,.06)}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:14px 0}
+  .card{border:1px solid var(--border);background:var(--bg-card);border-radius:12px;padding:14px}
+  .card h3{margin:0 0 6px;color:var(--accent)} .card p{margin:0;color:var(--text-dim);font-size:12.5px}
+  .mermaid{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;text-align:center}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+window.addEventListener('load', () => {
+  if (window.mermaid) mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor:'#141824', primaryBorderColor:'#1f293a', lineColor:'#00d4ff', primaryTextColor:'#e6edf6' } });
+  const links = [...document.querySelectorAll('aside nav a')];
+  const map = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      links.forEach((link) => link.classList.remove('active'));
+      const link = map.get(entry.target.id);
+      if (link) link.classList.add('active');
+    });
+  }, { rootMargin: '-10% 0px -75% 0px' });
+  document.querySelectorAll('section[id]').forEach((section) => obs.observe(section));
+});
+</script>
+</head>
+<body>
+<div id="wrap">
+  <aside>
+    <h1>Network as Code</h1>
+    <p>Nexora SOC · Deployment Center</p>
+    <nav>
+      <a href="#was">01 Was es ist</a>
+      <a href="#prinzip">02 Prinzipien</a>
+      <a href="#architektur">03 Architektur</a>
+      <a href="#spec">04 Die Deploy-Spec</a>
+      <a href="#params">05 Parametrisierung</a>
+      <a href="#lifecycle">06 Deploy-Lifecycle</a>
+      <a href="#module">07 Module &amp; Connectoren</a>
+      <a href="#security">08 Sicherheit</a>
+      <a href="#schnitt">09 OPNsense → Proxmox</a>
+      <a href="#glossar">10 IaC-Glossar</a>
+    </nav>
+  </aside>
+  <main>
+    <div class="hero">
+      <div class="badge">Konzept · noch kein Code</div>
+      <h1>Network as Code</h1>
+      <p>Vorkonfigurierte Open-Source-Systeme — Firewalls, SIEMs, IDS-Sensoren, Honeypots — aus Nexora heraus als VM auf einem Virtualisierer (Proxmox / ESXi) deployen. Deklarativ parametrisiert, modular, gegated und auditiert.</p>
+      <p><strong style="color:var(--text)">Die Deploy-Spec ist der Code:</strong> versioniert, validiert, wiederholbar — <code>Plan → Approve → Apply</code> wie in jeder IaC-Pipeline.</p>
+    </div>
+
+    <section id="was">
+      <h2>01 Was es ist</h2>
+      <p>Das Deployment Center bringt das Prinzip von <em>Infrastructure as Code</em> in den SOC-Stack: statt eine Appliance von Hand auf dem Virtualisierer zu installieren und zu konfigurieren, beschreibt man sie <strong>deklarativ</strong> — welches System, welche Ressourcen, welche Netzwerk-Vorgaben (statische IP, VLAN, DNS) — und das System provisioniert sie reproduzierbar.</p>
+      <table>
+        <thead><tr><th>Network as Code IST</th><th>Network as Code ist NICHT</th></tr></thead>
+        <tbody>
+          <tr><td>Deklaratives, parametrisiertes Deployment vorkonfigurierter Systeme</td><td>Ersatz für Terraform/Ansible — es nutzt deren Mechanik im SOC-Kontext</td></tr>
+          <tr><td>Modular: jedes System / jeder Hypervisor = ein austauschbares Modul</td><td>Ein hartcodierter „OPNsense-Knopf" — jedes System wird gleich behandelt</td></tr>
+          <tr><td>Gegated: Plan → Vier-Augen → Apply, voll auditiert</td><td>Direktes „Exec" auf Infrastruktur ohne Freigabe</td></tr>
+          <tr><td>Erweiterbar per Modul + Dokumentation (selbst machbar)</td><td>Eine geschlossene Liste fester Vendoren</td></tr>
+        </tbody>
+      </table>
+      <div class="note">Abgrenzung zum bestehenden <strong>Provisioning</strong> in Nexora: das ist <em>Agent-Enrollment</em> (Token, Heartbeat) und zieht keine VMs hoch. Network as Code ist eine neue Fähigkeitsschicht — sie wiederverwendet aber dieselben Muster (Registry, Apply-Kanal, Audit, RBAC).</div>
+    </section>
+
+    <section id="prinzip">
+      <h2>02 Prinzipien</h2>
+      <div class="grid">
+        <div class="card"><h3>Deklarativ</h3><p>Du beschreibst den Zielzustand (Spec), nicht die Schritte. Das System leitet den Plan ab.</p></div>
+        <div class="card"><h3>Modular</h3><p>System-Module × Hypervisor-Connectoren. Neues System oder Virtualisierer = ein Modul nach Vertrag.</p></div>
+        <div class="card"><h3>Parametrisiert</h3><p>Vorgaben pro Deploy: IP, CIDR, Gateway, VLAN, DNS, Ressourcen, vendor-spezifisches.</p></div>
+        <div class="card"><h3>Wiederholbar</h3><p>Gleiche Spec → gleiches Ergebnis. Idempotent über Spec-Hash, kein Doppel-Deploy.</p></div>
+        <div class="card"><h3>Gegated</h3><p>Plan → Vier-Augen-Freigabe → Apply. ENV-Gate <code>DEPLOY_ENABLED</code>, default aus.</p></div>
+        <div class="card"><h3>Auditiert</h3><p>Jeder Schritt (clone, config, start, destroy) append-only protokolliert. Rollback bei Fehler.</p></div>
+      </div>
+    </section>
+
+    <section id="architektur">
+      <h2>03 Architektur</h2>
+      <p>Drei klar getrennte, austauschbare Teile — so wird „jedes System gleich behandelt":</p>
+      <div class="mermaid">
+flowchart LR
+  subgraph M["System-Modul · WAS"]
+    M1["Template / Image"]
+    M2["paramSchema"]
+    M3["configApplier"]
+  end
+  subgraph C["Hypervisor-Connector · WOHIN"]
+    C1["Proxmox (REST-API)"]
+    C2["ESXi / vSphere · spaeter"]
+  end
+  subgraph O["Deploy-Orchestrator · WIE"]
+    O1["validate → Plan"]
+    O2["Approve (4-Augen)"]
+    O3["Apply → Status → Rollback"]
+  end
+  M --> O
+  C --> O
+  O --> R["VM laeuft mit genau der Vorgabe"]
+      </div>
+      <table>
+        <thead><tr><th>Teil</th><th>Verantwortung</th><th>Erweiterbar durch</th></tr></thead>
+        <tbody>
+          <tr><td><strong>System-Modul</strong></td><td>Was deployt wird: Template, Default-Ressourcen, Parameter-Schema, Config-Applier</td><td>neues Modul = neue Datei nach Vertrag</td></tr>
+          <tr><td><strong>Hypervisor-Connector</strong></td><td>Wohin: <code>clone · setResources · attachNetwork(vlan) · start · status · destroy</code></td><td>neuer Connector = neue Datei nach Vertrag</td></tr>
+          <tr><td><strong>Deploy-Orchestrator</strong></td><td>Wie: validate → Plan → Approve → Apply → Status → Rollback</td><td>nutzt den vorhandenen Apply-Kanal (Draft/4-Augen/Audit)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="spec">
+      <h2>04 Die Deploy-Spec (der Code)</h2>
+      <p>Die Spec ist das deklarative Artefakt — versionierbar, reviewbar, wiederholbar:</p>
+<pre><span class="c"># deploy-spec: OPNsense Firewall → Proxmox</span>
+<span class="k">module</span>: opnsense
+<span class="k">version</span>: <span class="s">"24.7"</span>
+<span class="k">connector</span>: proxmox-lab        <span class="c"># Hypervisor-Ziel (Connector-Instanz)</span>
+<span class="k">target</span>:
+  node: pve-01
+  storage: local-lvm
+  bridge: vmbr0
+<span class="k">resources</span>:
+  cpu: 2
+  ramMB: 2048
+  diskGB: 20
+<span class="k">params</span>:
+  hostname: fw-edge-01
+  network:
+    lan:
+      ipMode: static
+      ip: 10.0.10.1
+      cidr: 24
+      vlanTag: 10
+    gateway: 10.0.10.254
+    dns: [10.0.10.10, 1.1.1.1]
+  adminPassword: <span class="s">${secret:opnsense_admin}</span>   <span class="c"># write-only — nie im Plan/Log</span></pre>
+      <div class="note">Die Spec wird gegen <code>module.paramSchema</code> validiert, bevor ein Plan entsteht. Secrets erscheinen weder im Plan noch im Audit noch im Return.</div>
+    </section>
+
+    <section id="params">
+      <h2>05 Parametrisierung</h2>
+      <p>Jedes Modul deklariert seine Vorgaben. Ein gemeinsamer Netzwerk-Block gilt für alle Systeme, vendor-spezifisches kommt dazu.</p>
+      <table>
+        <thead><tr><th>Block</th><th>Felder</th><th>Validierung</th></tr></thead>
+        <tbody>
+          <tr><td>Netzwerk (gemeinsam)</td><td><code>hostname</code>, <code>ipMode</code>, <code>ip</code>, <code>cidr</code>, <code>gateway</code>, <code>vlanTag</code>, <code>dns[]</code>, <code>bridge</code></td><td>IP/CIDR-Format, VLAN 1–4094, DNS-IPs, Kollisionscheck</td></tr>
+          <tr><td>Ressourcen</td><td><code>cpu</code>, <code>ramMB</code>, <code>diskGB</code></td><td>Min/Max je Hypervisor-Kapazität</td></tr>
+          <tr><td>OPNsense (vendor)</td><td><code>wanInterface</code>, <code>lanInterface</code>, <code>lan.*</code>, <code>adminPassword</code></td><td>Interface-Namen, Secret write-only</td></tr>
+          <tr><td>Wazuh / IDS-Sensor (vendor)</td><td>Netzwerk + <code>managerUrl</code> bzw. <code>indexerNodes</code></td><td>URL-Format, Erreichbarkeit im Plan</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="lifecycle">
+      <h2>06 Deploy-Lifecycle</h2>
+      <div class="mermaid">
+sequenceDiagram
+  participant U as Operator (UI)
+  participant O as Orchestrator
+  participant H as Hypervisor-Connector
+  participant V as VM
+  U->>O: Deploy-Spec absenden
+  O->>O: validate(Spec) gegen paramSchema
+  O-->>U: Plan (Dry-Run: was passiert)
+  U->>O: Approve (Vier-Augen + Reauth)
+  O->>H: clone(Template) + setResources
+  O->>H: attachNetwork(bridge, vlanTag) + start
+  O->>V: configApplier(params) — IP/VLAN/DNS
+  V-->>O: Status erreichbar / Heartbeat
+  O-->>U: Deploy aktiv (auditiert)
+  Note over O,V: Fehler an jedem Schritt → Rollback (destroy)
+      </div>
+    </section>
+
+    <section id="module">
+      <h2>07 Module &amp; Connectoren (Erweiterbarkeit)</h2>
+      <p>Die „jede Firewall der Welt"-Vision ist ein Vertrag, kein Sonderfall. Erweiterung kommt eins nach dem anderen — und ist selbst machbar:</p>
+      <h3>System-Modul-Vertrag</h3>
+      <ul>
+        <li><code>identity</code> — id, name, type (firewall/siem/ids/honeypot), vendor, version</li>
+        <li><code>source</code> — Template-Referenz (klonen, bevorzugt) oder ISO + Erstinstallation</li>
+        <li><code>resourceDefaults</code> — cpu, ramMB, diskGB</li>
+        <li><code>paramSchema</code> — die konfigurierbaren Vorgaben (Typ, Validierung, Default, required)</li>
+        <li><code>configApplier</code> — wie Vorgaben in die VM kommen (OPNsense: config-import · Linux: cloud-init/netplan)</li>
+      </ul>
+      <h3>Hypervisor-Connector-Vertrag</h3>
+      <ul>
+        <li><code>cloneFromTemplate · setResources · attachNetwork(bridge, vlanTag) · start · status · destroy · snapshot</code></li>
+        <li>Connector-Instanz = Host + API-Token (verschlüsselt), Ziel-Node, Storage, Bridge</li>
+      </ul>
+      <div class="note">Roadmap (eins nach dem anderen): 1. OPNsense → Proxmox · 2. ESXi-Connector · 3. Wazuh + Suricata-IDS-Sensor (cloud-init-Applier wiederverwendet) · danach Fortinet/Sophos/… als eigene Module. Jeweils mit Modul-Autoren-Doku.</div>
+    </section>
+
+    <section id="security">
+      <h2>08 Sicherheit</h2>
+      <p>Network as Code schreibt <strong>echte Infrastruktur</strong> — entsprechend strikt:</p>
+      <ul>
+        <li><strong>Apply-Kanal:</strong> Draft → Vier-Augen-Approval → Plan/Dry-Run → Apply. Eigenes <code>DEPLOY_ENABLED</code>-ENV-Gate, default AUS (inert).</li>
+        <li><strong>Reauth-Token</strong> vor Apply · RBAC <code>admin</code> · Rate-Limiting.</li>
+        <li><strong>Hypervisor-Credentials verschlüsselt</strong> (SHA-256-gehasht wie NodeCredential), nie im Klartext/Return.</li>
+        <li><strong>Vollständiges Audit</strong> jedes Schritts, append-only. <strong>Rollback</strong> (VM destroy) bei jedem Fehlerschritt.</li>
+        <li><strong>Idempotenz</strong> über Spec-Hash — gleiche Spec erzeugt kein Doppel-Deploy.</li>
+        <li>API-Zugang zum Hypervisor nur über abgeschottetes Management-Netz, Token mit minimalen Rechten.</li>
+      </ul>
+    </section>
+
+    <section id="schnitt">
+      <h2>09 Vertikaler Schnitt: OPNsense → Proxmox</h2>
+      <p>Der erste Beweis des Musters, in der Lab-Umgebung direkt greifbar (Proxmox-API vorhanden, OPNsense läuft dort schon als VM 117).</p>
+      <div class="badge">Definition of Done</div>
+      <p style="margin-top:10px">Aus der UI: <em>„OPNsense, LAN 10.0.10.1/24, VLAN 10, DNS 10.0.10.10, 2 vCPU / 2 GB"</em> → <strong>Plan</strong> zeigt den Ablauf → <strong>Approve</strong> → Nexora klont das OPNsense-Golden-Template auf Proxmox, setzt Ressourcen + Netz/VLAN, startet, importiert die <code>config.xml</code> → OPNsense läuft mit <strong>genau</strong> dieser Vorgabe; alles auditiert; Fehler → Rollback.</p>
+      <div class="note warn"><span class="badge warn">Operator-Voraussetzung</span> &nbsp; Ein gepflegtes <strong>OPNsense-Golden-Template</strong> auf Proxmox + Proxmox-API-Token + existierende VLAN-Bridge. Das ist die Basis, von der geklont wird.</div>
+    </section>
+
+    <section id="glossar">
+      <h2>10 IaC-Glossar (Mapping)</h2>
+      <table>
+        <thead><tr><th>IaC-Begriff</th><th>Network as Code in Nexora</th></tr></thead>
+        <tbody>
+          <tr><td>Declarative config / „the code"</td><td>Deploy-Spec (Modul + Params + Target)</td></tr>
+          <tr><td>Module</td><td>System-Modul (vorkonfiguriertes System)</td></tr>
+          <tr><td>Provider</td><td>Hypervisor-Connector (Proxmox, ESXi)</td></tr>
+          <tr><td>Plan (Dry-Run)</td><td>validate(Spec) → Plan-Ausgabe vor Apply</td></tr>
+          <tr><td>Apply</td><td>clone → Netz/VLAN → start → configApplier</td></tr>
+          <tr><td>State / Drift</td><td>deploy_runs + Status/Heartbeat-Abgleich</td></tr>
+          <tr><td>Destroy / Rollback</td><td>Connector.destroy bei Fehler oder Abbau</td></tr>
+          <tr><td>Idempotency</td><td>Spec-Hash — kein Doppel-Deploy</td></tr>
+        </tbody>
+      </table>
+      <div class="note">Quelle/Detail: <code>docs/01-architecture/deployment-center-architecture.md</code> (technischer Plan) · <code>deployment-center-concept.md</code> (Gesamt-Konzept + Fresh-Install-Referenz).</div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,161 @@
+# ─────────────────────────────────────────────────────────────
+#  Nexora SOC — .gitignore
+#  Grundsatz: Secrets, Operator-Private Daten, Build-/Test-Artefakte
+#  und große Binärdateien gehören NICHT ins öffentliche Repo.
+# ─────────────────────────────────────────────────────────────
+
+# ── Dependencies / Build ──────────────────────────────────────
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.cache/
+.vite/
+
+# ── Operator-private Dashboard-Topologie (echte IPs/Agent-Namen/URLs) ──
+# Vorlage: frontend/public/config/topology.example.json (committet).
+# Die reale Datei bleibt lokal beim Betrieb und wird NIE eingecheckt.
+frontend/public/config/topology.json
+
+# ── MkDocs Doku-Website (Build-Output) ────────────────────────
+/site/
+
+# ── Secrets & Credentials (NIEMALS committen) ─────────────────
+.env
+.env.*
+!.env.example
+!*.env.example
+!.env.*.example
+deploy/.env.production
+backend/.env
+deploy/secrets/
+*.pem
+*.key
+*.crt
+.soc_backup_pass
+*_backup_pass
+*.p12
+*.pfx
+*cookie*.txt
+*credentials*.json
+# Hinweis: KEIN "*token*.js" — das traf Quelldateien (ApiToken.js, apiTokenAuth.js,
+# ApiTokenService.js, ...) und hielt das komplette API-Token-Feature aus dem Repo.
+# Secrets liegen hier nie in .js-Quellen; dafuer greifen die Endungs-Regeln oben.
+
+# ── Operator-private Daten (Credentials, Datenquellen, Notizen) ─
+*.local.json
+*.local.md
+*.local.txt
+*.local
+private-notes/
+local/
+
+# ── Interne Planungs-/Kostendokumente — nicht öffentlich ──────
+docs/cost-analysis.html
+docs/cost-analysis.md
+docs/plan-montag.md
+
+# ── Dev-Journal — operator-privat, NIEMALS pushen ─────────────
+docs/dev-journal.md
+docs/dev-journal.html
+
+# ── Developer Guide & UML — operator-lokal, nicht im Repo ─────
+docs/04-developer-guide/
+docs/01-architecture/uml.md
+docs/01-architecture/uml.html
+
+# ── Backups & Archive (große/temporäre Binärdateien) ──────────
+Backup/
+backups/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.bak
+*.orig
+*~
+
+# ── Test-Coverage & E2E-Artefakte ─────────────────────────────
+coverage/
+backend/coverage/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+
+# ── Worktree-Konfigurationen (von Sub-Agents, nie einchecken) ─
+frontend/vitest.worktree*.config.ts
+backend/jest.worktree*.config.js
+
+# ── ML-Eval-Laufzeit-Artefakte (reproduzierbar via npm run ml:*) ─
+# Generierte Run-Verzeichnisse, Snapshots, gemergte Gold-Sets.
+# Gold-SEEDS bleiben versioniert unter docs/01-architecture/ml-gold-*.jsonl.
+artifacts/
+
+# ── Logs & Laufzeit ───────────────────────────────────────────
+*.log
+npm-debug.log*
+*.pid
+
+# Ausnahme: Lab-Replay-Fixtures sind Teil des reproduzierbaren Lab-Stacks
+# (deterministische Beispiel-Daten, kein Laufzeit-Log) → versionieren.
+!deploy/lab/*.sample.log
+
+# ── Datenexporte / lokale Ticket-Dumps ────────────────────────
+soc-tickets*.json
+
+# ── Design-/Mockup-Referenzen (operator-lokal, nicht im Repo) ──
+toolDesign/
+SettingsDesign/
+qradar-analyst-deck/
+
+# ── Legacy Single-File-App (durch React-Frontend ersetzt) ─────
+index.html
+
+# ── Lokale Tooling-/Agent-Konfiguration (Claude Code etc.) ────
+.claude/
+
+# ── OS / Editor ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Claude Code (Dev-Tool) — nicht im öffentlichen Repo ───────
+CLAUDE.md
+docs/agent-runs/
+
+# ── Operator-private Arbeits-TODO — bleibt lokal ──────────────
+TODO.md
+TODO.local.md
+
+# Operator-private Lab-/Betriebs-Doku — bleibt lokal, NICHT public
+docs/07-operations/network/
+docs/_private/
+
+# AI-Tooling lokal
+.codex/
+# lokale Design-Mockups (Scratch)
+analyseSeite Design/
+
+# ── Operator-private Deploy-Secrets/Keys (von gen-env / install-dataplane erzeugt) ──
+# NIE committen: enthalten echte Secrets bzw. private SSH-Keys.
+deploy/.env.production
+deploy/nexora-intake/.env
+deploy/nexora-intake/hub.config.json
+deploy/nexora-intake/hub.config.json.bak*
+deploy/nexora-intake/keys/
+
+# Doc-Export: vendored Mermaid (regenerierbar, ~3.5MB)
+docs/_export/vendor/
+
+# Doc-Export: gebündelte HTML enthält reale Infrastruktur-Daten (Lab-IPs) → operator-privat,
+# NIE committen. Regeneriert jederzeit aus docs/ via build-doc-hub.js. (Privacy: repo-IP-Rewrite)
+docs/_export/*.html
+
+# Lokale Editor-Sperrdateien und Python-Caches sind generiert und nie Teil eines Releases.
+**/~$*.docx
+**/~WRL*.tmp
+**/__pycache__/
+*.py[cod]

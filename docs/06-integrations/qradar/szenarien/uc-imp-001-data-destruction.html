@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC-IMP-001 Data Destruction (uc_013) — Nexora SOC / QRadar</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Nexora <span>SOC</span></div>
+    <div class="sub">UC-IMP-001 · uc_013</div>
+    <h2>Auf dieser Seite</h2>
+    <a href="#hintergrund">1 · Hintergrund (T1485)</a>
+    <a href="#verdacht">2 · Wann verdächtig?</a>
+    <a href="#mitre">3 · MITRE-Einordnung</a>
+    <a href="#voraussetzungen">4 · Voraussetzungen</a>
+    <a href="#regeln">5 · Regeln A–C</a>
+    <a href="#regel-a">· A — Anti-Forensik (Wiping)</a>
+    <a href="#regel-b">· B — Massenlöschung</a>
+    <a href="#regel-c">· C — Log-Manipulation</a>
+    <a href="#baseline">6 · Baseline &amp; Pfad-Logik</a>
+    <a href="#aufwand">7 · Aufwand &amp; Empfehlung</a>
+    <a href="#validierung">8 · Validierung</a>
+    <a href="#handlung">9 · Analyst-Handlung</a>
+    <h2>Bibliothek</h2>
+    <a href="../index.html">Übersicht</a>
+    <a href="../mitre-coverage-map.html">Coverage Map</a>
+    <a href="../../qradar-usecase-anlegen.html">Klick-Anleitung</a>
+  </nav>
+
+  <main>
+    <div class="breadcrumb"><a href="../index.html">Bibliothek</a> / <a href="../mitre-coverage-map.html">Impact</a> / UC-IMP-001 (uc_013)</div>
+    <header class="hero">
+      <div class="kicker">Impact · Linux (SLES)</div>
+      <h1>UC-IMP-001 — Data Destruction</h1>
+      <p>Überwachung auffälliger Datenlöschung: Sabotage (System unbrauchbar machen), Anti-Forensik (Spuren verwischen) und Ransomware-Vorbereitung (Backups/Snapshots löschen). Quelle: GMK <code>uc_013_imp_data_destruction</code>.</p>
+      <div class="meta">
+        <span><b>MITRE:</b> <span class="chip mitre">T1485</span> Data Destruction</span>
+        <span><b>Taktik:</b> Impact</span>
+        <span><b>GMK-ID:</b> uc_013</span>
+        <span><b>Quelle:</b> <span class="chip src">Linux auditd (unlink/unlinkat) / Wazuh</span></span>
+      </div>
+    </header>
+
+    <h2 class="section" id="hintergrund">1 · Hintergrund der Technik (T1485)</h2>
+    <p>Wenn ein Angreifer im System ist, geht es in dieser Phase um echten Schaden bzw. das Verhindern der Wiederherstellung:</p>
+    <ul class="steps">
+      <li><b>Sabotage:</b> System unbrauchbar machen (Löschen von Konfigurationsdateien oder Datenbanken).</li>
+      <li><b>Anti-Forensik:</b> Logs löschen (<code>/var/log/</code>), damit das SOC nicht mehr nachvollziehen kann, was passiert ist.</li>
+      <li><b>Ransomware-Vorbereitung:</b> vor der Verschlüsselung Backups/Snapshots löschen, um den Zahlungsdruck zu erhöhen.</li>
+    </ul>
+
+    <h2 class="section" id="verdacht">2 · Wann ist Löschen verdächtig?</h2>
+    <p class="lead">Auf Linux werden ständig Dateien gelöscht (temp, Log-Rotation). Verdächtig wird es durch den Kontext:</p>
+    <table>
+      <tr><th>Merkmal</th><th>Harmlos</th><th>Verdächtig</th></tr>
+      <tr><td>Menge</td><td>einzelne Dateien / geplante Logs</td><td>tausende Dateien in Sekunden</td></tr>
+      <tr><td>Werkzeug</td><td><code>rm</code>, <code>logrotate</code></td><td><code>shred</code>, <code>wipe</code> (sicheres Überschreiben)</td></tr>
+      <tr><td>Pfad</td><td><code>/tmp</code>, <code>/var/cache</code></td><td><code>/var/log</code>, <code>/etc</code>, Backup-Mounts</td></tr>
+      <tr><td>Benutzer</td><td>System-Dienste (root, logrotate, snapper)</td><td>normaler User / Dienst-Account</td></tr>
+    </table>
+
+    <h2 class="section" id="mitre">3 · MITRE-Einordnung</h2>
+    <table style="max-width:760px">
+      <tr><th>Feld</th><th>Wert</th></tr>
+      <tr><td>Technik</td><td><span class="chip mitre">T1485</span> Data Destruction</td></tr>
+      <tr><td>Verwandt</td><td><span class="chip mitre">T1070.002</span> Clear Linux Logs (Regel C überschneidet sich), T1490 (Inhibit System Recovery)</td></tr>
+      <tr><td>Taktik</td><td>Impact (TA0040)</td></tr>
+    </table>
+
+    <h2 class="section" id="voraussetzungen">4 · Voraussetzungen</h2>
+    <ul class="steps">
+      <li><b>Log-Quelle:</b> auditd mit Watch auf Lösch-Syscalls (<code>unlink</code>, <code>unlinkat</code>, <code>rmdir</code>, <code>rename</code>) + execve für Wipe-Tools; an QRadar via Wazuh/Syslog.</li>
+      <li><b>Custom Event Properties:</b> <span class="chip src">Command / exe</span> <span class="chip src">syscall</span> <span class="chip src">File Path</span> <span class="chip src">Audit User (auid)</span> <span class="chip src">Process Name</span></li>
+      <li><b>Reference Sets:</b> <span class="chip refset">RS:Logging-Maint-Procs</span> (logrotate, systemd, snapper, rsyslogd) <span class="chip refset">RS:Service-Accounts-Linux</span> <span class="chip refset">RS:Critical-Paths</span> (Map: Pfad→Schwelle)</li>
+    </ul>
+
+    <h2 class="section" id="regeln">5 · Regeln A–C</h2>
+
+    <h3 class="section" id="regel-a">Regel A — Einsatz von Anti-Forensik-Tools („Wiping")</h3>
+    <div class="meta"><span><b>Aufwand:</b> Teil von Basis (s. Fazit)</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span></span></div>
+    <p><b>Beobachtung:</b> Ausführung von Programmen, die Dateien sicher überschreiben statt nur löschen. <b>Warum:</b> ein normaler Admin nutzt <code>rm</code>; ein Angreifer nutzt <code>shred</code>, damit Datenrettung unmöglich wird. Auf einem produktiven SLES-Server haben diese Tools im Alltag nichts zu suchen.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-001-A Anti-Forensic Wiping <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">Command/exe</span> (custom) matches the regex <span class="lnk">(?i)/(shred|wipe|srm|scrub)$</span></pre>
+    <div class="callout tip"><strong>Hohe Fidelity:</strong> nahezu kein FP auf Produktivservern. <strong>Response:</strong> Offense, Index by Host · Severity 8.</div>
+
+    <h3 class="section" id="regel-b">Regel B — Massenlöschung von Dateien (Ransomware-Indikator)</h3>
+    <div class="meta"><span><b>Aufwand:</b> Teil von Basis (Baseline-intensiv)</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span></span></div>
+    <p><b>Beobachtung:</b> extrem hohe Anzahl Lösch-Operationen in kurzem Zeitfenster. <b>Warum:</b> Ransomware/Saboteur löscht tausende Dateien in Sekunden — eine klare Anomalie.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-001-B Mass File Deletion <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">syscall</span> (custom) is one of the following <span class="lnk">unlink, unlinkat, rmdir</span>
+<span class="kw">and when</span> the <span class="lnk">Audit User (auid)</span> is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Logging-Maint-Procs</span>
+<span class="kw">and when</span> at least <span class="lnk">500</span> events are seen with the same <span class="lnk">Username</span> and same <span class="lnk">Source Host</span> in <span class="lnk">10 seconds</span></pre>
+    <div class="callout warn"><strong>Schwelle ist nicht „aus dem Bauch".</strong> Der Wert 500/10 s ist ein Startpunkt — die echte Schwelle ergibt sich aus der Baseline (siehe Abschnitt 6). <strong>FP:</strong> snapper-Cleanup, große Build-/Cache-Löschungen → Wartungsprozesse whitelisten.</div>
+
+    <h3 class="section" id="regel-c">Regel C — Manipulation / Löschung der System-Logs</h3>
+    <div class="meta"><span><b>Aufwand:</b> 5–10 h (Synergie mit T1070)</span><span><b>Empfehlung:</b> <span class="conf low">Erweitert</span></span></div>
+    <p><b>Beobachtung:</b> Löschbefehle in kritischen Log-Verzeichnissen, die nicht vom System stammen. <b>Warum:</b> ohne Logs ist das SOC blind — Angreifer leeren/löschen fast immer <code>audit.log</code> oder <code>messages</code>, um Spuren zu vertuschen.</p>
+<pre class="code"><span class="kw">Apply</span> UC-IMP-001-C System Log Tampering <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">syscall</span> (custom) is one of the following <span class="lnk">unlink, unlinkat, truncate, rename</span>
+<span class="kw">and when</span> <span class="lnk">File Path</span> (custom) matches the regex <span class="lnk">^/var/log/</span>
+<span class="kw">and when</span> the <span class="lnk">Process Name</span> is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Logging-Maint-Procs</span></pre>
+    <div class="callout tip"><strong>Synergie mit T1070 Clear Linux Logs:</strong> die technischen auditd-Watch-Rules aus dem bestehenden T1070-Use-Case lassen sich mitnutzen — daher der geringe Aufwand. Reizvoll als Regelverknüpfung (Chaining): <em>Massenlöschung (B) + Log-Löschung (C)</em> → erhöhte Severity.</div>
+
+    <h2 class="section" id="baseline">6 · Baseline &amp; pfadabhängige Logik</h2>
+    <p>Der größte Aufwand steckt nicht in der Regel selbst, sondern darin zu wissen, was „normal" ist:</p>
+    <ul class="steps">
+      <li><b>Baseline:</b> <code>unlink</code>/<code>unlinkat</code>-Events über 30 Tage auswerten (je System, je User/Service-Account, je Pfad). Schwelle = z. B. Baseline × Faktor 2–3 → Alarm.</li>
+      <li><b>Pfadabhängig:</b> in <code>/tmp</code> sind hunderte Löschungen normal; in <code>/etc</code> oder <code>/boot</code> sind 5 Löschungen schon verdächtig. Umsetzbar über die Map <code>RS:Critical-Paths</code> (Pfad → niedrige Schwelle) und separate strenge Regeln für <code>/etc</code>, <code>/boot</code>, Backup-Mounts.</li>
+      <li><b>Langfrist-Alternative:</b> UEBA-Inbetriebnahme abwarten — dann übernimmt das Verhaltensmodell die Baseline.</li>
+    </ul>
+
+    <h2 class="section" id="aufwand">7 · Aufwand &amp; Empfehlung (GMK-Fazit)</h2>
+    <div class="callout tip"><strong>Basis-Absicherung (A, B):</strong> destruktive Aktivität durch Ransomware/Sabotage (Massenlöschung + Wipe-Tools). <strong>Aufwand ca. 70–90 h</strong> — enthält die aufwendige Baseline-Ermittlung, Whitelisting von Systemdiensten (snapper, logrotate) und pfadabhängige Priorisierung (z. B. Alarm bei nur 1 Löschung in <code>/boot</code>).</div>
+    <div class="callout warn"><strong>Erweiterte Detektion (C):</strong> gezielter Schutz der Log-Integrität (Synergie mit T1070). <strong>Aufwand ca. 5–10 h</strong>, da technische Audit-Rules aus T1070 mitgenutzt werden; Aufwand fließt v. a. in Korrelation/Alarm-Logik in QRadar.</div>
+    <table>
+      <tr><th>Regel</th><th>Aufwand</th><th>Empfehlung</th></tr>
+      <tr><td>A — Anti-Forensik (Wiping)</td><td rowspan="2">zusammen ≈ 70–90 h</td><td>Basis</td></tr>
+      <tr><td>B — Massenlöschung (inkl. Baseline)</td><td>Basis</td></tr>
+      <tr><td>C — Log-Manipulation</td><td>5–10 h</td><td>Erweitert</td></tr>
+    </table>
+
+    <h2 class="section" id="validierung">8 · Validierung</h2>
+    <table>
+      <tr><th>ID</th><th>Typ</th><th>Regel</th><th>Beschreibung</th><th>Erwartet</th></tr>
+      <tr><td>TP-A1</td><td>TP</td><td>A</td><td><code>shred -u</code> auf Dateien durch normalen User</td><td>Offense</td></tr>
+      <tr><td>TP-B1</td><td>TP</td><td>B</td><td>700 unlink in 8 s durch Dienst-Account</td><td>Offense</td></tr>
+      <tr><td>TP-C1</td><td>TP</td><td>C</td><td><code>rm /var/log/audit/audit.log</code> durch User (nicht logrotate)</td><td>Offense</td></tr>
+      <tr><td>FP-B1</td><td>FP</td><td>B</td><td>snapper/Build-Cleanup (Wartungsprozess)</td><td>NICHT erkannt</td></tr>
+      <tr><td>FP-C1</td><td>FP</td><td>C</td><td>logrotate rotiert /var/log normal</td><td>NICHT erkannt</td></tr>
+    </table>
+
+    <h2 class="section" id="handlung">9 · Analyst-Handlung</h2>
+    <ul class="steps">
+      <li>Prozess + Konto (auid) + betroffene Pfade sichern; war <code>shred</code>/<code>wipe</code> beteiligt?</li>
+      <li>Bei Log-Löschung: parallele Aktivität in anderen UCs prüfen — der Angreifer verwischt gerade Spuren.</li>
+      <li>Snapshots/Backups auf Vollständigkeit prüfen (Ransomware-Vorbereitung?). Übergang zu <a href="uc-imp-002-data-encrypted.html">uc_014</a> beobachten.</li>
+      <li>Bei bestätigter Zerstörung: Host isolieren, aus sauberem Backup wiederherstellen.</li>
+    </ul>
+
+    <footer>
+      <p>UC-IMP-001 (GMK uc_013) · Detection-Logik aus SOC-Hunt-Framework (HUNT-007, Linux-adaptiert) · <code>…/szenarien/uc-imp-001-data-destruction.html</code> · 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

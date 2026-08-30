@@ -1,0 +1,101 @@
+<!--
+  ============================================================================
+  V2 — ✅ VALIDATED LIVE (2026-06-17)   [vormals: Proof-of-Chain-Vorschlag]
+  ============================================================================
+  LIVE-BEWEIS (kontrolliertes Apply-Fenster, KEIN Rollback noetig):
+    - Regel 100951 (if_sid 92101, Level 3) live & enabled (Wazuh-API bestaetigt).
+    - DC01-Test: powershell -> 10.99.99.72:8080  =>  rule.id=100951 feuert
+      (DC01 + WEC01, image=powershell.exe, protocol=tcp, dst 10.99.99.72:8080).
+      Top-Image NUR powershell, KEIN osb-agent, Rule 202/203 = 0, Indexer stabil.
+    - Nexora DC01-Ticket INC000283: network.flows zeigt sourceType sysmon_event3
+      (powershell.exe tcp -> 10.99.99.72:8080, user NT AUTHORITY\SYSTEM).
+    - Backup am Manager: local_rules.xml.bak-2026-06-17-pre-nexora-network-v2
+      (Pre-Apply-Hash 4ed4ab29...).
+  STATUS: APPLIED & LIVE am Manager (dieser <group>-Block = die angewendete Regel).
+  ============================================================================
+  Ziel V2: PROOF-OF-CHAIN. Nur belegen, dass der Pfad funktioniert:
+      Sysmon Event 3 (powershell.exe/tcp) -> 92101 -> Kindregel 100951
+      -> Level 3 -> wazuh-alerts -> CE-3 Network-Tab.
+  Bewusst KEINE breite LOLBin-Allowlist. Erweiterung erst nach erfolgreichem Proof.
+
+  WARUM V2 (Lehre aus V1):
+  - V1 nutzte <if_group>sysmon_event3</if_group> und war damit GESCHWISTER der
+    Built-in-Regel 92101 (die ebenfalls if_group sysmon_event3 nutzt).
+  - Im powershell/tcp-Test hat 92101 (niedrigere ID, Built-in) den Event-Zweig
+    "beansprucht"; da der Zielport (8080) keine 92102+-Bedingung traf, blieb das
+    Event auf Level 0 (nicht indexiert) und V1 (100951) kam nie zum Zug -> INERT.
+  - V2 haengt deshalb als KIND von 92101 (<if_sid>92101</if_sid>): es wird erst
+    ausgewertet, NACHDEM 92101 gematcht hat -> keine Geschwister-Konkurrenz.
+
+  ⚠️ WICHTIGE EINSCHRAENKUNG (per API verifiziert):
+  92101 matcht selbst nur:  win.eventdata.image ~ (?i)\\powershell\.exe  UND  protocol ^tcp$.
+  Daraus folgt fuer eine Kindregel von 92101:
+    - Es kommt NUR powershell.exe + tcp an. Das ist fuer den Proof-of-Chain genau richtig.
+    - pwsh.exe und powershell_ise.exe erreichen 100951 ueber diesen Anker NICHT
+      (92101 matcht sie nicht). Die |pwsh|_ise-Alternativen in der Regex unten sind
+      ueber diesen Anker also faktisch unerreichbar -> nur als Doku belassen.
+    - Andere LOLBins (rundll32/cmd/certutil/...) und andere Protokolle kommen hier
+      ebenfalls NICHT an -> brauchen spaeter EIGENE Regeln mit anderem Anker
+      (siehe Erweiterungsplan).
+
+  Feld/Regex read-only validiert (gegen echte Doppel-Backslash-Werte, wie Wazuh sie
+  speichert, z. B. C:\\Windows\\...\\powershell.exe):
+    powershell.exe -> match | powershell_ise.exe -> match | pwsh.exe -> match
+    rundll32.exe / cmd.exe / osb-agent.exe / notepad.exe -> KEIN match
+  Rule-ID 100951 ist nach dem Rollback wieder frei (vor Apply erneut bestaetigen).
+
+  Ziel-Datei am Manager (10.99.99.77): /var/ossec/etc/rules/local_rules.xml
+  -> diesen <group>-Block ANS ENDE einfuegen, sonst nichts aendern.
+
+  ---------------------------------------------------------------------------
+  APPLY-PLAN V2 (erst nach explizitem OK — NICHT Teil dieses Commits):
+    1. sudo cp -p /var/ossec/etc/rules/local_rules.xml \
+           /var/ossec/etc/rules/local_rules.xml.bak-<datum>-pre-nexora-v2
+    2. Block ans Ende anhaengen (byte-exakt, base64-Transfer empfohlen)
+    3. sudo /var/ossec/bin/wazuh-logtest   (nur Syntax/Ruleset-Load pruefen;
+       Feuern ist synthetisch nicht testbar -> json- statt eventchannel-Decoder)
+    4. sudo /var/ossec/bin/wazuh-control restart   (bewusst, ruhiges Fenster)
+    5. Manager-Status + ossec.log auf parse/ruleset-Fehler pruefen
+    6. Kontrollierter DC01-Test:
+       powershell -Command "try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 \
+         -Uri http://10.99.99.72:8080 } catch {}"
+    7. Indexer: rule.id=100951 >= 1 (image=powershell.exe, destinationIp/Port gesetzt, agent DC01)
+    8. Nexora: DC01-Ticket -> Network & NAT zeigt sourceType sysmon_event3;
+       Timeline NetworkConnect; Entities Destination-IP + Prozess
+    9. rule.id=100951-Count niedrig; osb-agent.exe darf NICHT auftauchen
+   10. Rule 202/203 (Agent-Buffer) ruhig
+
+  ROLLBACK V2:
+    sudo cp -p /var/ossec/etc/rules/local_rules.xml.bak-<datum>-pre-nexora-v2 \
+        /var/ossec/etc/rules/local_rules.xml
+    sudo /var/ossec/bin/wazuh-control restart
+    (Block entfernen + restart geht auch; keine anderen Regeln/Decoder beruehrt.)
+
+  ---------------------------------------------------------------------------
+  ERWEITERUNGSPLAN (erst NACH erfolgreichem powershell-Proof):
+    - Pro Binary-Gruppe EIGENE Regel-ID, NICHT alles in eine Riesenregel:
+        100952 rundll32/regsvr32/mshta ...
+        100953 certutil/bitsadmin ...
+    - Richtiger Anker fuer Breite ist NICHT 92101 (zu schmal). Optionen pruefen:
+        a) Kind von 61605 (generische Event-3-Basis) — aber Geschwister-Konkurrenz
+           zu 92101 erneut beachten/testen.
+        b) eigene Zwischen-Basisregel (if_sid 61605, alle Event 3) -> darauf die
+           LOLBin-Kindregeln haengen.
+    - VOR Breit-Apply: erwartetes Volumen je Binary aus dem Sysmon-Log messen
+      (osb-agent = 99,8 % Rauschen, bleibt ausgeschlossen).
+  ============================================================================
+-->
+<group name="nexora_sysmon_network,">
+
+  <rule id="100951" level="3">
+    <if_sid>92101</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\powershell(?:_ise)?\.exe$|\\pwsh\.exe$</field>
+    <description>Nexora: Sysmon Event 3 PowerShell NetworkConnect $(win.eventdata.image) -> $(win.eventdata.destinationIp):$(win.eventdata.destinationPort)</description>
+    <mitre>
+      <id>T1059.001</id>
+      <id>T1071</id>
+    </mitre>
+    <group>nexora_sysmon_network,sysmon_event3,powershell_network,</group>
+  </rule>
+
+</group>

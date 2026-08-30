@@ -1,0 +1,249 @@
+# Nexora Lab — vereintes System in Docker, phasenweise nachgebaut.
+#
+# Phase 1 (jetzt): Data-Plane Intake-Server (Annahme-Grenze, EventEnvelopeV1).
+# Phase 2 (folgt): Nexora-Stack (web/api/postgres/worker — aus docker-compose.dev.yml),
+#                  weitere Collectors (Firewall-Go), echte Quell-Images
+#                  (Wazuh single-node, Cowrie, Suricata).
+#
+# Live (Step jetzt): vier Kollektoren als EIGENSTÄNDIGE Container (kein In-Process-Modul),
+#                    je domain ein Service — conntrack(ids-flow) · suricata(ids) · opnsense(firewall)
+#                    · wazuh(siem). Ein Image, COLLECTOR_KIND wählt das Plugin. Alle posten
+#                    EventEnvelopeV1 gegen den Intake (Lab: Replay-Fixtures).
+#
+# Start:  docker compose -f deploy/lab/docker-compose.lab.yml up -d --build
+# Smoke:  curl localhost:8081/health   (intake)
+#         curl localhost:808{2,3,4,5}/health   (conntrack · ids · firewall · siem)
+services:
+  intake:
+    build:
+      context: ../../dataplane
+    image: nexora-intake:lab
+    container_name: nexora_intake_lab
+    environment:
+      PORT: "8081"
+      # Postgres-Boot: persistente Events + Outbox + echte Credential-Auflösung (Block B).
+      DATAPLANE_DB_URL: "postgres://nexora:nexora@intake-postgres:5432/nexora_intake"
+    depends_on:
+      intake-postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+  # conntrack-Flow-Collector — eigenständiger Service (eigenes Image, eigener Lifecycle).
+  # Liest im Lab eine Replay-Fixture (echte conntrack-DESTROY-Zeilen mit finalen Bytes),
+  # normalisiert zu EventEnvelopeV1 und postet gegen den Intake. Auf der VPS stattdessen:
+  # `conntrack -E -e DESTROY -p tcp` auf stdin + --network host (kein Replay).
+  conntrack-collector:
+    build:
+      context: ../../dataplane
+      dockerfile: Dockerfile.collector
+    image: nexora-collector:lab
+    container_name: nexora_conntrack_collector_lab
+    depends_on:
+      - intake
+    environment:
+      COLLECTOR_KIND: "conntrack"
+      INTAKE_URL: "http://intake:8081/v1/intake/events"
+      COLLECTOR_CREDENTIAL: "lab-conntrack-token"
+      INSTANCE_ID: "lab-hp"
+      SCOPE_PORTS: "22,2222"
+      REPLAY_FILE: "/app/replay/conntrack-replay.sample.log"
+      REPLAY_LOOP: "1"
+      REPLAY_DELAY_MS: "2000"
+      HEALTH_PORT: "8082"
+    volumes:
+      - ./conntrack-replay.sample.log:/app/replay/conntrack-replay.sample.log:ro
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+
+  # IDS-Collector — Suricata eve.json → EventEnvelopeV1 (domain "ids", vendor "suricata").
+  ids-collector:
+    build:
+      context: ../../dataplane
+      dockerfile: Dockerfile.collector
+    image: nexora-collector:lab
+    container_name: nexora_ids_collector_lab
+    depends_on:
+      - intake
+    environment:
+      COLLECTOR_KIND: "suricata"
+      INTAKE_URL: "http://intake:8081/v1/intake/events"
+      COLLECTOR_CREDENTIAL: "lab-suricata-token"
+      INSTANCE_ID: "lab-sensor"
+      ASSET_IPS: "198.51.100.10"
+      REPLAY_FILE: "/app/replay/suricata-eve.sample.log"
+      REPLAY_LOOP: "1"
+      REPLAY_DELAY_MS: "2000"
+      HEALTH_PORT: "8083"
+    volumes:
+      - ./suricata-eve.sample.log:/app/replay/suricata-eve.sample.log:ro
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+
+  # FIREWALL-Collector — OPNsense filterlog → EventEnvelopeV1 (domain "firewall", vendor "opnsense").
+  firewall-collector:
+    build:
+      context: ../../dataplane
+      dockerfile: Dockerfile.collector
+    image: nexora-collector:lab
+    container_name: nexora_firewall_collector_lab
+    depends_on:
+      - intake
+    environment:
+      COLLECTOR_KIND: "opnsense"
+      INTAKE_URL: "http://intake:8081/v1/intake/events"
+      COLLECTOR_CREDENTIAL: "lab-opnsense-token"
+      INSTANCE_ID: "lab-fw"
+      ASSET_IPS: "198.51.100.9,198.51.100.10"
+      REPLAY_FILE: "/app/replay/opnsense-filterlog.sample.log"
+      REPLAY_LOOP: "1"
+      REPLAY_DELAY_MS: "2000"
+      HEALTH_PORT: "8084"
+    volumes:
+      - ./opnsense-filterlog.sample.log:/app/replay/opnsense-filterlog.sample.log:ro
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+
+  # SIEM-Collector — Wazuh-Alerts → EventEnvelopeV1 (domain "siem", vendor "wazuh").
+  siem-collector:
+    build:
+      context: ../../dataplane
+      dockerfile: Dockerfile.collector
+    image: nexora-collector:lab
+    container_name: nexora_siem_collector_lab
+    depends_on:
+      - intake
+    environment:
+      COLLECTOR_KIND: "wazuh"
+      INTAKE_URL: "http://intake:8081/v1/intake/events"
+      COLLECTOR_CREDENTIAL: "lab-wazuh-token"
+      INSTANCE_ID: "lab-mgr"
+      MIN_LEVEL: "5"
+      REPLAY_FILE: "/app/replay/wazuh-alerts.sample.log"
+      REPLAY_LOOP: "1"
+      REPLAY_DELAY_MS: "2000"
+      HEALTH_PORT: "8085"
+    volumes:
+      - ./wazuh-alerts.sample.log:/app/replay/wazuh-alerts.sample.log:ro
+    ports:
+      - "8085:8085"
+    restart: unless-stopped
+
+  # Mock-Nexora-Ingress — Platzhalter für POST /api/v1/dataplane/incidents im Lab
+  # (das echte Nexora-Backend ist nicht Teil dieser Compose). Antwortet 202, loggt jeden Vorfall.
+  mock-ingress:
+    image: nexora-collector:lab
+    container_name: nexora_mock_ingress_lab
+    command: ["node", "-e", "require('http').createServer((q,s)=>{let b='';q.on('data',c=>b+=c);q.on('end',()=>{try{const j=JSON.parse(b||'{}');process.stdout.write('mock-ingress incident '+(j.incidentId||'?')+' verdict='+(j.verdict||'?')+'\\n')}catch(e){};s.writeHead(202,{'content-type':'application/json'});s.end('{\"status\":\"accepted\"}')})}).listen(9099,()=>console.log('mock-ingress on 9099'))"]
+    restart: unless-stopped
+
+  # Outbox-Worker — Korrelierungs-Engine-Runtime: claimt Outbox → Cross-Domain-Fusion → Ingress.
+  outbox-worker:
+    image: nexora-collector:lab
+    container_name: nexora_outbox_worker_lab
+    depends_on:
+      intake-postgres:
+        condition: service_healthy
+      nexora-api:
+        condition: service_healthy
+    command: ["node", "src/engine/outboxWorkerMain.js"]
+    environment:
+      DATAPLANE_DB_URL: "postgres://nexora:nexora@intake-postgres:5432/nexora_intake"
+      # Echtes Nexora-Backend-Ingress (HMAC) statt Mock → fusionierter Vorfall wird ein Ticket.
+      INGRESS_URL: "http://nexora-api:3000/api/v1/dataplane/incidents"
+      INGRESS_SECRET: "lab-ingress-secret"
+      WORKER_ID: "lab-worker-1"
+      POLL_INTERVAL_MS: "2000"
+      FUSION_WINDOW_MS: "300000"
+      HEALTH_PORT: "8086"
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+
+  # Data-Plane-Persistenz (intake_events + Transactional Outbox). Migrationen: dataplane/src/db/migrations.
+  intake-postgres:
+    image: postgres:16-alpine
+    container_name: nexora_intake_postgres
+    environment:
+      POSTGRES_DB: nexora_intake
+      POSTGRES_USER: nexora
+      POSTGRES_PASSWORD: nexora
+    ports:
+      - "5433:5432"
+    volumes:
+      - intake_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexora -d nexora_intake"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Echtes Nexora-Backend (empfängt fusionierte Vorfälle → Ticket) ──────────
+  # Reuse des Dev-Patterns (node:20-bookworm-slim + npm install + server.js).
+  nexora-api-postgres:
+    image: postgres:16-alpine
+    container_name: nexora_api_postgres_lab
+    environment:
+      POSTGRES_DB: soc_tickets_lab
+      POSTGRES_USER: soc_api
+      POSTGRES_PASSWORD: devpassword
+    volumes:
+      - nexora_api_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soc_api -d soc_tickets_lab"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  nexora-api:
+    image: node:20-bookworm-slim
+    container_name: nexora_api_lab
+    working_dir: /app
+    command: sh -c "npm install && node src/server.js"
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      DB_ENABLED: "true"
+      DB_HOST: nexora-api-postgres
+      DB_PORT: "5432"
+      DB_NAME: soc_tickets_lab
+      DB_USER: soc_api
+      DB_PASSWORD: devpassword
+      DB_SSL: "false"
+      JWT_SECRET: lab-only-jwt-secret
+      ADMIN_EMAIL: admin@nexora.example
+      ADMIN_PASSWORD: DevAdmin123!
+      # HMAC-Secret des Data-Plane-Ingress = INGRESS_SECRET des Outbox-Workers.
+      WEBHOOK_SECRET_DATAPLANE: lab-ingress-secret
+      LOG_LEVEL: info
+    volumes:
+      - ../../backend:/app
+      - nexora_api_node_modules:/app/node_modules
+    ports:
+      - "3001:3000"
+    depends_on:
+      nexora-api-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      start_period: 120s
+      retries: 8
+    restart: unless-stopped
+
+volumes:
+  intake_pgdata:
+  nexora_api_pgdata:
+  nexora_api_node_modules:
+
+# Netz für spätere Phasen (Collectors/Quell-Systeme hängen sich hier an).
+networks:
+  default:
+    name: nexora_lab

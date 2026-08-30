@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC — Arc42 Architekturdokumentation</title>
+<style>
+  :root {
+    --bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;
+    --accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;
+    --text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;
+    --font-mono:'JetBrains Mono','Courier New',monospace;
+    --font-ui:'Segoe UI',system-ui,sans-serif;--sw:270px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}
+  #sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .sb-badge{display:inline-block;margin:10px 18px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--accent);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:14px 18px 5px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:6px 18px;font-size:12px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .num{font-size:10px;color:var(--text-dim);font-family:var(--font-mono);min-width:24px;}
+  #content{margin-left:var(--sw);flex:1;max-width:900px;padding:44px 52px 80px;}
+  .cover{margin-bottom:44px;padding-bottom:28px;border-bottom:1px solid var(--border);}
+  .cover h1{font-size:32px;font-weight:800;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
+  .cover .sub{font-size:17px;color:var(--text);margin-top:8px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:5px;}
+  .doc-section{margin-bottom:52px;scroll-margin-top:28px;}
+  h2{font-size:20px;font-weight:700;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+  h2 .num{font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.25);color:var(--accent);font-family:var(--font-mono);}
+  h3{font-size:14px;font-weight:700;color:var(--text-head);margin:24px 0 10px;}
+  h4{font-size:13px;font-weight:700;color:#8ec5d6;margin:18px 0 8px;}
+  p{margin-bottom:12px;color:var(--text);}
+  .info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-left:3px solid var(--accent);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .info-box strong{color:var(--accent);}
+  .warn-box{background:rgba(255,107,53,.07);border:1px solid rgba(255,107,53,.25);border-left:3px solid var(--warn);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .warn-box strong{color:var(--warn);}
+  .doc-table{width:100%;border-collapse:collapse;margin:14px 0 22px;font-size:13px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table tr:hover td{background:rgba(255,255,255,.02);}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:12px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:5px;padding:14px 18px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:10px 0 18px;}
+  code{font-family:var(--font-mono);font-size:12px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  ul.doc-list{list-style:none;margin:10px 0 16px;padding:0;}
+  ul.doc-list li{padding:4px 0 4px 18px;position:relative;color:var(--text);font-size:13px;}
+  ul.doc-list li::before{content:'›';position:absolute;left:4px;color:var(--accent);font-weight:700;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:28px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  .arc-box{background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:20px;font-family:var(--font-mono);font-size:12px;color:var(--text-dim);line-height:2;margin:14px 0;overflow-x:auto;}
+  .arc-box .hl{color:var(--accent);}
+  .arc-box .hl2{color:var(--accent2);}
+  .arc-box .hl3{color:var(--warn);}
+  .badge-phase{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;text-transform:uppercase;}
+  .done{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--accent2);}
+  .next{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--accent);}
+  .plan{background:rgba(90,106,128,.15);border:1px solid rgba(90,106,128,.3);color:var(--text-dim);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>Nexora SOC</h1><p>Architekturdokumentation</p></div>
+  <span class="sb-badge">Arc42</span>
+  <div class="sb-section">Kapitel</div>
+  <a class="sb-link" href="#c1"><span class="num">01</span> Einführung &amp; Ziele</a>
+  <a class="sb-link" href="#c2"><span class="num">02</span> Randbedingungen</a>
+  <a class="sb-link" href="#c3"><span class="num">03</span> Kontextabgrenzung</a>
+  <a class="sb-link" href="#c4"><span class="num">04</span> Lösungsstrategie</a>
+  <a class="sb-link" href="#c5"><span class="num">05</span> Bausteinsicht</a>
+  <a class="sb-link" href="#c6"><span class="num">06</span> Laufzeitsicht</a>
+  <a class="sb-link" href="#c7"><span class="num">07</span> Verteilungssicht</a>
+  <a class="sb-link" href="#c8"><span class="num">08</span> Konzepte</a>
+  <a class="sb-link" href="#c9"><span class="num">09</span> Architekturentscheidungen</a>
+  <a class="sb-link" href="#c10"><span class="num">10</span> Qualitätsanforderungen</a>
+  <a class="sb-link" href="#c11"><span class="num">11</span> Risiken &amp; Schulden</a>
+  <a class="sb-link" href="#c12"><span class="num">12</span> Glossar</a>
+  <div class="sb-section" style="margin-top:14px;">Weitere Docs</div>
+  <a class="sb-link" href="developer-guide.html"><span class="num">→</span> Developer Guide</a>
+  <a class="sb-link" href="user-guide.html"><span class="num">→</span> User Guide</a>
+  <a class="sb-link" href="changelog.html"><span class="num">→</span> Changelog</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="../index.html">← Zurück zur App</a>
+  <div class="cover">
+    <h1>Nexora SOC Orchestrator</h1>
+    <div class="sub">Arc42 — Architekturdokumentation</div>
+    <div class="meta">Version 1.1 &nbsp;|&nbsp; Gültig ab: 2026-06-20 &nbsp;|&nbsp; Status: Production (<code>v0.1.0</code>) — live auf nexora.example (10.99.99.75)</div>
+  </div>
+
+  <div class="info-box">
+    <strong>Live-Stand (deployt):</strong> <code>41d8d92</code> (2026-06-20) — MFA/TOTP + Personal Access Tokens aktiviert.
+    Spätere Bausteine (E-Mail/SMTP-Kanal, SSO/OIDC, WebAuthn/Passkey, NIS2-Review-Kadenz) sind
+    <strong>lokal gebaut und getestet, aber noch nicht deployt</strong> — im Text als „<strong>lokal</strong>" gekennzeichnet.
+    <code>/health</code> meldet die laufende Version (Deploy-Verifikation, SemVer-Policy seit <code>v0.1.0</code>).
+  </div>
+
+  <!-- 1 -->
+  <section class="doc-section" id="c1">
+    <h2><span class="num">01</span> Einführung &amp; Ziele</h2>
+
+    <h3>Was ist Nexora SOC?</h3>
+    <p>Nexora ist ein <strong>Enterprise-SOC-Ticket-Orchestration-System</strong>: Eine Plattform zur Triage, Analyse und Verwaltung von Security-Incidents. Das System:</p>
+    <ul class="doc-list">
+      <li><strong>Integriert externe SIEM-/Detection-Quellen</strong> (Wazuh, IBM QRadar, Splunk, CrowdSec-WAN) und sammelt Alerts/Offenses</li>
+      <li><strong>Erstellt Tickets</strong> aus den eingehenden Events, dedupliziert und aggregiert sie</li>
+      <li><strong>Korreliert pro Incident</strong> (Correlation Engine CE-1…CE-5): Quellen-Normalizer, Host-Case-Aggregation, Network/NAT-Flow-Modell, Inventory- + FQDN-Anreicherung — alles mit Provenance, <strong>keine erfundenen Werte</strong></li>
+      <li><strong>Unterstützt Threat Hunting</strong> mit vorgefertigten, One-Click-Hunts auf lokalen/Remote-Systemen</li>
+      <li><strong>Nutzt lokale KI</strong> (Ollama + Llama 3.2; Cloud-Provider opt-in) zur Vorschlag-Generierung und Analyse</li>
+      <li><strong>Bietet sichere Automation</strong> (Safe Command Console, Approval-Gates, Human-in-the-loop)</li>
+      <li><strong>Verwaltet eine Control-Plane / Node-Registry</strong> (Provisioning, Enrollment, Heartbeats, Linux-Installer) — <strong>read-only, kein Apply-/Remote-/Netz-Kanal</strong></li>
+      <li><strong>Unterstützt NIS2-Readiness &amp; Evidence</strong> (Control-Katalog, Assessment, Nachweis-Links) — <strong>ehrlich: kein Konformitätsnachweis, keine Zertifizierung</strong></li>
+      <li><strong>Benachrichtigt nach außen</strong> (Slack/Webhook/Teams/E-Mail) und exportiert Tickets/Reports/Audit (ServiceNow/OTRS, PDF/CSV)</li>
+      <li><strong>Bleibt self-hosted</strong> und kann offline oder in geschlossenen Netzen betrieben werden</li>
+    </ul>
+
+    <h3>Kern-Workbench</h3>
+    <p>SOC-Analyst öffnet <code>/analysis</code>, sieht Tickets aggregiert nach Host/Case, kann:</p>
+    <ul class="doc-list">
+      <li>Ticket öffnen → Evidence/MITRE/IOCs anschauen</li>
+      <li>Hunt starten → Threat-Intelligence sammeln</li>
+      <li>KI-Vorschlag erhalten → approve/reject</li>
+      <li>False-Positive-Regel erzeugen → auf Wazuh deployen</li>
+      <li>Ticket schließen mit Begründung → History trackt alles</li>
+    </ul>
+
+    <h3>Stakeholder</h3>
+    <table class="doc-table">
+      <thead><tr><th>Rolle</th><th>Anliegen</th><th>Anforderungen</th></tr></thead>
+      <tbody>
+        <tr><td>SOC Analyst (Tier 1–3)</td><td>Schnelle Triage, wenig Klicks</td><td>Intuitive UI, vorgefertigte Hunts, ein Klick = ein Ergebnis</td></tr>
+        <tr><td>Security Engineer</td><td>Automation, Reproduzierbarkeit</td><td>KI-Regeln, FP-Ausnahmen, Audit-Trail</td></tr>
+        <tr><td>SOC Lead / Manager</td><td>Metriken, Trends, Compliance</td><td>Dashboard, KPIs, Activity-Log, Export</td></tr>
+        <tr><td>IT-Operations / Deployment</td><td>Stabilität, Monitoring, Scale</td><td>Docker, Proxmox, Health-Checks, Prometheus</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Qualitätsziele</h3>
+    <table class="doc-table">
+      <thead><tr><th>Ziel</th><th>Maßnahme</th></tr></thead>
+      <tbody>
+        <tr><td>Security</td><td>Keine XSS/CSRF/Injection; CSP + HSTS; Cookie-only-Session (httpOnly <code>soc_token</code>) + CSRF-Double-Submit (ADR-017); MFA/TOTP, SSO/OIDC, WebAuthn/Passkey; bcrypt; Audit append-only; SBOM + Dependency-Scan (<code>security.yml</code>)</td></tr>
+        <tr><td>Availability</td><td>Stateless Backend, Postgres, Docker-Compose, Health-Checks, Retry-Mechanismen</td></tr>
+        <tr><td>Maintainability</td><td>Repository-Pattern, Adapter-Layer, 80%+ Test-Coverage (~2720 BE / ~912 FE), CCD-Grad 2+</td></tr>
+        <tr><td>Performance</td><td>Pagination, Indexe, Caching (u. a. persistenter Postgres-TI-Cache), OpenSearch-Aggregationen (Wazuh-Indexer)</td></tr>
+        <tr><td>Compliance</td><td>Audit-Trail (redaktiert), DSGVO-konform (PII-Hashing), NIS2-Readiness-Unterstützung (kein Konformitätsnachweis), Cloud-LLM nur opt-in</td></tr>
+        <tr><td>Integrität / „No-Fake"</td><td>Correlation: fehlt ein Wert → <code>null</code> + <code>missingReason</code> + <code>provenance</code>; Control-Plane ohne Apply-/Remote-Kanal (per Test erzwungen)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2 -->
+  <section class="doc-section" id="c2">
+    <h2><span class="num">02</span> Randbedingungen</h2>
+
+    <h3>Technologie-Stack</h3>
+    <h4>Backend</h4>
+    <ul class="doc-list">
+      <li>Node.js 20+ / Express.js</li>
+      <li>PostgreSQL 14+ (Persistenz, Audit, Dedup-Keys)</li>
+      <li>pg-boss (Queue / Worker für Webhooks)</li>
+      <li>Joi (Input-Validierung)</li>
+    </ul>
+    <h4>Frontend</h4>
+    <ul class="doc-list">
+      <li>React 18 + TypeScript + Vite</li>
+      <li>Zustand (State)</li>
+      <li>TanStack Query (Server-State)</li>
+      <li>Vitest + Playwright (Tests)</li>
+    </ul>
+    <h4>Integrations &amp; KI</h4>
+    <ul class="doc-list">
+      <li>Wazuh 4.14.5+ (SIEM, Agent-API, Indexer-OpenSearch)</li>
+      <li>Ollama (lokales LLM, CPU-only, llama3.2:3b); Cloud-Provider (Anthropic/OpenAI/Google) <strong>opt-in</strong>, Keys AES-256-GCM at-rest (ADR-018)</li>
+      <li>Qdrant (Vector-DB für RAG: MITRE-ATT&amp;CK + Hunt-Katalog + past_incidents)</li>
+      <li>Adapter-Pattern (QRadar, Splunk, ServiceNow, OTRS, CrowdSec-WAN)</li>
+      <li>nodemailer (SMTP-Versand, lazy geladen, <strong>lokal</strong>); jsPDF (PDF-Reports/-Export, dynamisch geladen)</li>
+    </ul>
+    <h4>Auth-Bausteine (Security-Welle 3)</h4>
+    <ul class="doc-list">
+      <li>TOTP (RFC 6238, <strong>ohne</strong> externe Lib, Node <code>crypto</code>) — MFA <strong>live</strong></li>
+      <li><code>@simplewebauthn/server</code> + <code>/browser</code> (FIDO2/Passkey, <strong>lokal</strong>)</li>
+      <li>OIDC: PKCE/S256 eigener Client + <code>jose</code> (JWKS, <strong>lokal</strong>)</li>
+    </ul>
+    <h4>Infrastruktur</h4>
+    <ul class="doc-list">
+      <li>Docker Multi-Stage (dev + prod)</li>
+      <li>Nginx 1.25+ (Reverse Proxy, TLS)</li>
+      <li>Proxmox 8.x (LXC-Host)</li>
+      <li>Ubuntu 24.04 LTS (Runtime)</li>
+    </ul>
+
+    <h3>Betriebliche Anforderungen</h3>
+    <ul class="doc-list">
+      <li><strong>Single Tenant</strong> (keine Multi-Tenancy, User gehören zu einer Organization)</li>
+      <li><strong>Offline-fähig</strong> (kein Cloud-API für LLM, alles lokal)</li>
+      <li><strong>DSGVO-konform</strong> (PII nicht geloggt, Betroffenenrechte, TOM)</li>
+      <li><strong>Stateless Backend</strong> (Scale horizontal, kein Session-Store)</li>
+      <li><strong>Audit-Pflicht</strong> (jede Änderung wird geloggt, append-only)</li>
+    </ul>
+
+    <h3>Einschränkungen</h3>
+    <ul class="doc-list">
+      <li><strong>KI standardmäßig lokal</strong> — Ollama on-prem; Cloud-Provider sind <strong>opt-in</strong> und kennzeichnungspflichtig (Daten verlassen das Netz → AVV nötig, ADR-018)</li>
+      <li><strong>Keine Secrets in Code</strong> — <code>.env</code> pflichtgemäß; Cloud-Keys at-rest verschlüsselt; <code>enr_</code>/<code>ncr_</code>-Credentials nur als SHA-256-Hash gespeichert (Klartext genau einmal)</li>
+      <li><strong>Control-Plane ohne Steuerkanal</strong> — Provisioning/Enrollment/Heartbeat liefern <strong>nie</strong> ausführbare Befehle zurück; kein Apply-/Remote-Exec-/Netz-/Wazuh-Write-Kanal (per Test erzwungen)</li>
+      <li><strong>NIS2 = Arbeits-/Nachweis-Unterstützung</strong> — <strong>kein</strong> Konformitätsnachweis, keine Zertifizierung, kein Rechtsgutachten (per Test erzwungen)</li>
+      <li><strong>Nicht für SOAR-Replacement</strong> — wir sind Triaging/Analysis, nicht breites Automation-Framework</li>
+      <li><strong>Nur echte Incidents</strong> — Demo-Daten entfernt (ADR-009); Correlation erfindet keine Werte (No-Fake)</li>
+    </ul>
+  </section>
+
+  <!-- 3 -->
+  <section class="doc-section" id="c3">
+    <h2><span class="num">03</span> Kontextabgrenzung</h2>
+
+    <h3>Externe Systeme</h3>
+    <div class="arc-box">
+┌──────────────────────────────────────────────────────────────┐<br>
+│&nbsp;&nbsp;<span class="hl">Nexora SOC</span> (Backend 3000 + Frontend 5173, hinter nginx 443)&nbsp;│<br>
+├──────────────────────────────────────────────────────────────┤<br>
+│&nbsp;&nbsp;<span class="hl2">EINGEHEND</span> (Detection/Alerts):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Wazuh Manager (10.99.99.77:55000) ← Alerts/Events&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Wazuh Indexer (OpenSearch :9200) ← Searches/Aggregat.&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ QRadar / Splunk (optional inbound webhook)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;└─ CrowdSec-LAPI (Webserver-WAN, Poller, Machine-JWT)&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;<span class="hl2">KI / WISSEN</span>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Ollama (192.168.240.78:11434) ← LLM-Inference&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Cloud-LLM (Anthropic/OpenAI/Google, opt-in)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;└─ Qdrant (6333) ← Vector-Embeddings (RAG)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;<span class="hl2">PERSISTENZ</span>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;└─ PostgreSQL (5432) ← Tickets/Audit/TI-Cache/Provisioning&nbsp;│<br>
+│&nbsp;&nbsp;<span class="hl3">AUSGEHEND</span> (Export/Notify):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ ServiceNow / OTRS (Ticket-Export + Status-Sync)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;└─ Slack / Webhook / Teams / SMTP-Mail (Notifications)&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;<span class="hl3">AUTH</span> (optional, opt-in):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;└─ OIDC-IdP (Authorization Code + PKCE) — SSO (lokal)&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;<span class="hl3">CONTROL-PLANE</span> (node-facing, read-only):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;└─ Installierte Nodes ── enroll (Token) → Heartbeat (ncr_)&nbsp;│<br>
+└──────────────────────────────────────────────────────────────┘
+    </div>
+
+    <h3>Datenfluss</h3>
+    <ul class="doc-list">
+      <li><strong>Wazuh Alert</strong> → Webhook → <code>/integrations/wazuh</code> → Queue → Processor → Ticket + Evidence</li>
+      <li><strong>CrowdSec-WAN</strong> → Poller (<code>pollOnce</code>) → <code>integrationService.ingest('crowdsec', …)</code> → Adapter → Dedup/Normalize/Queue → Ticket <em>(Pipeline lokal end-to-end; Live-ENV offen)</em></li>
+      <li><strong>Correlation</strong> (CE-1…CE-5) → Quellen-Normalizer + Host-Case + Flow-Modell + Inventory- + FQDN-Anreicherung → <code>CorrelationResult</code> (Provenance + missingReason)</li>
+      <li><strong>Threat Hunt</strong> → Runner (lokal) → Findings → Persist</li>
+      <li><strong>KI-Agent</strong> → EvidenceBundle (normalisierte Entities + Inventory + RAG) → Ollama/Cloud → strukturiertes <code>analysis</code>-Objekt → Verdict-Floors (Benign/Evidence) → Approval-Queue (Details: ADR-014, <code>local-llm-architecture.md</code>)</li>
+      <li><strong>False-Positive-Regel</strong> → Wazuh-Adapter → Rule-JSON → Wazuh-API (PUT /rules, hinter Gate)</li>
+      <li><strong>Outbound</strong> → Ticket-Export (ServiceNow/OTRS) · Notifications (Slack/Webhook/Teams/Mail) · Reports/Audit (PDF/CSV) — alle default-aus, ENV-gated</li>
+      <li><strong>Control-Plane</strong> → Node enroll (Enrollment-Token im Body) → Node-Credential-Handoff (<code>ncr_</code>) → Heartbeat (read-only Inventar); Server-Antwort enthält <strong>nie</strong> Befehle</li>
+    </ul>
+
+    <h3>Benutzer-Interaktion</h3>
+    <div class="arc-box">
+<span class="hl">SOC Analyst</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+Login (Cookie-Session soc_token; optional MFA-Challenge / SSO / Passkey)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+<span class="hl2">Dashboard / Analysis-Seite</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Tickets (Filter/Sort, Export, Reports)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Threat Hunts (Library + Console)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Detection Library (YARA/Rules, Custom-Rules)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ KI-Agent (Proposals → Approve/Reject)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Evidence Center (IoCs, Hashes, IPs)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Hosts (Wazuh-Agent-Inventory, Health)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Compliance → NIS2 (Readiness + Management-Report)&nbsp;&nbsp;&nbsp;[viewer+ / admin]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Provisioning (Node-/Agent-Registry)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[admin]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Audit-Log (Export CSV/PDF)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├─ Profile (MFA/Passkey/PAT-Selbstverwaltung — alle Rollen)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└─ Settings (Theme, KI-Provider, Sicherheit, Notifications)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+Close Ticket · Export (PDF/CSV) · Incident-/Kunden-Report
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="doc-section" id="c4">
+    <h2><span class="num">04</span> Lösungsstrategie</h2>
+
+    <h3>Kernansätze</h3>
+    <table class="doc-table">
+      <thead><tr><th>Ansatz</th><th>Beschreibung</th></tr></thead>
+      <tbody>
+        <tr><td>Adapter-Pattern</td><td>Externe Systeme sind abstrakt hinter <code>BaseAdapter</code>. Feldmappings sind lokal; das interne Modell bleibt stabil.</td></tr>
+        <tr><td>Repository-Pattern</td><td>Datenzugriff ist abstrahiert (InMemoryRepository für Tests, PostgresRepository für Prod).</td></tr>
+        <tr><td>Event-Driven</td><td>Webhooks → Queue → Worker → Domain Events → Services → Persistierung.</td></tr>
+        <tr><td>Human-in-the-Loop</td><td>Keine automatische Änderung an Wazuh ohne Approval. KI-Vorschläge müssen bestätigt werden. Autonomie ist ein konfigurierbares, default-ausgeschaltetes, evidenz-gebundenes Gate (ADR-016, inert).</td></tr>
+        <tr><td>Local-First (mit Cloud-Opt-in)</td><td>Ollama läuft lokal; Cloud-LLM nur opt-in (ADR-018). RAG mit Qdrant.</td></tr>
+        <tr><td>No-Fake / Provenance-First</td><td>Correlation und FQDN-Anreicherung erfinden keine Werte — fehlt etwas, steht <code>null</code> + <code>missingReason</code> + <code>provenance</code> (Quelle ×N). Forward-confirm beim DNS (A-Record muss == Flow-IP).</td></tr>
+        <tr><td>Read-only Control-Plane</td><td>Die Node-/Agent-Registry verwaltet Zustände, sendet aber <strong>nie</strong> ausführbare Befehle an Nodes — kein Apply-/Remote-/Netz-Kanal (per Test erzwungen).</td></tr>
+        <tr><td>Ehrliche Compliance-Position</td><td>NIS2-Readiness unterstützt die Nachweisführung, behauptet aber keinen Konformitäts-/Zertifizierungsstatus (per Test erzwungen).</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Technische Entscheidungen</h3>
+    <table class="doc-table">
+      <thead><tr><th>Entscheidung</th><th>Begründung</th></tr></thead>
+      <tbody>
+        <tr><td>Express statt Next.js</td><td>Backend-only; Frontend separat (React) → klare Trennung</td></tr>
+        <tr><td>PostgreSQL statt MongoDB</td><td>ACID, komplexe Queries (Audit), Normalisierung, Full-Text-Search</td></tr>
+        <tr><td>Ollama (Cloud opt-in)</td><td>Offline/DSGVO-Default; Cloud nur bei bewusster Aktivierung (ADR-018)</td></tr>
+        <tr><td>pg-boss statt Bull</td><td>PostgreSQL-nativ, nicht Redis-abhängig, Durability</td></tr>
+        <tr><td>Cookie-only + CSRF statt Bearer-im-localStorage</td><td>XSS kann den Token nicht mehr stehlen (ADR-017); Bearer/PAT bleiben für API-Clients</td></tr>
+        <tr><td>TOTP/WebAuthn ohne schwere Libs</td><td>TOTP per Node <code>crypto</code> (RFC 6238), Passkey via <code>@simplewebauthn</code> — supply-chain-arm</td></tr>
+        <tr><td>Enrollment-Token ≠ Betriebs-Credential</td><td>Single-use <code>enr_</code> → <code>ncr_</code>-Handoff; nur Hash gespeichert, kein Steuerkanal</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5 -->
+  <section class="doc-section" id="c5">
+    <h2><span class="num">05</span> Bausteinsicht</h2>
+
+    <h3>Schicht 1 — Externe Schnittstellen</h3>
+    <div class="arc-box">
+┌────────────────────────────────────────────────────────┐<br>
+│&nbsp;&nbsp;<span class="hl2">Frontend</span> (React, Port 5173)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Auth (LoginPage: Passwort + MFA/SSO/Passkey)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Dashboard (KPIs, Recent Activity, Top-Detections)&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Analysis (Tickets, Filters, Detail, Reports)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Threat Hunts (Library + Console)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Detection (YARA, Rules, Custom-Rules)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ KI-Agent (Proposal Queue, Guardrails-Sidebar)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Hosts (Agent Inventory, Health)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Compliance/NIS2 (Readiness + Management-Report)&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Provisioning (Node-Registry, admin)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Audit-Log (Export CSV/PDF)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;├─ Profile (MFA/Passkey/PAT-Selbstverwaltung)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;└─ Settings (KI-Provider, Sicherheit, Notifications)&nbsp;&nbsp;│<br>
+└────────────────────────────────────────────────────────┘<br>
+<br>
+┌────────────────────────────────────────────────────────┐<br>
+│&nbsp;&nbsp;<span class="hl">Backend API</span> (Express, Port 3000)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;Routes: /v1/{auth, mfa, auth/oidc, auth/webauthn,&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tokens, profile, tickets, hunts, yara,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;detections, agent, evidence, hosts, siem,&nbsp;&nbsp;&nbsp;│<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nis2, provisioning, notifications, settings,&nbsp;│<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;audit, …}; pro Route requireAuth+requireRole&nbsp;│<br>
+└────────────────────────────────────────────────────────┘
+    </div>
+
+    <h3>Schicht 2 — Anwendungs-Services</h3>
+    <table class="doc-table">
+      <thead><tr><th>Gruppe</th><th>Services</th></tr></thead>
+      <tbody>
+        <tr><td>Kern</td><td>AuthService (Cookie-Session, Password, CSRF) · TicketService (CRUD, Dedup) · HuntService (Sessions, Runs) · AgentService (LLM-Propose, Verdict-Floors) · AuditService (Append-Only, redaktiert) · WazuhFpExceptionSvc (Rule-Builder, Apply-Gate) · ThreatIntel (+ Postgres-Cache, überlebt Neustart) · YaraService (Pattern-Match) · EvidenceService (Chain-of-Custody, SHA-256) · AutonomyEvaluator (Gate, inert/Default-Deny)</td></tr>
+        <tr><td>Auth-Welle 3</td><td>MfaService (TOTP) · oidcService · webAuthnService · ApiTokenService (PAT)</td></tr>
+        <tr><td>Outbound</td><td>NotificationService + notificationOutbound (Slack/Webhook/Teams/E-Mail) · ExternalTicketService (ServiceNow/OTRS Export+Sync)</td></tr>
+        <tr><td>Control-Plane</td><td>EnrollmentTokenService · NodeCredentialService · NodeEnrollmentService (enroll/heartbeat/retire)</td></tr>
+        <tr><td>Compliance</td><td>Nis2ReadinessService (Katalog ⨝ Assessment ⨝ Evidence)</td></tr>
+        <tr><td>Correlation</td><td>CorrelationEngine (CE-1…CE-5) + fqdnResolver</td></tr>
+      </tbody>
+    </table>
+    <p>Jeder Service kapselt Business-Logic und delegiert Persistierung an Repositories.</p>
+    <div class="info-box"><strong>Wiring-Hinweis:</strong> Im InMemory-Modus teilen Service-Singletons keinen State über mehrere Factory-Aufrufe — die Provisioning-Route injiziert <strong>eine</strong> geteilte Repo-Instanz in alle drei Control-Plane-Services.</div>
+
+    <h3>Schicht 3 — Domain Model</h3>
+    <div class="arc-box">
+<span class="hl">Domain / Entities</span><br>
+├─ <span class="hl2">Ticket</span> (id, number, title, description, source [wazuh|qradar|splunk|manual],<br>
+│&nbsp;&nbsp;&nbsp;state [OPEN|CLOSED], status [assigned|in_progress|on_hold|awaiting_customer],<br>
+│&nbsp;&nbsp;&nbsp;close_reason [resolved|false_positive|benign|duplicate|other], priority, severity,<br>
+│&nbsp;&nbsp;&nbsp;srcIp, dstIp, port, protocol, assignedTo, owner, parent_id [Host-Case], timestamps)<br>
+│&nbsp;&nbsp;&nbsp;└─ Relationen: Evidence[] · Comments[] · ExternalLinks[] · AgentSuggestions[]<br>
+├─ <span class="hl2">Evidence</span> (id, ticketId, source [wazuh_event|hunt_finding|vt|…], title, description,<br>
+│&nbsp;&nbsp;&nbsp;severity, confidence, data [JSONB], created_at)<br>
+├─ <span class="hl2">User</span> (id, email, displayName, role [admin|engineer|analyst|viewer],<br>
+│&nbsp;&nbsp;&nbsp;password_hash [bcrypt], created_at, last_login)<br>
+├─ <span class="hl2">AuditLog</span> (append-only: id, timestamp, actorUserId, actorLabel, action,<br>
+│&nbsp;&nbsp;&nbsp;resourceType, resourceId, metadata, ip [SHA-256], request_id)<br>
+├─ <span class="hl2">HuntSession</span> (id, createdBy, hunt_id, config, status [RUNNING|COMPLETED|FAILED],<br>
+│&nbsp;&nbsp;&nbsp;findings[], timestamps)<br>
+├─ <span class="hl2">AgentSuggestion</span> (id, ticketId, type [fp_rule|escalate|…], status [pending|approved|rejected],<br>
+│&nbsp;&nbsp;&nbsp;proposedBy, approvedBy, approvalDate, payload, analysis [JSONB, snake→camel — ADR-014])<br>
+│<br>
+├─ <span class="hl3">Auth-Welle 3</span> (Security-Welle 3)<br>
+│&nbsp;&nbsp;├─ MfaEnrollment&nbsp;&nbsp;&nbsp;(TOTP-Secret, Recovery-Codes; Migration 038) — <span class="hl2">live</span><br>
+│&nbsp;&nbsp;├─ ApiToken (PAT)&nbsp;&nbsp;(Präfix + Hash, scope; Migration 030) — <span class="hl2">live</span><br>
+│&nbsp;&nbsp;├─ UserOidcLink&nbsp;&nbsp;&nbsp;&nbsp;(sub↔userId; Migration 039) — <span class="hl3">lokal</span><br>
+│&nbsp;&nbsp;└─ WebAuthnCredential (credentialId/publicKey/counter; Migration 040) — <span class="hl3">lokal</span><br>
+│<br>
+├─ <span class="hl3">Control-Plane / Provisioning</span> (6 Entities + Credentials)<br>
+│&nbsp;&nbsp;├─ ProvisioningProfile&nbsp;&nbsp;(draft→validated→approved→retired)<br>
+│&nbsp;&nbsp;├─ EnrollmentProfile&nbsp;&nbsp;&nbsp;&nbsp;(Rolle + read-only Capabilities)<br>
+│&nbsp;&nbsp;├─ InstalledNode&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(pending→enrolled→active→stale→retired)<br>
+│&nbsp;&nbsp;├─ NodeCapability&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(read-only Allow-List)<br>
+│&nbsp;&nbsp;├─ NodeHeartbeat&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(healthy | degraded | offline)<br>
+│&nbsp;&nbsp;├─ ProvisioningAuditEvent (append-only, redaktiert)<br>
+│&nbsp;&nbsp;├─ EnrollmentToken (enr_, <strong>nur SHA-256-Hash</strong>, single-use; Migration 034)<br>
+│&nbsp;&nbsp;└─ NodeCredential&nbsp;(ncr_, <strong>nur SHA-256-Hash</strong>, Heartbeat-Auth; Migration 035, FK 037)<br>
+│<br>
+├─ <span class="hl3">Compliance / NIS2</span> (Migration 036)<br>
+│&nbsp;&nbsp;├─ Nis2ControlCatalog (10 Maßnahmenbereiche, statisch/versioniert, stabile Keys)<br>
+│&nbsp;&nbsp;├─ Nis2Assessment&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(not_started…addressed/not_applicable; n/a braucht Begründung)<br>
+│&nbsp;&nbsp;└─ Nis2EvidenceLink&nbsp;&nbsp;&nbsp;(8 Typen; ref hart validiert; addressed ohne Evidence ⇒ needsReview)<br>
+│<br>
+├─ <span class="hl3">AutonomyPolicy</span> (ADR-016, inert; Migration 027)<br>
+│&nbsp;&nbsp;└─ customer × actionClass × mode (advisory|assisted|autonomous), Default-Deny<br>
+│<br>
+└─ <span class="hl3">CorrelationResult</span> (laufzeit-berechnet, nicht persistiert)<br>
+&nbsp;&nbsp;&nbsp;├─ entities[] (mit provenance, Quelle ×N)<br>
+&nbsp;&nbsp;&nbsp;├─ network.flows[] (Firewall + Sysmon E3; je Feld provenance + missingReason)<br>
+&nbsp;&nbsp;&nbsp;├─ sourceHostInterface vs. firewallInterface (getrennt — CE-4.3)<br>
+&nbsp;&nbsp;&nbsp;└─ sourceFqdn/destinationFqdn (Event-Computer &gt; Inventory &gt; DNS-forward-confirm — CE-5.3)
+    </div>
+
+    <h3>Schicht 4 — Data Access (Repository Pattern)</h3>
+    <div class="arc-box">
+┌─────────────────────────────────────────┐<br>
+│ <span class="hl">Repository Interface</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+├─────────────────────────────────────────┤<br>
+│ TicketRepository&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│ • findAll(filters) → Ticket[]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│ • findById(id) → Ticket&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│ • create / update / delete&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│ • findByOffense(source, offenseId)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+│ • findByParentId(parentId)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+└─────────────────────────────────────────┘<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓ implements ↓<br>
+┌──────────────────────┬──────────────────────┐<br>
+│ <span class="hl2">PostgresRepository</span>&nbsp;&nbsp;&nbsp;&nbsp;│ <span class="hl2">InMemoryRepository</span>&nbsp;&nbsp;&nbsp;│<br>
+│ (Prod)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ (Tests/Dev)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+└──────────────────────┴──────────────────────┘
+    </div>
+    <p>Jede Entity hat ein Repository; Tests nutzen InMemory, Prod nutzt Postgres via Query-Builder oder ORM. Auswahl pro Domäne über die Factory (<code>DB_ENABLED=true</code> → Postgres).</p>
+
+    <h3>Schicht 5 — Integration &amp; Adapter</h3>
+    <table class="doc-table">
+      <thead><tr><th>Gruppe</th><th>Bausteine</th></tr></thead>
+      <tbody>
+        <tr><td>Webhook-Intake</td><td>HMAC-Verifikation · Replay-Schutz (nonce) · Event-Parsing</td></tr>
+        <tr><td>Adapter (Processors)</td><td>WazuhProcessor (Alert → Ticket) · QRadarProcessor (Offense → Ticket) · SplunkProcessor (Notable → Ticket) · ManualEventProcessor</td></tr>
+        <tr><td>External API Clients</td><td>WazuhApiClient (Manager) · WazuhIndexerClient (OpenSearch) · QRadarClient (REST) · ThreatIntelClient (VT, AbuseIPDB) · OllamaClient (LLM) · QdrantClient (Vector-DB, opt.)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Schicht 6 — Persistierung &amp; Queue</h3>
+    <div class="arc-box">
+<span class="hl">PostgreSQL (Primary)</span> — Migrationsstand bis 040, laufen additiv beim API-Boot<br>
+├─ tickets · evidence · evidence_custody · users<br>
+├─ audit_logs (append-only)<br>
+├─ agent_suggestions (+ analysis JSONB)<br>
+├─ hunt_sessions · hunt_findings · hunt_ticket_links<br>
+├─ yara_patterns · published_detections<br>
+├─ external_ticket_links · fp_exceptions<br>
+├─ threat_intel_cache&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(persistenter TI-Cache, überlebt Neustart)<br>
+├─ autonomy_policies&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(027, inert)<br>
+├─ notifications (029) · api_tokens (030)<br>
+├─ password_aging (031) · user_prefs (032) · user_profile_fields (028)<br>
+├─ <span class="hl3">Control-Plane</span> (033–035, 037):<br>
+│&nbsp;&nbsp;├─ provisioning_*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(append-only Audit-Trigger blockt UPDATE/DELETE)<br>
+│&nbsp;&nbsp;├─ enrollment_tokens&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(token_hash UNIQUE, nie Klartext)<br>
+│&nbsp;&nbsp;└─ node_credentials&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(FK → installed_nodes, NOT VALID + CASCADE)<br>
+├─ nis2_* (036)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Assessment unique je Control, Evidence-FK CASCADE)<br>
+└─ <span class="hl3">Auth-Welle 3</span>:<br>
+&nbsp;&nbsp;&nbsp;├─ mfa_enrollments (038)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— live<br>
+&nbsp;&nbsp;&nbsp;├─ user_oidc_link (039)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— lokal<br>
+&nbsp;&nbsp;&nbsp;└─ webauthn_credentials (040) — lokal<br>
+<br>
+<span class="hl">pg-boss (Queue)</span><br>
+└─ Job-Tabelle für Integration Worker
+    </div>
+    <div class="info-box">Auth-Hilfstabellen (<code>jwt_blocklist</code>/<code>login_lockouts</code>/<code>user_sessions</code>) sind bewusst Lazy-Init statt Migration (ADR-019, Tech-Debt). <code>platform_settings</code> wird per <code>CREATE TABLE IF NOT EXISTS</code> beim ersten Zugriff angelegt.</div>
+
+    <h3>Neue Bausteingruppen (Stand 2026-06-20)</h3>
+
+    <h4>Correlation Engine (<code>backend/src/correlation/</code>)</h4>
+    <p>Zentrale Korrelation pro Incident; berechnet <code>CorrelationResult</code> zur Laufzeit (nicht persistiert):</p>
+    <ul class="doc-list">
+      <li><code>evidenceNormalizer</code> — Quellen-Normalizer-Registry (alle Quellen, nicht nur Wazuh; liest auch <code>win.system</code>)</li>
+      <li><code>entityCorrelation</code> — entitätszentrierte Korrelation <strong>mit Provenance</strong> (Host/User/Process/File/Registry/Network/DNS, Quelle ×N)</li>
+      <li><code>flowNormalizer</code> + <code>networkCorrelation</code> — Network/NAT-Flow-Modell (Firewall <strong>und</strong> Sysmon Event 3 via Wazuh-Regel 100951)</li>
+      <li><code>flowInventoryEnrichment</code> + <code>inventoryLookupCache</code> (TTL 5 min) — Host-NIC <strong>vs.</strong> Firewall-Interface getrennt (CE-4.3), MAC/Host aus Syscollector</li>
+      <li><code>flowFqdnEnrichment</code> + <code>fqdnResolver</code> — FQDN-Quellen-Reihenfolge: <strong>Event-Computer &gt; Inventory &gt; DNS-forward-confirm</strong> (CE-5.3, <strong>live</strong>); A-Record muss == Flow-IP, sonst <code>dns_unconfirmed</code> (kein Fake)</li>
+      <li>Invariante: fehlt ein Wert → <code>null</code> + <code>missingReason</code> + <code>provenance</code>. Specs: <code>correlation-data-model.md</code>, <code>ce5-fqdn-source-discovery.md</code>.</li>
+    </ul>
+
+    <h4>Auth-Welle 3 (<code>backend/src/mfa/</code>, <code>backend/src/auth/{oidc,webauthn}/</code>)</h4>
+    <ul class="doc-list">
+      <li><strong>MFA/TOTP</strong> (<code>mfa/totp.js</code>, RFC 6238, ohne externe Lib) + <code>MfaService</code> + Login-Challenge + Recovery-Codes; org-weite Pflicht via Setting <code>mfaRequired</code> (Setup-Token-Flow). ENV <code>MFA_ENABLED</code>. <strong>live</strong>.</li>
+      <li><strong>SSO/OIDC</strong> (<code>oidcClient.js</code> PKCE/S256 + <code>oidcService.js</code>, Signaturprüfung gegen JWKS via <code>jose</code>); <code>allowSignup</code> default aus → nur Account-Linking, Default-Rolle <code>viewer</code>. ENV <code>OIDC_*</code>. <strong>lokal</strong>.</li>
+      <li><strong>WebAuthn/Passkey</strong> (<code>webauthnClient.js</code> Ceremony-Request-Seite + <code>webAuthnService.js</code>, Krypto injiziert via <code>@simplewebauthn/server</code>); Counter-Clone-Check, einheitlicher nicht-diskriminierender Auth-Fehler. ENV <code>WEBAUTHN_*</code>. <strong>lokal</strong>. Ergänzt TOTP, ersetzt es nicht.</li>
+      <li>Reine Request-/Claim-/Ceremony-Logik ist von der kryptografischen Verifikation getrennt (gleicher Split wie OIDC↔jose).</li>
+    </ul>
+
+    <h4>Control-Plane / Provisioning (<code>backend/src/provisioning/</code>, Routes <code>provisioning.js</code>)</h4>
+    <p>Kette: GitOps-Profile/Plan → Domain (6 Entities) → Postgres → Enrollment-Token + Node-Credential-Handoff → Heartbeats → read-only Admin-API → Registry-UI → Linux-Installer (<code>deploy/install/</code>).</p>
+    <ul class="doc-list">
+      <li><strong>Kein Apply-/Remote-/Netz-Kanal</strong> in der gesamten Kette (per Safety-Test erzwungen — Installer-Scan gegen ip/dhcp/dns/nat/route/firewall/wazuh/opnsense/sniff…).</li>
+      <li>Node-facing: <code>/enroll</code> (Enrollment-Token im Body, CSRF-frei, <strong>single-use</strong> consume-vor-mint), <code>/nodes/:id/heartbeat</code> (Bearer Node-Credential, Node-Bindung <code>nodeId==:id</code> → 403); Antwort nur <code>accepted/serverTime/desiredProfileId</code>.</li>
+      <li><strong>P_PROVISION_SECURITY_1</strong> (<strong>live</strong> <code>3370fcc</code>): Credential-Revoke (CAS-idempotent), Node-Retire (revoke-on-retire), Rate-Limits <code>/enroll</code> (pro-IP, nur Fehlversuche) + <code>/heartbeat</code> (pro-nodeId, NAT-sicher), FK-Migration 037.</li>
+    </ul>
+
+    <h4>Compliance / NIS2 (<code>backend/src/compliance/nis2/</code>, Routes <code>nis2.js</code>)</h4>
+    <ul class="doc-list">
+      <li>Statischer 10-Control-Katalog + <code>Nis2Assessment</code> + <code>Nis2EvidenceLink</code> (8 Typen) + <code>Nis2ReadinessService</code> (Signale <code>overdue</code>/<code>missingEvidence</code>/<code>needsReview</code>, lokal auch <code>reviewDue</code>).</li>
+      <li>Routen: <code>/v1/nis2</code> (Lesen viewer+, Schreiben admin), <code>/controls/:key/incident-evidence</code> (admin, Snapshot <strong>nur sichere Felder, kein PII</strong>), <code>/report</code> (Management-Readiness mit Disclaimer).</li>
+      <li><strong>Ehrlich: kein Konformitätsnachweis</strong> (per Test). Evidence-<code>ref</code> hart validiert (nur http/https, keine Secret-Query/Fragment-Keys, kein <code>javascript:/data:</code>). Audit nur sichere Metadaten (nie notes/URL). <strong>live</strong>; <code>reviewDue</code> (P_NIS2_3) <strong>lokal</strong>.</li>
+    </ul>
+
+    <h4>Outbound (<code>backend/src/services/notificationOutbound.js</code>, <code>integrations/adapters/{servicenow,otrs,email}/</code>)</h4>
+    <ul class="doc-list">
+      <li>Notifications: Slack · generischer Webhook · Microsoft Teams · E-Mail/SMTP (nodemailer lazy, <strong>lokal</strong>). Default aus via <code>NOTIFICATIONS_OUTBOUND_ENABLED</code>; <code>GET /v1/notifications/channels</code> meldet nur <code>.configured</code>-Booleans (keine URLs/Secrets).</li>
+      <li>Ticket-Export: <code>POST /v1/tickets/:id/export</code> + <code>/export/sync-status</code> (ServiceNow PATCH / OTRS TicketUpdate), Gate <code>EXTERNAL_TICKET_EXPORT_ENABLED</code>, jeder Fehlversuch auditiert.</li>
+      <li>Reports-MVP: Incident- (technisch) + Kunden-Report (nicht-technisch, <strong>ohne</strong> IP/MITRE/IOC, per Test); PDF via jsPDF (dynamisch).</li>
+    </ul>
+
+    <h4>CrowdSec-WAN (<code>backend/src/integrations/adapters/crowdsec/</code>)</h4>
+    <p>Adapter + LAPI-Client (Machine-JWT → <code>/v1/alerts</code>) + Poller + Processor; zieht externe Angriffsfläche (HTTP-Bruteforce/Scanner/CVE-Probes/Bad Bots) über die Integration-Pipeline in Tickets (erbt Dedup/Normalize/Queue). ENV <code>CROWDSEC_*</code>. Pipeline end-to-end <strong>lokal</strong>; Live-ENV-Anbindung offen.</p>
+  </section>
+
+  <!-- 6 -->
+  <section class="doc-section" id="c6">
+    <h2><span class="num">06</span> Laufzeitsicht</h2>
+
+    <h3>Login-Flow (Cookie-only + CSRF, optional 2. Faktor — ADR-017)</h3>
+    <pre>1. Nutzer tippt email + password
+2. Frontend POST /auth/login (credentials:'include')
+3. Backend: verify password (bcrypt) + Account-Lockout-Check
+4a. MFA inaktiv → Session-JWT als httpOnly-Cookie soc_token + JS-lesbares
+    csrf_token-Cookie (sameSite=strict); JSON-Token nur, wenn
+    AUTH_RETURN_TOKEN_JSON=true explizit aktiviert ist
+4b. MFA aktiv → KEINE Session, sondern MFA-Challenge-Token → Schritt 5
+4c. mfaRequired + keine MFA → kurzlebiger Setup-Token (purpose:mfa_setup, 15 min)
+    → POST /auth/mfa-setup/{begin,complete} → MFA aktiv → volle Session
+5. MFA: POST /auth/mfa (TOTP-Code, ±Drift) → bei OK volle Session
+6. State-changing Requests: X-CSRF-Token-Header == csrf_token-Cookie (csrfGuard)
+7. Middleware requireAuth/requireRole prüft Cookie-Session + Expiry + Blocklist</pre>
+    <ul class="doc-list">
+      <li><strong>Alternativen:</strong> SSO/OIDC (<code>/auth/oidc/*</code>, Callback + Account-Linking, <strong>lokal</strong>) und WebAuthn/Passkey (<code>/auth/webauthn/*</code>, usernamelos, <strong>lokal</strong>) münden in dieselbe Session.</li>
+      <li><strong>API-Clients:</strong> Bearer + Personal Access Tokens (PAT) bleiben gültig und sind CSRF-immun.</li>
+      <li><strong>Produktions-Default:</strong> Browser-Login ist cookie-only; der Session-JWT wird in Produktion nicht automatisch im JSON-Body ausgeliefert.</li>
+      <li><strong>Fehlerfall:</strong> Login-Fehler wird geloggt (action=LOGIN_FAILED) → Brute-Force-Detection; einheitliche, nicht-diskriminierende Fehler bei MFA/Token-Problemen (kein Leak).</li>
+    </ul>
+
+    <h3>Ticket-Erstellung (Wazuh-Webhook)</h3>
+    <pre>Wazuh Manager Alert (Rule Match)
+    ↓
+POST /api/v1/integrations/wazuh  (mit HMAC-Signature + Payload)
+    ↓
+Webhook-Handler prüft: HMAC valid? · Replay-ID nicht doppelt?
+    ↓
+payload → RawEvent in pg-boss.jobs
+    ↓
+Worker (async):
+  1. WazuhProcessor.process(event)
+  2. Dedup-Check: source=wazuh + offenseId → schon Ticket?
+  3. Nein → TicketService.create(normalized)
+  4. Ja → TicketService.update(found.id, { alert_count++ })
+  5. Evidence + MITRE + TI anreichern
+  6. Audit-Log: action=CREATE_TICKET, source=wazuh
+    ↓
+Frontend bemerkt Update (auto-refresh oder Poll)
+    ↓
+SOC Analyst sieht neues Ticket in der Analyse-Seite</pre>
+
+    <h3>KI-Agent-Flow</h3>
+    <pre>Analyst klickt "KI-Vorschlag" auf Ticket
+    ↓
+Frontend: POST /agent/propose  (ticketId, type=fp_rule | escalate | ...)
+    ↓
+Backend AgentService:
+  1. Ticket laden
+  2. Evidence-Bundle bauen (EvidenceBundleBuilder)
+  3. System-Prompt + Bundle → Ollama
+  4. Ollama antwortet (text | rule-json)
+  5. AgentSuggestion speichern: status=pending
+  6. Audit-Log: action=AGENT_SUGGEST
+    ↓
+Frontend zeigt Proposal-Modal: Vorschlag · ✅ Approve | ❌ Reject
+    ↓
+Approve: POST /agent/approve
+  • Wenn type=fp_rule → WazuhFpExceptionService.apply()
+    (PUT /manager/api/wazuh.api_v1.rules:update)
+  • status=approved · Audit-Log: action=AGENT_APPROVE, approvedBy=userId
+    ↓
+Reject: POST /agent/reject · status=rejected · optional: reason geloggt</pre>
+
+    <h3>Threat-Intel-Enrichment (RBAC + Validierung)</h3>
+    <pre>Analyst/Engineer/Admin klickt "Threat Intel anreichern"
+    v
+POST /api/v1/threat-intel/enrich
+    v
+Middleware:
+  requireAuth
+  requireRole('analyst')  -> Viewer erhalten 403
+    v
+ThreatIntelService.validateIndicator:
+  type allowlist: ip | domain | url | hash
+  max. 2048 Zeichen
+  IP/Domain/URL/Hash syntaktisch begrenzt
+    v
+Cache zuerst (Postgres bei DB_ENABLED, sonst InMemory)
+    v
+Provider nur bei Cache-Miss:
+  AbuseIPDB / VirusTotal nur fuer konfigurierte Keys;
+  private IPs werden nicht extern abgefragt
+    v
+Normalisiertes Ergebnis: verdict, score, confidence, provider status</pre>
+    <p>Security-Review 2026-06-29: Der Enrichment-Endpunkt ist nicht mehr nur authentifiziert,
+      sondern Analyst+ beschraenkt. Damit koennen reine Viewer keine externen Provider-Calls,
+      Quota-Verbrauch oder unnoetige IOC-Datenabfluesse ausloesen.</p>
+
+    <h3>Threat Hunt-Flow</h3>
+    <pre>Analyst navigiert zu Threat Hunts
+    ↓
+Hunt-Katalog laden (GET /hunts/catalog) — 10 vorgefertigte Hunts
+    ↓
+Analyst klickt "Run Hunt" auf z.B. "Suspicious PowerShell"
+    ↓
+HuntService.createSession: session_id · hunt_id + config · status=RUNNING
+    ↓
+Frontend: WebSocket oder Polling (GET /hunts/:id/session)
+    ↓
+Backend Runner (async):
+  1. Wazuh-API abfragen (PowerShell Events)
+  2. Oder lokale Datei-Scan (wenn YARA)
+  3. Findings sammeln (title, severity, rawEvent)
+  4. Finding speichern in hunt_findings
+  5. Session: status=COMPLETED
+    ↓
+Frontend zeigt Live-Console (Scanning … / Findings)
+    ↓
+Analyst kann: "Create Ticket from Finding" · "Add as Evidence" · "Export Report"</pre>
+
+    <h3>Analysis-Seite (Dashboard)</h3>
+    <pre>GET /analysis?state=OPEN&amp;sort=updated_at
+    ↓
+TicketService.findAll(filters):
+  SELECT * FROM tickets WHERE state='OPEN'
+    ORDER BY updated_at DESC LIMIT 50
+    ↓
+  Für jedes Ticket: Enrichment laden
+    (Evidence, Parent-Case, Agent-Count, Comment-Count)
+    ↓
+  Response: { data: Ticket[], total, page, requestId }
+    ↓
+Frontend zeigt: Tabelle/Karten-Grid · Filter (state, status, priority,
+  assignedTo, sourceSystem) · Klick → TicketEditorPage
+  (Detail mit Evidence-Tabs, History, Comments, MITRE-Map)</pre>
+
+    <h3>Correlation-Flow (CE-1…CE-5)</h3>
+    <pre>Timeline-Route lädt Ticket-Events (Wazuh-Indexer ticketFlows)
+    ↓
+evidenceNormalizer: Roh-Events → normalisierte Entities (alle Quellen)
+    ↓
+networkCorrelation: Firewall- + Sysmon-E3-Flows → einheitliches Flow-Modell
+    ↓ (async, NACH Inventory)
+flowInventoryEnrichment (inventoryLookupCache, TTL 5 min):
+  • Host-NIC ≠ Firewall-Interface (getrennt), MAC/Host aus Syscollector
+  • fehlt etwas → null + missingReason (not_in_inventory / inventory_not_loaded)
+    ↓
+flowFqdnEnrichment (ENV FQDN_RESOLVER_ENABLED):
+  • Kandidat = Host-Kurzname + FQDN_DOMAIN
+  • forward-confirm: A-Record(s) müssen Flow-IP enthalten → FQDN, sonst dns_unconfirmed
+  • Reihenfolge der Wahrheit: Event-Computer &gt; Inventory &gt; DNS (setIfEmpty)
+    ↓
+CorrelationResult (entities + network.flows, je Feld provenance + missingReason)
+    ↓
+Network-/Entities-/Timeline-Tab im Analyse-Deck (No-Fake: „—" + Missing-Reason)</pre>
+
+    <h3>Node-Enrollment + Heartbeat (Control-Plane, read-only)</h3>
+    <pre>Admin legt EnrollmentProfile an + mintet Token
+  → /provisioning/.../token → Klartext enr_ EINMALIG (nur Hash gespeichert)
+    ↓
+Node (Linux-Installer bootstrap.sh):
+  POST /v1/provisioning/enroll  (Token im Body, CSRF-frei)
+    → consume Token (single-use, consume-VOR-mint) + mint Node-Credential ncr_
+    → Antwort { nodeId, nodeCredential }  (Klartext EINMALIG)
+    ↓
+Node-Agent (Heartbeat-Loop):
+  POST /v1/provisioning/nodes/:id/heartbeat  (Bearer ncr_)
+    → Node-Bindung nodeId==:id (sonst 403); retired Node → 403
+    → record Heartbeat + read-only Inventar
+    → Antwort NUR { accepted, serverTime, desiredProfileId }  — NIE Befehle
+    ↓
+Lifecycle (admin): Credential-Revoke (→ Heartbeat 401) · Node-Retire (revoke-on-retire)
+Rate-Limits: /enroll pro-IP (nur Fehlversuche), /heartbeat pro-nodeId (NAT-sicher)</pre>
+
+    <h3>NIS2 Incident-Evidence (admin, kein PII)</h3>
+    <pre>Admin: POST /v1/nis2/controls/:key/incident-evidence  (ticketRef)
+  → ticketService validiert Ticket existiert (sonst 404)
+  → Evidence-Link Typ 'ticket', Snapshot NUR sichere Felder
+    (INC-Nummer, sanitisierter Titel, Priorität, State) — NIE email/user/srcIp/notes
+  → Audit NIS2_EVIDENCE_LINKED { controlKey, evidenceType, ticketRef }  (kein PII)
+    ↓
+GET /v1/nis2/report (viewer+): Status-Verteilung + Evidence-/Incident-Coverage
+  + Disclaimer „kein Konformitätsnachweis …"</pre>
+  </section>
+
+  <!-- 7 -->
+  <section class="doc-section" id="c7">
+    <h2><span class="num">07</span> Verteilungssicht</h2>
+
+    <h3>Docker-Compose (Production)</h3>
+    <div class="arc-box">
+<span class="hl">Services</span>:<br>
+├─ <span class="hl2">api</span> (backend) — Port 3000 (intern, hinter nginx)<br>
+│&nbsp;&nbsp;&nbsp;Umgebung: DATABASE_URL, WAZUH_*, OLLAMA_*, FQDN_RESOLVER_*,<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MFA_ENABLED, API_TOKENS_ENABLED, OIDC_*, WEBAUTHN_*,<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NOTIFICATIONS_OUTBOUND_ENABLED + NOTIFY_*, EXTERNAL_TICKET_EXPORT_ENABLED,<br>
+│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CROWDSEC_*, PROV_* (Rate-Limits), SETTINGS_ENC_KEY, JWT_SECRET, etc.<br>
+│&nbsp;&nbsp;&nbsp;Health-Check: GET /health (meldet laufende Version)<br>
+├─ <span class="hl2">web</span> (frontend) — Port 5173 (nur in Dev; in Prod via nginx); Build-Output in nginx:/app<br>
+├─ <span class="hl2">nginx</span> (reverse proxy) — Port 443 (TLS), 80 (redirect)<br>
+│&nbsp;&nbsp;&nbsp;Routes: / → frontend (SPA) · /api → api:3000 · /metrics → api:3000 (IP-gate)<br>
+├─ <span class="hl2">postgres</span> — Port 5432 (intern); Database soc_db; PG-Data persistent<br>
+└─ (optional) <span class="hl3">redis</span> — Caching / Sessions (future)
+    </div>
+
+    <h3>Proxmox-Topologie</h3>
+    <div class="arc-box">
+<span class="hl">Proxmox Host</span> (192.168.240.72)<br>
+├─ <span class="hl2">LXC 177</span> (nexora-soc, Ubuntu 24.04)<br>
+│&nbsp;&nbsp;├─ IP: 10.99.99.75 (VLAN 10) · CPU 8 · RAM 16 GB · Disk 100 GB (NAS / StorageM2)<br>
+│&nbsp;&nbsp;├─ Docker Engine (multi-container)<br>
+│&nbsp;&nbsp;└─ Networks: br-manage (10.99.99.75) · docker0 (API-Web-DB)<br>
+├─ <span class="hl2">LXC 178</span> (ollama-lm, Ubuntu 24.04)<br>
+│&nbsp;&nbsp;├─ IP: 192.168.240.78 · CPU 6 · RAM 8 GB (für llama3.2:3b)<br>
+│&nbsp;&nbsp;└─ Ollama Service · Modell llama3.2:3b (~2 GB)<br>
+└─ <span class="hl3">External</span>:<br>
+&nbsp;&nbsp;&nbsp;├─ Wazuh Manager (10.99.99.77) — API 55000 · Indexer 9200 (OpenSearch)<br>
+&nbsp;&nbsp;&nbsp;└─ OPNsense (10.99.99.1) — Default Gateway
+    </div>
+
+    <h3>Network-Segmentierung</h3>
+    <div class="arc-box">
+<span class="hl">VLAN 10</span> (Management, 10.99.99.0/24):<br>
+&nbsp;&nbsp;• Proxmox (10.99.98.100) · Nexora-SOC (10.99.99.75) · Wazuh Manager (10.99.99.77)<br>
+&nbsp;&nbsp;• DC01 (10.99.99.10) · WEC01 (10.99.99.11)<br>
+&nbsp;&nbsp;→ Intern, kein Internet-Zugang<br>
+<br>
+<span class="hl">VLAN 1</span> (User-LAN, 192.168.241.0/24):<br>
+&nbsp;&nbsp;• User-PC (DHCP) · OPNsense braucht Routing zu VLAN10<br>
+<br>
+<span class="hl3">External</span> (WAN, 192.168.240.0/24):<br>
+&nbsp;&nbsp;• FritzBox (192.168.240.1) · Ollama-Host (192.168.240.78, separates Subnet für Isolation)
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="doc-section" id="c8">
+    <h2><span class="num">08</span> Querschnittskonzepte</h2>
+
+    <h3>Authentifizierung &amp; Autorisierung</h3>
+    <p><strong>JWT-basiert:</strong> Token <code>{ sub: userId, email, role, exp, jti }</code>; Secret <code>JWT_SECRET</code> aus <code>.env.production</code>; TTL 24 Stunden; Blacklist (jti-Tracking) bei Logout.</p>
+    <p><strong>Rollen (RBAC):</strong></p>
+    <pre>admin   > engineer > analyst > viewer
+├─ All   ├─ Hunts   ├─ Own   ├─ Read-Only
+├─ FP    ├─ Console ├─ Hunts
+├─ Users ├─ Rules   └─ Hunts
+└─ Audit</pre>
+    <p><strong>Middleware:</strong> <code>requireAuth</code> (Token present + valid) · <code>requireRole(role)</code> (Token + role check).</p>
+
+    <h3>Logging &amp; Audit</h3>
+    <p><strong>Request-Logging (morgan-style):</strong></p>
+    <pre>[RequestID] [timestamp] [IP] [method] [path] [status] [duration]ms</pre>
+    <p><strong>Audit-Log (append-only):</strong></p>
+    <pre>INSERT INTO audit_logs (
+  actor_user_id, actor_label, action, resource_type, resource_id,
+  metadata, ip, request_id, created_at
+) VALUES (...)</pre>
+    <p><strong>Actions:</strong> <code>LOGIN</code>, <code>LOGIN_FAILED</code>, <code>LOGOUT</code> · <code>CREATE_TICKET</code>, <code>UPDATE_TICKET</code>, <code>DELETE_TICKET</code> · <code>CREATE_HUNT</code>, <code>RUN_HUNT</code>, <code>COMPLETE_HUNT</code> · <code>AGENT_SUGGEST</code>, <code>AGENT_APPROVE</code>, <code>AGENT_REJECT</code> · <code>CREATE_FP_RULE</code>, <code>APPLY_FP_RULE</code> · <code>EXPORT_*</code>, <code>SYNC_EXTERNAL</code>.</p>
+
+    <h3>Fehlerbehandlung</h3>
+    <p><strong>Global Error Handler (Express):</strong></p>
+    <pre>app.use((err, req, res, next) => {
+  const { status, code, message } = classifyError(err);
+  res.status(status).json({ error: code, message, requestId: req.id });
+});</pre>
+    <p><strong>Fehler-Kategorien:</strong></p>
+    <table class="doc-table">
+      <thead><tr><th>Fehler</th><th>HTTP</th><th>Bedeutung</th></tr></thead>
+      <tbody>
+        <tr><td>ValidationError</td><td>400</td><td>Input ungültig</td></tr>
+        <tr><td>AuthenticationError</td><td>401</td><td>Token ungültig</td></tr>
+        <tr><td>ForbiddenError</td><td>403</td><td>Keine Berechtigung</td></tr>
+        <tr><td>NotFoundError</td><td>404</td><td>Ressource nicht gefunden</td></tr>
+        <tr><td>ConflictError</td><td>409</td><td>Dedup-Konflikt</td></tr>
+        <tr><td>RateLimitError</td><td>429</td><td>Zu viele Requests</td></tr>
+        <tr><td>ServiceUnavailableError</td><td>503</td><td>SIEM offline, etc.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Validierung</h3>
+    <p><strong>Schema-basiert (Joi):</strong></p>
+    <pre>const schema = Joi.object({
+  email: Joi.string().email().required(),
+  priority: Joi.string().valid('critical', 'high', 'medium', 'low'),
+  tags: Joi.array().items(Joi.string()).max(10),
+});</pre>
+    <p><strong>Input-Limits:</strong> Title max 200 chars · Description max 5000 chars · Comment max 2000 chars · Payload (raw) max 50 KB · Array-Items max 100.</p>
+
+    <h3>Caching &amp; Performance</h3>
+    <ul class="doc-list">
+      <li><strong>Query-Optimierung:</strong> Indexe auf <code>tickets(state, status, created_at)</code>, <code>evidence(ticket_id)</code>, <code>audit_logs(actor_id)</code>; Pagination LIMIT 50, Cursor-basiert (offset).</li>
+      <li><strong>Frontend-Caching (TanStack Query):</strong> <code>staleTime: 5min</code> für Tickets, <code>gcTime: 10min</code> (Cache-Retention), <code>refetchOnWindowFocus: true</code> (bei Tab-Return).</li>
+      <li><strong>Server-Caching (optional):</strong> Redis für TicketRepository-Findall (invalidiert bei Update); Session-TTL 24h.</li>
+    </ul>
+  </section>
+
+  <!-- 9 -->
+  <section class="doc-section" id="c9">
+    <h2><span class="num">09</span> Architekturentscheidungen (ADRs)</h2>
+    <table class="doc-table">
+      <thead><tr><th>ADR</th><th>Titel</th><th>Entscheidung</th></tr></thead>
+      <tbody>
+        <tr><td>ADR-001</td><td>Schrittweise Migration</td><td>Security → Tests → Backend → DB</td></tr>
+        <tr><td>ADR-002</td><td>Eigenes internes Ticketmodell</td><td>Adapter-Layer zwischen extern + intern</td></tr>
+        <tr><td>ADR-003</td><td>PostgreSQL</td><td>ACID, komplexe Queries, Prod-Ready</td></tr>
+        <tr><td>ADR-004</td><td>Queue/Worker</td><td>Keine sync Jobs im API-Request</td></tr>
+        <tr><td>ADR-005</td><td>Traceability</td><td>external_ticket_links + Audit-Trail</td></tr>
+        <tr><td>ADR-006</td><td>Idempotente Webhooks</td><td>Dedup-Key: source + offenseId + hash</td></tr>
+        <tr><td>ADR-007</td><td>State + Status</td><td>OPEN/CLOSED + assigned/in_progress/etc.</td></tr>
+        <tr><td>ADR-008</td><td>Analysis-Deck</td><td><code>/analysis</code> ist die Kernworkbench</td></tr>
+        <tr><td>ADR-009</td><td>Keine Demo-Daten</td><td>Ehrliche Leerzustände, keine Fake-Tickets</td></tr>
+        <tr><td>ADR-010</td><td>SIEM-Dashboard</td><td><code>/wazuh</code> auf echten Indexer-Daten (OpenSearch)</td></tr>
+      </tbody>
+    </table>
+    <div class="info-box">Weitere referenzierte ADRs im Text: ADR-014 (KI-Analysis-Modell), ADR-016 (Autonomy-Gate, inert), ADR-017 (Cookie-only + CSRF), ADR-018 (Cloud-LLM at-rest-Keys), ADR-019 (Auth-Hilfstabellen Lazy-Init, Tech-Debt). Vollständige Doku: <code>docs/adr/decisions.md</code></div>
+  </section>
+
+  <!-- 10 -->
+  <section class="doc-section" id="c10">
+    <h2><span class="num">10</span> Qualitätsanforderungen</h2>
+
+    <h3>Funktional</h3>
+    <table class="doc-table">
+      <thead><tr><th>Anforderung</th><th>Metrik</th><th>Ziel</th></tr></thead>
+      <tbody>
+        <tr><td>Ticket-Dedup</td><td>Duplikate pro Monat</td><td>&lt; 1%</td></tr>
+        <tr><td>Hunt-Success-Rate</td><td>Findings pro Run</td><td>&gt;= 1</td></tr>
+        <tr><td>KI-Vorschlag-Accuracy</td><td>Approved Proposals</td><td>&gt;= 70%</td></tr>
+        <tr><td>SIEM-Integration</td><td>Alerts/min</td><td>&gt;= 1000</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Non-Funktional</h3>
+    <table class="doc-table">
+      <thead><tr><th>Anforderung</th><th>Metrik</th><th>Ziel</th></tr></thead>
+      <tbody>
+        <tr><td>Availability</td><td>Uptime</td><td>99.5%</td></tr>
+        <tr><td>Response-Time</td><td>API p95</td><td>&lt; 500ms</td></tr>
+        <tr><td>Search-Latency</td><td>Ticket-Liste</td><td>&lt; 1s (50 Items)</td></tr>
+        <tr><td>Test-Coverage</td><td>Code Coverage</td><td>&gt;= 80%</td></tr>
+        <tr><td>Security Scan</td><td>OWASP Top 10</td><td>0 kritisch</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Skalierbarkeit</h3>
+    <ul class="doc-list">
+      <li><strong>Horizontal:</strong> Stateless Backend, kann repliziert werden (nginx LB)</li>
+      <li><strong>Vertikal:</strong> Postgres kann auf bessere Hardware hochgefahren werden</li>
+      <li><strong>Daten-Wachstum:</strong> Partition audit_logs quartalsweise (alte Logs archivieren)</li>
+    </ul>
+  </section>
+
+  <!-- 11 -->
+  <section class="doc-section" id="c11">
+    <h2><span class="num">11</span> Risiken &amp; technische Schulden</h2>
+
+    <h3>Offene Risiken</h3>
+    <table class="doc-table">
+      <thead><tr><th>Risiko</th><th>Eintritt</th><th>Impact</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh-Manager-Ausfall</td><td>Mittel</td><td>Hoch (keine neuen Alerts)</td><td>Failover-Manager + Backup-Config</td></tr>
+        <tr><td>Ollama OOM</td><td>Mittel</td><td>Mittel (KI offline)</td><td>RAM-Monitoring, Fallback zu Stub-Provider</td></tr>
+        <tr><td>Webhook-Replay</td><td>Niedrig</td><td>Mittel (Duplizierte Events)</td><td>Nonce-Tracking implementiert</td></tr>
+        <tr><td>JWT-Kompromise</td><td>Niedrig</td><td>Sehr Hoch (Account-Hijack)</td><td>Kurze TTL, JTI-Blacklist, HTTPS erzwingen</td></tr>
+        <tr><td>DSGVO-Verletzung</td><td>Niedrig</td><td>Sehr Hoch (Bußgeld)</td><td>Audit-Trail, PII-Hashing, Anonymisierung</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Technische Schulden</h3>
+    <table class="doc-table">
+      <thead><tr><th>Item</th><th>Prio</th><th>Aufwand</th><th>Lösung</th></tr></thead>
+      <tbody>
+        <tr><td>Evidence-Collector (P16)</td><td>Hoch</td><td>2 Wochen</td><td>Endpoint-Artefakte sammeln</td></tr>
+        <tr><td>RAG Knowledge Base (P19b)</td><td>Mittel</td><td>3 Wochen</td><td>Qdrant + MITRE + Hunts einfüttern</td></tr>
+        <tr><td>Multi-SIEM (QRadar/Splunk)</td><td>Mittel</td><td>2 Wochen pro Adapter</td><td>Existierende Adapter erweitern</td></tr>
+        <tr><td>Settings-Seite ausbauen</td><td>Mittel</td><td>laufend</td><td>Geplante Tabs/Funktionen real machen</td></tr>
+        <tr><td>Performance-Tuning</td><td>Niedrig</td><td>Laufend</td><td>Index-Optimierung, Caching</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Bekannte Limitierungen</h3>
+    <ul class="doc-list">
+      <li><strong>Keine Offline-Hunts</strong> — Hunts brauchen Wazuh-API; lokal funktioniert nur YARA</li>
+      <li><strong>Keine Batch-Import</strong> — Webhooks sind Event-basiert; Bulk-Upload noch nicht implementiert</li>
+      <li><strong>Eingeschränktes SOAR</strong> — Wir automatisieren nicht, wir schlagen vor (Human-in-the-loop)</li>
+      <li><strong>Single-Tenant</strong> — Keine Multi-Org-Isolierung</li>
+    </ul>
+
+    <h3>Anhang: Wichtige Dateien</h3>
+    <ul class="doc-list">
+      <li><code>backend/src/app.js</code> — Express-Setup</li>
+      <li><code>backend/src/domain/entities/</code> — Datenmodelle</li>
+      <li><code>backend/src/services/</code> — Business-Logic</li>
+      <li><code>backend/src/integrations/adapters/</code> — SIEM-Adapter</li>
+      <li><code>frontend/src/pages/</code> — React-Seiten</li>
+      <li><code>frontend/src/features/</code> — UI-Features (api, auth, etc.)</li>
+      <li><code>docs/adr/decisions.md</code> — ADR-Details</li>
+      <li><code>ROADMAP.md</code> — Feature-Roadmap</li>
+    </ul>
+  </section>
+
+  <!-- 12 -->
+  <section class="doc-section" id="c12">
+    <h2><span class="num">12</span> Glossar</h2>
+    <table class="doc-table">
+      <thead><tr><th>Begriff</th><th>Definition</th></tr></thead>
+      <tbody>
+        <tr><td>SOC</td><td>Security Operations Center — Team das Sicherheitsvorfälle überwacht und bearbeitet</td></tr>
+        <tr><td>Incident</td><td>Sicherheitsvorfall — ein konkretes Ereignis das untersucht werden muss</td></tr>
+        <tr><td>IOC</td><td>Indicator of Compromise — technisches Merkmal das auf einen Angriff hinweist (IP, Hash, Domain …)</td></tr>
+        <tr><td>SIEM</td><td>Security Information and Event Management — Plattform zur Log-Aggregation und Alerting (z.B. Wazuh, QRadar, Splunk)</td></tr>
+        <tr><td>Wazuh</td><td>Open-Source-SIEM/XDR; liefert Alerts (Manager) und Such-/Aggregationsdaten (Indexer/OpenSearch)</td></tr>
+        <tr><td>Offense</td><td>QRadar-Begriff für einen korreliert erkannten Sicherheitsvorfall</td></tr>
+        <tr><td>CrowdSec</td><td>Verhaltensbasierte WAN-Detection; LAPI liefert Alerts über die Integration-Pipeline</td></tr>
+        <tr><td>Correlation Engine (CE)</td><td>Laufzeit-Korrelation pro Incident (CE-1…CE-5): Normalizer, Host-Case, Flow-Modell, Inventory- + FQDN-Anreicherung — mit Provenance, ohne Fake</td></tr>
+        <tr><td>Provenance</td><td>Herkunftsnachweis pro Feld (Quelle ×N); fehlt ein Wert → <code>null</code> + <code>missingReason</code></td></tr>
+        <tr><td>Control-Plane</td><td>Node-/Agent-Registry (Provisioning, Enrollment, Heartbeats) — read-only, ohne Steuerkanal</td></tr>
+        <tr><td>Enrollment-Token (enr_)</td><td>Single-use-Token zum Node-Enroll; nur als SHA-256-Hash gespeichert</td></tr>
+        <tr><td>Node-Credential (ncr_)</td><td>Betriebs-Credential für Heartbeats nach dem Enroll-Handoff; nur als Hash gespeichert</td></tr>
+        <tr><td>NIS2</td><td>EU-Richtlinie zur Cybersicherheit; hier Readiness-/Nachweis-Unterstützung (kein Konformitätsnachweis)</td></tr>
+        <tr><td>MFA / TOTP</td><td>Multi-Faktor-Authentifizierung; TOTP nach RFC 6238 (zeitbasierter Einmalcode)</td></tr>
+        <tr><td>OIDC</td><td>OpenID Connect — SSO via Authorization Code + PKCE</td></tr>
+        <tr><td>WebAuthn / Passkey</td><td>FIDO2-basierte, passwortlose Authentifizierung (Hardware-/Plattform-Authenticator)</td></tr>
+        <tr><td>PAT</td><td>Personal Access Token — Bearer-Credential für API-Clients (CSRF-immun)</td></tr>
+        <tr><td>CSRF Double-Submit</td><td>Schutz gegen Cross-Site-Request-Forgery: <code>X-CSRF-Token</code>-Header muss <code>csrf_token</code>-Cookie entsprechen</td></tr>
+        <tr><td>Adapter</td><td>Komponente die ein externes System anbindet und Daten ins interne Modell überführt</td></tr>
+        <tr><td>Idempotenz</td><td>Mehrfache Ausführung mit gleichen Daten hat gleichen Effekt wie einmalige (Dedup-Key)</td></tr>
+        <tr><td>RBAC</td><td>Role-Based Access Control — admin &gt; engineer &gt; analyst &gt; viewer</td></tr>
+        <tr><td>RAG</td><td>Retrieval-Augmented Generation — KI-Kontext aus Qdrant (MITRE + Hunt-Katalog + past_incidents)</td></tr>
+        <tr><td>CSP</td><td>Content Security Policy — HTTP-Header zur Einschränkung erlaubter Ressourcen (XSS-Schutz)</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+<script>
+  const links = document.querySelectorAll('.sb-link[href^="#"]');
+  const sections = document.querySelectorAll('.doc-section');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const a = document.querySelector(`.sb-link[href="#${e.target.id}"]`);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

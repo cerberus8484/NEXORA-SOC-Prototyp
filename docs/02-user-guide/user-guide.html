@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC — Benutzerhandbuch</title>
+<style>
+  :root {
+    --bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;
+    --accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;
+    --text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;
+    --font-mono:'JetBrains Mono','Courier New',monospace;
+    --font-ui:'Segoe UI',system-ui,sans-serif;--sw:270px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}
+  #sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .sb-badge{display:inline-block;margin:10px 18px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--accent);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:14px 18px 5px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:6px 18px;font-size:12px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .num{font-size:10px;color:var(--text-dim);font-family:var(--font-mono);min-width:24px;}
+  #content{margin-left:var(--sw);flex:1;max-width:900px;padding:44px 52px 80px;}
+  .cover{margin-bottom:44px;padding-bottom:28px;border-bottom:1px solid var(--border);}
+  .cover h1{font-size:32px;font-weight:800;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
+  .cover .sub{font-size:17px;color:var(--text);margin-top:8px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:5px;}
+  .doc-section{margin-bottom:52px;scroll-margin-top:28px;}
+  h2{font-size:20px;font-weight:700;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+  h2 .num{font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.25);color:var(--accent);font-family:var(--font-mono);}
+  h3{font-size:14px;font-weight:700;color:var(--text-head);margin:24px 0 10px;}
+  p{margin-bottom:12px;color:var(--text);}
+  .info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-left:3px solid var(--accent);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .info-box strong{color:var(--accent);}
+  .warn-box{background:rgba(255,107,53,.07);border:1px solid rgba(255,107,53,.25);border-left:3px solid var(--warn);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .warn-box strong{color:var(--warn);}
+  .ok-box{background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);border-left:3px solid var(--accent2);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .ok-box strong{color:var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:14px 0 22px;font-size:13px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table tr:hover td{background:rgba(255,255,255,.02);}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:12px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:5px;padding:14px 18px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:10px 0 18px;}
+  code{font-family:var(--font-mono);font-size:12px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  ul.doc-list{list-style:none;margin:10px 0 16px;padding:0;}
+  ul.doc-list li{padding:4px 0 4px 18px;position:relative;color:var(--text);font-size:13px;}
+  ul.doc-list li::before{content:'›';position:absolute;left:4px;color:var(--accent);font-weight:700;}
+  ol.doc-steps{margin:10px 0 16px;padding-left:22px;}
+  ol.doc-steps li{padding:4px 0;color:var(--text);font-size:13px;}
+  .kbd{display:inline-block;font-family:var(--font-mono);font-size:11px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--text-head);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:28px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  .step-grid{display:grid;grid-template-columns:28px 1fr;gap:8px 14px;margin:14px 0;}
+  .step-num{background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--accent);font-family:var(--font-mono);font-size:11px;font-weight:700;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+  .step-text{padding-top:4px;font-size:13px;}
+  .pill{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;text-transform:uppercase;vertical-align:middle;margin-left:6px;}
+  .pill.live{background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.35);color:var(--accent2);}
+  .pill.opt{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.3);color:var(--warn);}
+  .pill.admin{background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--accent);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>Nexora SOC</h1><p>Benutzerhandbuch</p></div>
+  <span class="sb-badge">User Guide</span>
+  <div class="sb-section">Kapitel</div>
+  <a class="sb-link" href="#s01"><span class="num">01</span> Erste Schritte</a>
+  <a class="sb-link" href="#s02"><span class="num">02</span> Anmeldung</a>
+  <a class="sb-link" href="#s03"><span class="num">03</span> Zwei-Faktor (MFA/TOTP)</a>
+  <a class="sb-link" href="#s04"><span class="num">04</span> Dashboard</a>
+  <a class="sb-link" href="#s05"><span class="num">05</span> Tickets verwalten</a>
+  <a class="sb-link" href="#s06"><span class="num">06</span> Reports</a>
+  <a class="sb-link" href="#s07"><span class="num">07</span> Threat Hunting</a>
+  <a class="sb-link" href="#s08"><span class="num">08</span> KI-Agent (Copilot)</a>
+  <a class="sb-link" href="#s09"><span class="num">09</span> Detection Library</a>
+  <a class="sb-link" href="#s10"><span class="num">10</span> Evidence &amp; Threat Intel</a>
+  <a class="sb-link" href="#s11"><span class="num">11</span> Hosts &amp; Inventory</a>
+  <a class="sb-link" href="#s12"><span class="num">12</span> Compliance — NIS2</a>
+  <a class="sb-link" href="#s13"><span class="num">13</span> Provisioning (Admin)</a>
+  <a class="sb-link" href="#s14"><span class="num">14</span> Audit-Log &amp; Export</a>
+  <a class="sb-link" href="#s15"><span class="num">15</span> Benachrichtigungen</a>
+  <a class="sb-link" href="#s16"><span class="num">16</span> Einstellungen</a>
+  <a class="sb-link" href="#s17"><span class="num">17</span> Profil &amp; Self-Service</a>
+  <a class="sb-link" href="#s18"><span class="num">18</span> FAQ</a>
+  <div class="sb-section" style="margin-top:14px;">Weitere Docs</div>
+  <a class="sb-link" href="developer-guide.html"><span class="num">→</span> Developer Guide</a>
+  <a class="sb-link" href="arc42.html"><span class="num">→</span> Arc42 Architektur</a>
+  <a class="sb-link" href="changelog.html"><span class="num">→</span> Changelog</a>
+  <div class="sb-section" style="margin-top:14px;">Hunt-Dokumentation</div>
+  <a class="sb-link" href="../hunts/index.html"><span class="num">→</span> 🎯 Alle Hunts</a>
+</nav>
+
+<main id="content">
+  <a class="back-link" href="../index.html">← Zurück zur App</a>
+  <div class="cover">
+    <h1>Nexora SOC</h1>
+    <div class="sub">Benutzerhandbuch — User Guide</div>
+    <div class="meta">Version 1.1 &nbsp;|&nbsp; Gültig ab: 2026-06-20 &nbsp;|&nbsp; Sprache: Deutsch</div>
+  </div>
+
+  <div class="info-box"><strong>Verfügbarkeit:</strong> Funktionen mit der Markierung
+    <span class="pill opt">nach Aktivierung</span> liegen im Code vor, sind aber standardmäßig
+    deaktiviert und werden erst durch den Betreiber (Admin/Operator) freigeschaltet. Alle anderen
+    Funktionen sind <span class="pill live">live</span>.</div>
+
+  <!-- 01 -->
+  <section class="doc-section" id="s01">
+    <h2><span class="num">01</span> Erste Schritte</h2>
+    <p>Nexora SOC ist eine self-hosted SOC-Orchestrierungsplattform für Analysten der
+      Tier-Stufen 1–3: Incident-Tickets, Threat Hunting, Evidence/Chain-of-Custody,
+      Threat-Intel-Anreicherung und KI-Triage mit menschlicher Freigabe.</p>
+
+    <h3>Zugriff</h3>
+    <p>Nexora ist erreichbar unter:</p>
+    <pre>https://nexora.example</pre>
+    <p>oder in der lokalen Entwicklung:</p>
+    <pre>http://localhost:5173</pre>
+
+    <h3>Rollen &amp; Berechtigungen</h3>
+    <table class="doc-table">
+      <thead><tr><th>Rolle</th><th>Berechtigung</th></tr></thead>
+      <tbody>
+        <tr><td>Admin</td><td>Vollzugriff, Benutzerverwaltung, System-Settings, Provisioning</td></tr>
+        <tr><td>Engineer</td><td>Hunts, KI-Vorschläge, False-Positive-Regeln, Detections</td></tr>
+        <tr><td>Analyst</td><td>Tickets, Hunts starten, KI-Vorschläge, Evidence</td></tr>
+        <tr><td>Viewer</td><td>Lesen von Tickets, Hunts, Detections, NIS2-Readiness</td></tr>
+      </tbody>
+    </table>
+    <div class="info-box"><strong>Self-Service für alle:</strong> Unabhängig von der Rolle kann
+      jeder Nutzer seine eigene Zwei-Faktor-Authentifizierung und persönliche API-Token im
+      <a href="#s17" style="color:var(--accent);">Profil</a> verwalten.</div>
+  </section>
+
+  <!-- 02 -->
+  <section class="doc-section" id="s02">
+    <h2><span class="num">02</span> Anmeldung</h2>
+
+    <h3>Login</h3>
+    <div class="step-grid">
+      <div class="step-num">1</div><div class="step-text">Öffne <code>https://nexora.example</code></div>
+      <div class="step-num">2</div><div class="step-text">E-Mail-Adresse eingeben</div>
+      <div class="step-num">3</div><div class="step-text">Passwort eingeben</div>
+      <div class="step-num">4</div><div class="step-text"><strong>Login</strong> klicken</div>
+    </div>
+    <p>Ist die Zwei-Faktor-Authentifizierung für dein Konto aktiv, folgt anschließend die
+      Code-Abfrage — siehe <a href="#s03" style="color:var(--accent);">Kapitel 03</a>.</p>
+
+    <h3>Passwort ändern</h3>
+    <p>Gehe zu <strong>Profil</strong> (Profilfoto oben rechts), gib das aktuelle und das neue
+      Passwort (mind. 8 Zeichen) ein und bestätige.</p>
+
+    <h3>Abmeldung</h3>
+    <p>Klick auf dein Profilfoto oben rechts → <strong>Abmelden</strong>.</p>
+
+    <h3>Anmeldung mit Passkey (WebAuthn / FIDO2) <span class="pill opt">nach Aktivierung</span></h3>
+    <p>Hat der Betreiber WebAuthn eingeschaltet und du hast in deinem Profil einen Passkey
+      hinterlegt (z. B. Windows Hello, Touch ID, Sicherheitsschlüssel), erscheint auf der
+      Login-Seite zusätzlich ein <strong>Passkey</strong>-Button. Ein Klick darauf meldet dich
+      ohne Passwort an — bestätigt über deinen Authenticator.</p>
+    <div class="info-box"><strong>Hinweis:</strong> Passkeys ergänzen die TOTP-Zwei-Faktor-
+      Authentifizierung, sie ersetzen sie nicht. Der Passwort-Login bleibt parallel verfügbar.
+      Einrichtung/Löschung im <a href="#s17" style="color:var(--accent);">Profil</a>.</div>
+
+    <h3>Single Sign-On (SSO / OIDC) <span class="pill opt">nach Aktivierung</span></h3>
+    <p>Hat der Betreiber eine OpenID-Connect-Anbindung (z. B. an Entra ID / Keycloak)
+      eingerichtet, erscheint auf der Login-Seite ein <strong>SSO</strong>-Button. Der
+      Passwort-Login bleibt parallel verfügbar. Ob neue Accounts automatisch angelegt oder nur
+      bestehende Konten verknüpft werden, legt der Betreiber fest.</p>
+  </section>
+
+  <!-- 03 -->
+  <section class="doc-section" id="s03">
+    <h2><span class="num">03</span> Zwei-Faktor-Authentifizierung (MFA/TOTP) <span class="pill live">live</span></h2>
+    <p>Nexora unterstützt eine zeitbasierte Zwei-Faktor-Authentifizierung (TOTP), kompatibel mit
+      Google Authenticator, Authy, Microsoft Authenticator u. a. Der zweite Faktor ist ein
+      6-stelliger Code, der sich alle 30 Sekunden ändert.</p>
+    <div class="info-box">MFA ist <strong>live</strong>, sofern der Betreiber es freigeschaltet
+      hat. Ist es freigeschaltet, entscheidest <strong>du als einzelner Nutzer</strong>, ob du
+      es einrichtest — es sei denn, der Betreiber hat eine <strong>organisationsweite Pflicht</strong>
+      aktiviert (siehe unten).</div>
+
+    <h3>MFA selbst einrichten</h3>
+    <div class="step-grid">
+      <div class="step-num">1</div><div class="step-text">Gehe zu <strong>Profil</strong> (Profilfoto oben rechts → Profil)</div>
+      <div class="step-num">2</div><div class="step-text">Öffne die Karte <strong>Zwei-Faktor-Authentifizierung</strong></div>
+      <div class="step-num">3</div><div class="step-text">Klick <strong>MFA einrichten</strong></div>
+      <div class="step-num">4</div><div class="step-text">Scanne den <strong>QR-Code</strong> mit deiner Authenticator-App, oder gib das angezeigte Secret (<code>otpauth://</code>) manuell ein</div>
+      <div class="step-num">5</div><div class="step-text">Gib den 6-stelligen Code aus deiner App zur Bestätigung ein</div>
+      <div class="step-num">6</div><div class="step-text">Klick <strong>Aktivieren</strong></div>
+    </div>
+
+    <h3>Recovery-Codes sichern (einmalig!)</h3>
+    <p>Nach der Aktivierung zeigt Nexora dir eine Liste <strong>einmaliger Recovery-Codes</strong>.</p>
+    <div class="warn-box"><strong>Wichtig:</strong> Diese Codes werden <strong>nur ein einziges
+      Mal</strong> angezeigt. Speichere sie sicher (Passwort-Manager, ausgedruckt im Tresor).
+      Jeder Code funktioniert genau einmal und erlaubt die Anmeldung, falls du keinen Zugriff auf
+      deine Authenticator-App hast (z. B. Handy verloren). Ohne Authenticator und ohne
+      Recovery-Code muss ein Admin dich entsperren.</div>
+
+    <h3>Login mit zweitem Faktor</h3>
+    <div class="step-grid">
+      <div class="step-num">1</div><div class="step-text">E-Mail und Passwort eingeben → <strong>Login</strong></div>
+      <div class="step-num">2</div><div class="step-text">Bei der Abfrage <strong>MFA-Code</strong> den aktuellen 6-stelligen Code aus der App eingeben</div>
+      <div class="step-num">3</div><div class="step-text"><strong>Bestätigen</strong> klicken</div>
+    </div>
+    <p>Alternativ kannst du an dieser Stelle einen deiner <strong>Recovery-Codes</strong> eingeben
+      (verbraucht den Code).</p>
+
+    <h3>Organisationsweite MFA-Pflicht</h3>
+    <p>Der Betreiber kann MFA <strong>für alle Konten verpflichtend</strong> machen
+      (<em>Einstellungen → Sicherheit → MFA-Pflicht</em>). Ist die Pflicht aktiv und du hast noch
+      keine MFA, wirst du <strong>direkt beim nächsten Login</strong> durch den
+      Einrichtungs-Schritt geführt: QR-Code → Code bestätigen → Recovery-Codes sichern. Erst
+      danach erhältst du Zugang. Bestehende Sitzungen werden nicht ausgesperrt; der Schritt greift
+      beim nächsten Anmelden.</p>
+  </section>
+
+  <!-- 04 -->
+  <section class="doc-section" id="s04">
+    <h2><span class="num">04</span> Dashboard</h2>
+    <p>Das Dashboard gibt einen schnellen Überblick über offene Incidents.</p>
+
+    <h3>Komponenten</h3>
+    <ul class="doc-list">
+      <li><strong>KPIs:</strong> Offene Tickets (heute), Gelöste Tickets (Woche), Ø Bearbeitungszeit, Top-Alerts</li>
+      <li><strong>Recent Activity:</strong> zuletzt geänderte Tickets, neue Findings, neue KI-Vorschläge</li>
+      <li><strong>Alerts-Heatmap:</strong> Alert-Trends der letzten 7 Tage</li>
+      <li><strong>Top Erkennungsquellen:</strong> häufigste auslösende Regeln (für Engineer/Admin)</li>
+    </ul>
+
+    <h3>Navigation (Sidebar)</h3>
+    <ul class="doc-list">
+      <li><strong>Dashboard</strong> — Start-Seite</li>
+      <li><strong>Analysis</strong> — Ticket-Workbench (Kern)</li>
+      <li><strong>Threat Hunts</strong> — Hunt-Katalog und laufende Sessions</li>
+      <li><strong>Detection Library</strong> — YARA-Regeln und Wazuh-Detections</li>
+      <li><strong>KI-Agent</strong> — Vorschlag-Queue (für Approval)</li>
+      <li><strong>Hosts</strong> — Agent-Inventory und Heartbeat</li>
+      <li><strong>Compliance → NIS2</strong> — Readiness-Status, Evidence, Management-Report</li>
+      <li><strong>Provisioning</strong> — Node-/Agent-Registry (nur Admin)</li>
+      <li><strong>Audit-Log</strong> — Nachvollziehbarkeit aller Aktionen, Export</li>
+      <li><strong>Einstellungen</strong> — Profil, System, API-Keys, Benachrichtigungen</li>
+    </ul>
+  </section>
+
+  <!-- 05 -->
+  <section class="doc-section" id="s05">
+    <h2><span class="num">05</span> Tickets verwalten</h2>
+    <p>Die <strong>Analysis</strong>-Seite ist die Hauptwerkbank zur Triage von Incidents.</p>
+
+    <h3>Ticket-Liste</h3>
+    <p><strong>Filter:</strong> State (OPEN/CLOSED) · Status (assigned, in_progress, on_hold,
+      awaiting_customer) · Priority (critical/high/medium/low) · Assigned · Source (wazuh, qradar,
+      splunk, crowdsec, manual). <strong>Suche</strong> in Titel, Beschreibung und IOCs.</p>
+
+    <h3>Ticket-Detail</h3>
+    <p><strong>Info-Panel (links):</strong> Ticket-Nummer (z. B. <code>INC000001</code>), Titel +
+      Beschreibung, State/Status/Priority, Source, Host, User, Source-/Destination-IP.</p>
+    <p><strong>Tabs (rechts):</strong></p>
+    <table class="doc-table">
+      <thead><tr><th>Tab</th><th>Inhalt</th></tr></thead>
+      <tbody>
+        <tr><td>Evidence</td><td>Roh-Event + normalisierte Felder + MITRE-ATT&amp;CK-Taktiken</td></tr>
+        <tr><td>Threat Intel</td><td>IOC-Anreicherung (VirusTotal, AbuseIPDB)</td></tr>
+        <tr><td>History</td><td>Audit-Trail: wer, wann, was geändert</td></tr>
+        <tr><td>Comments</td><td>Analyse-Notizen</td></tr>
+        <tr><td>Related</td><td>verwandte Tickets (gleicher Host / gleiche IP)</td></tr>
+        <tr><td>Report</td><td>Incident- &amp; Kunden-Report als PDF (siehe Kapitel 06)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Ticket bearbeiten</h3>
+    <p>Über <strong>Bearbeiten</strong>: Status ändern (assigned → in_progress → on_hold),
+      Notizen hinzufügen, dem selbst oder einem anderen Analyst zuweisen.</p>
+
+    <h3>Ticket schließen</h3>
+    <p>Klick <strong>Schließen</strong>, wähle einen Schließ-Grund (Gelöst, False Positive,
+      Duplikat, Benign, Sonstiges) und gib optional eine Notiz ein. Geschlossene Tickets können
+      über <strong>Reopen</strong> wieder geöffnet werden.</p>
+
+    <h3>Ticket löschen <span class="pill admin">Admin</span></h3>
+    <p>Nur Admins können Tickets löschen — über den Papierkorb-Button in der Ticket-Liste. Vorher
+      erscheint ein Bestätigungsdialog.</p>
+
+    <h3>Ticket exportieren</h3>
+    <p>Ticket öffnen → <strong>⋮ → Als PDF exportieren</strong> (Titel, Beschreibung, Evidence,
+      History).</p>
+  </section>
+
+  <!-- 06 -->
+  <section class="doc-section" id="s06">
+    <h2><span class="num">06</span> Reports (Incident- &amp; Kunden-Report)</h2>
+    <p>Aus denselben Ticket-Daten erzeugt Nexora zwei Report-Perspektiven, beide als
+      <strong>PDF-Download</strong>. Die Buttons liegen im <strong>Report-Tab</strong> des Tickets.</p>
+
+    <h3>Incident-Report (technisch)</h3>
+    <ul class="doc-list">
+      <li>Übersicht (Ticket-Nummer, Schweregrad, Status, Zeitstempel)</li>
+      <li>Analyst-Zusammenfassung</li>
+      <li>Entitäten (Hosts, Benutzer, Prozesse, Netzwerk)</li>
+      <li>Timeline</li>
+      <li>MITRE-ATT&amp;CK-Zuordnung</li>
+      <li>Entscheidung / Empfehlung</li>
+    </ul>
+
+    <h3>Kunden-Report (nicht-technisch)</h3>
+    <p>Für die Weitergabe an Kunden oder das Management — in verständlicher Sprache (Schweregrad
+      und Status in Klartext).</p>
+    <div class="info-box"><strong>Bewusst ohne technische Details:</strong> Der Kunden-Report
+      enthält <strong>keine IP-Adressen, keine MITRE-Technik-IDs, keine IOCs und keine
+      Roh-Logdaten</strong>. So kannst du ihn ohne weitere Schwärzung an externe Empfänger
+      weitergeben.</div>
+
+    <h3>Report erzeugen</h3>
+    <div class="step-grid">
+      <div class="step-num">1</div><div class="step-text">Ticket öffnen</div>
+      <div class="step-num">2</div><div class="step-text">In den Tab <strong>Report</strong> wechseln</div>
+      <div class="step-num">3</div><div class="step-text"><strong>Incident-Report (PDF)</strong> oder <strong>Kunden-Report (PDF)</strong> klicken</div>
+      <div class="step-num">4</div><div class="step-text">Die PDF wird im Browser generiert und heruntergeladen</div>
+    </div>
+  </section>
+
+  <!-- 07 -->
+  <section class="doc-section" id="s07">
+    <h2><span class="num">07</span> Threat Hunting</h2>
+    <p>Threat Hunts sind gezielte Suchen nach verdächtigen Aktivitäten auf Systemen.</p>
+
+    <h3>Hunt-Katalog</h3>
+    <table class="doc-table">
+      <thead><tr><th>Hunt</th><th>Sucht nach</th></tr></thead>
+      <tbody>
+        <tr><td>Suspicious PowerShell</td><td>Encoded/obfuscated Commands</td></tr>
+        <tr><td>Lateral Movement</td><td>RDP, SSH, WMI Lateral Moves</td></tr>
+        <tr><td>Persistence Mechanisms</td><td>Registry Persistence, Scheduled Tasks</td></tr>
+        <tr><td>Data Exfiltration</td><td>große Datenübertragungen</td></tr>
+        <tr><td>Credential Access</td><td>LSASS-Dumping, Mimikatz</td></tr>
+        <tr><td>DNS Tunneling</td><td>DNS-basierter Command &amp; Control</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Hunt starten</h3>
+    <div class="step-grid">
+      <div class="step-num">1</div><div class="step-text">Auf eine Hunt-Karte klicken</div>
+      <div class="step-num">2</div><div class="step-text">Optional konfigurieren: Host-Filter, Zeitbereich (Standard: letzte 24 h)</div>
+      <div class="step-num">3</div><div class="step-text"><strong>Hunt starten</strong> klicken</div>
+    </div>
+    <p>Die <strong>Hunt-Console</strong> zeigt Findings in Echtzeit. Nach Abschluss kannst du je
+      Finding ein <strong>neues Ticket erstellen</strong>, es <strong>als Evidence</strong> zu
+      einem bestehenden Ticket hinzufügen oder eine <strong>Notiz</strong> ergänzen.</p>
+  </section>
+
+  <!-- 08 -->
+  <section class="doc-section" id="s08">
+    <h2><span class="num">08</span> KI-Agent (Copilot)</h2>
+    <p>Der KI-Agent ist dein Analyst-Copilot: Er schlägt Maßnahmen vor — du entscheidest.</p>
+
+    <h3>Vorschlag anfordern</h3>
+    <p>Ticket öffnen → <strong>🤖 KI-Vorschlag</strong> → Typ wählen
+      (False-Positive-Regel, Eskalation, Korrelation, Remediation) → <strong>Generieren</strong>.
+      Das dauert lokal (Ollama) typisch 10–30 Sekunden.</p>
+
+    <h3>Vorschlag bewerten</h3>
+    <p>Der Agent zeigt seinen Vorschlag mit einem Confidence-Wert.</p>
+    <ul class="doc-list">
+      <li><strong>Akzeptieren</strong> — z. B. eine FP-Regel wird übernommen (mit Audit-Eintrag)</li>
+      <li><strong>Ablehnen</strong> — Vorschlag verworfen, optional mit Begründung</li>
+    </ul>
+    <div class="info-box"><strong>Human-in-the-Loop:</strong> Der Agent schließt nie selbst ein
+      Ticket und führt keine Aktion ohne deine Freigabe aus.</div>
+
+    <h3>KI-Vorschlag-Queue</h3>
+    <p>Unter <strong>KI-Agent</strong> verwaltest du alle Vorschläge (Tabs: Ausstehend,
+      Genehmigt, Abgelehnt).</p>
+    <div class="info-box"><strong>Cloud-Provider</strong> (Anthropic/OpenAI/Google) sind opt-in
+      und vom Admin in den Einstellungen wählbar. Bei Cloud-Nutzung verlassen Daten das lokale
+      Netz — bewusste Entscheidung des Betreibers.</div>
+  </section>
+
+  <!-- 09 -->
+  <section class="doc-section" id="s09">
+    <h2><span class="num">09</span> Detection Library</h2>
+    <p>Die Detection Library zeigt alle Erkennungsregeln.</p>
+
+    <h3>YARA-Regeln</h3>
+    <p>Über <strong>+ Neue YARA-Regel</strong> legst du Pattern-Matching-Regeln an (Name,
+      Beschreibung, Tags, Patterns, Condition, Severity, Author). Mit <strong>YARA Scan</strong>
+      testest du einen Text/Befehl gegen die Regeln — passende Regeln werden markiert.</p>
+
+    <h3>Wazuh-Detections</h3>
+    <p>Read-only-Sicht auf die Wazuh-Erkennungsregeln, suchbar nach Beschreibung, Gruppe und
+      Level. Über <strong>Neue Regel</strong> können Admins/Engineers eigene Detections anlegen.</p>
+  </section>
+
+  <!-- 10 -->
+  <section class="doc-section" id="s10">
+    <h2><span class="num">10</span> Evidence &amp; Threat Intelligence</h2>
+    <p>Jedes Ticket wird automatisch angereichert.</p>
+
+    <h3>IOC-Extraktion</h3>
+    <p>IPs, Domains, Hashes (MD5/SHA-1/SHA-256) und E-Mail-Adressen werden automatisch erkannt.</p>
+
+    <h3>Automatische TI-Lookups</h3>
+    <ul class="doc-list">
+      <li><strong>VirusTotal</strong> — Hash-/IP-/Domain-Reputation (AV-Engine-Verdicts)</li>
+      <li><strong>AbuseIPDB</strong> — IP-Reputation (Abuse-Score 0–100, Kategorien)</li>
+    </ul>
+    <p>Im Tab <strong>Threat Intel</strong> siehst du eine Tabelle aller IOCs mit Quelle, Score
+      und Verdict (benign / suspicious / malicious). Ein Klick öffnet den vollständigen Report.</p>
+    <p><strong>Berechtigung:</strong> Threat-Intel-Anreicherung ist fuer Analyst, Engineer und Admin gedacht.
+      Viewer koennen vorhandene Ticket- und IOC-Informationen lesen, aber keine neuen externen
+      Provider-Abfragen ausloesen. So werden API-Quota und moegliche IOC-Datenabfluesse begrenzt.</p>
+  </section>
+
+  <!-- 11 -->
+  <section class="doc-section" id="s11">
+    <h2><span class="num">11</span> Hosts &amp; Inventory</h2>
+    <p>Die <strong>Hosts</strong>-Seite zeigt die Wazuh-Agenten.</p>
+
+    <h3>Agent-Status</h3>
+    <p>Tabelle aller registrierten Agenten mit IP, OS, Status (active / disconnected /
+      never_connected) und letztem Heartbeat. Filterbar nach Status und OS-Familie.</p>
+
+    <h3>Agent-Detail</h3>
+    <ul class="doc-list">
+      <li><strong>System-Info:</strong> Hostname, IP, OS + Version + Architektur, CPU/RAM/Disk</li>
+      <li><strong>Installierte Pakete:</strong> Antivirus, Patch-Level, Browser-Versionen</li>
+      <li><strong>Network-Interfaces:</strong> aktive NICs, MAC-Adressen, Gateway</li>
+      <li><strong>SCA-Compliance:</strong> Sicherheits-Scores, Failed Checks</li>
+    </ul>
+  </section>
+
+  <!-- 12 -->
+  <section class="doc-section" id="s12">
+    <h2><span class="num">12</span> Compliance — NIS2-Readiness</h2>
+    <p>Die Seite <strong>Compliance → NIS2</strong> (<code>/compliance/nis2</code>) unterstützt
+      dich, den Stand der NIS2-Risikomanagement-Maßnahmen zu dokumentieren und Nachweise zu
+      sammeln.</p>
+
+    <div class="warn-box"><strong>Ehrliche Einordnung — bitte beachten:</strong> Diese Seite ist
+      eine <strong>Arbeits- und Nachweis-Unterstützung</strong>. Sie ist <strong>kein
+      Konformitätsnachweis, keine Zertifizierung und kein Rechtsgutachten</strong>. Nexora
+      behauptet an keiner Stelle, „NIS2-konform" oder „zertifiziert" zu sein. Die Bewertung, ob
+      eine Maßnahme ausreichend ist, triffst du bzw. deine Organisation.</div>
+
+    <h3>Aufbau</h3>
+    <ul class="doc-list">
+      <li><strong>KPIs:</strong> Anzahl Controls, Evidence-Abdeckung, Review-Bedarf, Überfällige</li>
+      <li><strong>Control-Registry:</strong> statischer, versionierter Katalog mit 10 Maßnahmenbereichen (deutsche Titel)</li>
+      <li><strong>Detail-Panel:</strong> Status, Nachweise und (für Admins) Bearbeitung je Control</li>
+    </ul>
+
+    <h3>Status setzen <span class="pill admin">Admin</span></h3>
+    <p>Maßnahme wählen → Status setzen (<em>Nicht begonnen → in Arbeit → adressiert</em>, oder
+      <em>Nicht anwendbar</em> — hierfür ist eine <strong>Begründung Pflicht</strong>) →
+      speichern. Lesen ab Viewer, Bearbeiten nur Admin.</p>
+
+    <h3>Nachweise (Evidence) verknüpfen</h3>
+    <p>Je Maßnahme lassen sich Belege hinterlegen (Link auf Richtlinie, Wiki, Dokument); es gibt
+      8 Evidence-Typen.</p>
+    <div class="info-box"><strong>Sicherheits-Hinweis zu Links:</strong> Erlaubt sind nur
+      <code>http</code>/<code>https</code>-URLs. URLs, die wie Geheimnisse aussehen
+      (Tokens/Passwörter in Query oder Fragment) oder <code>javascript:</code>/<code>data:</code>
+      werden abgelehnt — so gelangen keine versehentlich verlinkten Secrets in die Sammlung.</div>
+
+    <h3>Incident als Nachweis verknüpfen <span class="pill admin">Admin</span></h3>
+    <p>Im Control-Detail über <strong>„Incident verknüpfen"</strong> ein Ticket als Beleg anhängen.
+      Übernommen wird nur ein <strong>sicherer Auszug</strong> (INC-Nummer, bereinigter Titel,
+      Priorität, State) — <strong>keine personenbezogenen Daten</strong> (E-Mail, Benutzer,
+      Abteilung, Quell-IP, Notizen, Logs).</p>
+
+    <h3>Readiness-Signale</h3>
+    <ul class="doc-list">
+      <li><strong>Überfällig</strong> — Frist überschritten</li>
+      <li><strong>Nachweis fehlt</strong> — kein Beleg hinterlegt</li>
+      <li><strong>Review nötig</strong> — z. B. als <em>adressiert</em> markiert, aber ohne Nachweis</li>
+      <li><strong>Review fällig</strong> <span class="pill opt">nach Aktivierung</span> — adressierte Maßnahme mit Nachweis, deren letzter Review älter als die Kadenz ist (Standard 365 Tage)</li>
+    </ul>
+
+    <h3>Management-Report</h3>
+    <p>Im Tab <strong>„Management-Report"</strong>: Status-Verteilung, Evidence-Abdeckung,
+      Incident-Nachweis-Zähler und ein klar gekennzeichneter <strong>Disclaimer</strong> (kein
+      Konformitätsnachweis). Lesen ab Viewer.</p>
+  </section>
+
+  <!-- 13 -->
+  <section class="doc-section" id="s13">
+    <h2><span class="num">13</span> Provisioning-Registry <span class="pill admin">nur Admin</span></h2>
+    <p>Die Seite <strong>Provisioning</strong> (<code>/provisioning</code>) ist eine Registry zur
+      Verwaltung von Nodes/Agenten (z. B. zusätzlichen Sensoren) — nur für Admins.</p>
+
+    <div class="warn-box"><strong>Wichtig — was Provisioning NICHT tut:</strong> Nexora sendet über
+      diese Funktion <strong>keine ausführbaren Befehle</strong> an die Nodes, ändert
+      <strong>keine Netzwerk-/Firewall-Einstellungen</strong> und spielt <strong>keine
+      Konfiguration aus</strong>. Ein Node meldet sich lediglich (Heartbeat) und erhält als
+      Antwort ausschließlich Status-Informationen — niemals Kommandos.</div>
+
+    <h3>Enrollment-Profil anlegen</h3>
+    <p><strong>Profil anlegen</strong> → Name, Rolle und (read-only) Fähigkeiten des Nodes →
+      speichern.</p>
+
+    <h3>Enrollment-Token erzeugen (einmalig sichtbar!)</h3>
+    <p>Profil wählen → <strong>Token erzeugen</strong>. Der Token (<code>enr_…</code>) wird
+      <strong>genau einmal</strong> in einem Modal angezeigt (mit Kopier-Button).</p>
+    <div class="warn-box"><strong>Wichtig:</strong> Der Token erscheint nur dieses eine Mal im
+      Klartext. Sofort kopieren und beim Einrichten des Nodes verwenden. Nexora speichert nur eine
+      Prüfsumme — der Token erscheint danach <strong>nirgends</strong> mehr (nicht in der Tabelle,
+      nicht im Audit-Log). Geht er verloren, erzeuge einen neuen.</div>
+
+    <h3>Node-Status &amp; Heartbeat</h3>
+    <p>Je Node siehst du Status (pending, enrolled, active, stale, retired) und letzten Heartbeat
+      (Frische). Das Detail-Modal zeigt IP, OS, Fähigkeiten, Heartbeat-Historie und die
+      Betriebs-Credentials — nur der Präfix, <strong>nie</strong> das vollständige Credential.</p>
+
+    <h3>Credential widerrufen / Node stilllegen <span class="pill admin">Admin</span></h3>
+    <ul class="doc-list">
+      <li><strong>Credential widerrufen</strong> — ein widerrufenes Betriebs-Credential wird sofort ungültig; der Node kann keine Heartbeats mehr senden.</li>
+      <li><strong>Node stilllegen (Retire)</strong> — setzt den Node terminal auf <em>retired</em> und widerruft dabei alle aktiven Credentials.</li>
+    </ul>
+    <p>Beide Aktionen fragen über einen <strong>Bestätigungsdialog</strong> mit Folgenwarnung nach.
+      Viewer/Nicht-Admins sehen den Status, aber keine Schreibaktion.</p>
+  </section>
+
+  <!-- 14 -->
+  <section class="doc-section" id="s14">
+    <h2><span class="num">14</span> Audit-Log &amp; Export</h2>
+    <p>Das <strong>Audit-Log</strong> (<code>/audit</code>) protokolliert alle
+      sicherheitsrelevanten Aktionen (append-only, nachträglich nicht änderbar): wer hat was wann
+      an welcher Ressource getan.</p>
+
+    <h3>Suchen &amp; filtern</h3>
+    <p>Nach Aktion, Akteur, Ressource oder per Freitext.</p>
+
+    <h3>Export (CSV / PDF)</h3>
+    <p>Oben im Audit-Log das Button-Paar <strong>CSV-Export</strong> / <strong>PDF-Export</strong>.
+      Exportiert wird die aktuell gefilterte/durchsuchte Auswahl (Anzahl gedeckelt).</p>
+    <ul class="doc-list">
+      <li><strong>CSV-Export</strong> — für Excel/Tabellen (UTF-8 mit BOM, gegen Formel-Injektion abgesichert)</li>
+      <li><strong>PDF-Export</strong> — paginiertes A4-Quer-Layout mit Kopfzeile und Erstellungs-Zeitstempel</li>
+    </ul>
+  </section>
+
+  <!-- 15 -->
+  <section class="doc-section" id="s15">
+    <h2><span class="num">15</span> Benachrichtigungskanäle <span class="pill opt">nach Aktivierung</span></h2>
+    <p>Nexora kann Ausgangs-Benachrichtigungen (z. B. zu neuen kritischen Incidents) über mehrere
+      Kanäle versenden. Die Konfiguration der Ziele (URLs, Zugangsdaten) erfolgt durch den
+      Betreiber über Umgebungsvariablen — sie werden nie in der Oberfläche angezeigt.</p>
+    <div class="info-box">Standardmäßig ist der Ausgangs-Versand <strong>deaktiviert</strong> und
+      wird vom Betreiber freigeschaltet.</div>
+    <table class="doc-table">
+      <thead><tr><th>Kanal</th><th>Beschreibung</th></tr></thead>
+      <tbody>
+        <tr><td>Slack</td><td>Nachricht in einen Slack-Channel (Incoming Webhook)</td></tr>
+        <tr><td>Microsoft Teams</td><td>Nachricht in einen Teams-Channel</td></tr>
+        <tr><td>E-Mail (SMTP)</td><td>E-Mail an eine konfigurierte Adresse</td></tr>
+        <tr><td>Webhook (generisch)</td><td>POST an eine beliebige HTTP-Endpunkt-URL</td></tr>
+      </tbody>
+    </table>
+    <p>In den Einstellungen zeigt Nexora je Kanal nur an, <strong>ob</strong> er
+      konfiguriert/aktiv ist („aktiv" / „konfiguriert" / „nicht konfiguriert") — niemals die
+      hinterlegte URL oder Zugangsdaten.</p>
+  </section>
+
+  <!-- 16 -->
+  <section class="doc-section" id="s16">
+    <h2><span class="num">16</span> Einstellungen <span class="pill admin">Admin</span></h2>
+    <p>Die System-Einstellungen (<strong>⚙️ Einstellungen → System</strong>) erfordern
+      Admin-Zugriff. Persönliche Einstellungen liegen im
+      <a href="#s17" style="color:var(--accent);">Profil</a>.</p>
+
+    <h3>Benutzerverwaltung</h3>
+    <p>Benutzer anlegen, Passwort zurücksetzen, Rollen ändern, Benutzer löschen.</p>
+
+    <h3>Integration-Settings</h3>
+    <p>Wazuh-Verbindung prüfen, Webhook-Secret anzeigen, Integrations-Status.</p>
+
+    <h3>LLM-Settings</h3>
+    <p>KI-Provider (Ollama, Stub, Cloud), Modell-Name, Ollama-URL.</p>
+
+    <h3>Sicherheit</h3>
+    <ul class="doc-list">
+      <li><strong>MFA-Pflicht</strong> (org-weit) ein-/ausschalten (siehe Kapitel 03)</li>
+      <li>Account-Lockout (max. Fehlversuche, Sperrdauer)</li>
+      <li>Passwort-Regeln (Ablauf, Wiederverwendungssperre)</li>
+      <li>Inaktivitäts-Timeout, Mehrfach-Sitzungen-Limit</li>
+      <li>TLS erzwingen, IP-Allowlist</li>
+    </ul>
+
+    <h3>Benachrichtigungen</h3>
+    <p>Status der Ausgangs-Kanäle (Slack / Teams / E-Mail / Webhook) — nur Anzeige, ob
+      konfiguriert/aktiv (siehe Kapitel 15).</p>
+
+    <h3>API-Keys (für Integrations-Webhooks)</h3>
+    <p>Hiervon zu unterscheiden sind die <strong>persönlichen API-Token (PAT)</strong> für den
+      eigenen Account (siehe Kapitel 17). Integrations-API-Keys dienen der Anbindung von
+      Integrationen (z. B. Wazuh-Webhook):</p>
+    <div class="step-grid">
+      <div class="step-num">1</div><div class="step-text"><strong>⚙️ Einstellungen → API</strong></div>
+      <div class="step-num">2</div><div class="step-text">Neuen Key erstellen (Name, Scope <code>webhooks</code>, TTL)</div>
+      <div class="step-num">3</div><div class="step-text">Key kopieren</div>
+      <div class="step-num">4</div><div class="step-text">Beim Webhook-Setup als <code>Authorization: Bearer &lt;API_KEY&gt;</code> verwenden</div>
+    </div>
+  </section>
+
+  <!-- 17 -->
+  <section class="doc-section" id="s17">
+    <h2><span class="num">17</span> Profil &amp; Self-Service</h2>
+    <p>Persönliche Einstellungen verwaltest du auf der <strong>Profil</strong>-Seite (Profilfoto
+      oben rechts → Profil). Diese Self-Service-Funktionen stehen <strong>allen Rollen</strong>
+      offen — du musst kein Admin sein, um deine eigene Sicherheit zu verwalten.</p>
+
+    <h3>Persönliche Daten &amp; Anzeige</h3>
+    <ul class="doc-list">
+      <li><strong>Anzeigename</strong> ändern</li>
+      <li><strong>Passwort</strong> ändern (mit altem Passwort, mind. 8 Zeichen)</li>
+      <li><strong>Sprache</strong> (Deutsch / Englisch) — dauerhaft gespeichert</li>
+      <li><strong>Datumsformat</strong> — dauerhaft gespeichert</li>
+    </ul>
+
+    <h3>Zwei-Faktor-Authentifizierung (MFA)</h3>
+    <p>Die Karte <strong>Zwei-Faktor-Authentifizierung</strong> erlaubt das Einrichten/Verwalten
+      von MFA. Vollständige Anleitung (QR-Code, Recovery-Codes) in
+      <a href="#s03" style="color:var(--accent);">Kapitel 03</a>. Die Karte erscheint, wenn der
+      Betreiber MFA freigeschaltet hat.</p>
+
+    <h3>Persönliche API-Token (PAT) <span class="pill live">live</span></h3>
+    <p>Live, sofern der Betreiber Personal Access Tokens freigeschaltet hat. Mit einem PAT sprichst
+      du die Nexora-API programmatisch unter <strong>deinem</strong> Konto an (z. B. für Skripte).</p>
+    <p><strong>Token erstellen:</strong> Karte <strong>API-Token</strong> → <strong>Neues
+      Token</strong> → Name vergeben → Token wird <strong>einmalig</strong> angezeigt → sofort
+      kopieren.</p>
+    <div class="warn-box"><strong>Wichtig:</strong> Wie alle Secrets wird der Token nur
+      <strong>ein einziges Mal</strong> angezeigt. Danach ist er nicht mehr einsehbar. Geht er
+      verloren, widerrufe ihn und erstelle einen neuen.</div>
+    <p><strong>Token widerrufen:</strong> Karte <strong>API-Token</strong> → beim betreffenden
+      Token auf <strong>Widerrufen</strong> → im Dialog bestätigen. Der Token ist sofort ungültig.</p>
+
+    <h3>Passkey (WebAuthn) <span class="pill opt">nach Aktivierung</span></h3>
+    <p>Hat der Betreiber WebAuthn eingeschaltet, findest du eine Karte zum <strong>Hinzufügen,
+      Auflisten und Löschen von Passkeys</strong>. Damit kannst du dich ohne Passwort anmelden
+      (siehe <a href="#s02" style="color:var(--accent);">Kapitel 02</a>).</p>
+
+    <h3>Bestätigungsdialoge</h3>
+    <p>Sicherheitsrelevante oder unumkehrbare Aktionen (Ticket löschen, Credential widerrufen,
+      Node stilllegen, Passwort zurücksetzen) fragen vorher über einen
+      <strong>Bestätigungsdialog</strong> nach. Der Dialog beschreibt die Folge; mit
+      <span class="kbd">Escape</span> oder <strong>Abbrechen</strong> brichst du ab. Bei länger
+      laufenden Aktionen bleibt der Dialog sichtbar und zeigt einen eventuellen Fehler direkt an.</p>
+  </section>
+
+  <!-- 18 -->
+  <section class="doc-section" id="s18">
+    <h2><span class="num">18</span> FAQ</h2>
+
+    <h3>Mein Passwort habe ich vergessen. Wie zurücksetzen?</h3>
+    <p>Kontaktiere einen Admin. Der Admin kann in <strong>Einstellungen → Benutzerverwaltung</strong>
+      dein Passwort zurücksetzen.</p>
+
+    <h3>Ich habe mein Handy / die Authenticator-App verloren. Wie komme ich rein?</h3>
+    <p>Nutze beim Login statt des 6-stelligen Codes einen deiner <strong>Recovery-Codes</strong>
+      (jeder Code funktioniert genau einmal). Hast du auch keine mehr, kontaktiere einen Admin —
+      er kann deine MFA zurücksetzen.</p>
+
+    <h3>Ist Nexora „NIS2-konform" / zertifiziert?</h3>
+    <p>Nein — und das behauptet Nexora bewusst nicht. Die NIS2-Seite ist eine Arbeits- und
+      Nachweis-Unterstützung; sie ist <strong>kein Konformitätsnachweis, keine Zertifizierung und
+      kein Rechtsgutachten</strong>.</p>
+
+    <h3>Warum sehe ich die Provisioning-Seite nicht?</h3>
+    <p>Die Provisioning-Registry ist <strong>nur für Admins</strong> sichtbar und bedienbar.</p>
+
+    <h3>Verändert Provisioning meine Nodes / mein Netzwerk?</h3>
+    <p>Nein. Es werden keine ausführbaren Befehle gesendet und keine Netzwerk-/Firewall-
+      Einstellungen geändert. Nodes melden sich nur (Heartbeat) und erhalten ausschließlich
+      Status-Informationen zurück.</p>
+
+    <h3>Wo richte ich MFA oder ein API-Token für mich selbst ein?</h3>
+    <p>Auf der <strong>Profil</strong>-Seite — das geht für <strong>alle Rollen</strong>, nicht nur
+      für Admins (siehe Kapitel 17).</p>
+
+    <h3>Wie exportiere ich einen Report?</h3>
+    <p>Schnell-Export: Ticket öffnen → <strong>⋮ → Als PDF exportieren</strong>. Oder im Tab
+      <strong>Report</strong>: <strong>Incident-Report (PDF)</strong> (technisch) bzw.
+      <strong>Kunden-Report (PDF)</strong> (nicht-technisch, ohne IPs/MITRE/IOCs).</p>
+
+    <h3>Kann ich Tickets löschen?</h3>
+    <p>Nur Admins. Geschlossene Tickets bleiben aus Audit-Gründen erhalten — stattdessen schließen
+      mit passendem Grund.</p>
+
+    <h3>Gibt es einen Dark Mode?</h3>
+    <p>Ja — über das Theme-Toggle (Mond-Icon) oben rechts im Header.</p>
+
+    <h3>Kann der KI-Agent Tickets automatisch schließen?</h3>
+    <p>Nein. Der Agent macht nur Vorschläge, die du genehmigst oder ablehnst.</p>
+  </section>
+
+</main>
+
+<script>
+// ScrollSpy
+const links = document.querySelectorAll('.sb-link[href^="#"]');
+const sections = Array.from(links).map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+function spy() {
+  let cur = sections[0];
+  sections.forEach(s => { if (window.scrollY + 80 >= s.offsetTop) cur = s; });
+  links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + cur.id));
+}
+window.addEventListener('scroll', spy, { passive: true });
+spy();
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!--
+  ============================================================================
+  VORSCHLAG — NOCH NICHT ANGEWENDET (Stand 2026-06-17)
+  ============================================================================
+  Ziel:   Sysmon Event 3 (NetworkConnect) der High-Signal-Prozesse für die
+          Nexora Correlation Engine sichtbar machen (Network/Timeline/Entities).
+  Problem: Basisregel 61605 "Sysmon - Event 3: Network connection" = Level 0
+           → unter log_alert_level=3 → landet NICHT in wazuh-alerts.
+  Lösung:  Diese Verbindungen (nur die LOLBin-Allowlist) auf Level 3 heben.
+           osb-agent.exe & Co. bleiben automatisch Level 0 (nicht in Allowlist)
+           → kein Backup-Rauschen (99,8 % des Volumens).
+
+  Ziel-Datei am Manager (10.99.99.77): /var/ossec/etc/rules/local_rules.xml
+  → den folgenden <group>-Block ANS ENDE einfügen, nichts anderes ändern.
+
+  Read-only verifiziert (Wazuh-API):
+    - Rule-ID 100951 ist FREI (belegte lokale 1009xx: nur 100901–100906).
+    - if_group "sysmon_event3" ist korrekt (61605 ist in dieser Gruppe; so bauen
+      auch die bestehenden Detection-Regeln 92104/92105). if_sid 61605 wäre
+      ebenfalls gültig, if_group ist robuster/konventionell.
+    - Feld "win.eventdata.image" + type="pcre2" wird exakt so von Regel 92104
+      genutzt → korrekt für wazuh-logtest.
+
+  APPLY (erst nach explizitem OK — NICHT Teil dieses Commits):
+    1. cp /var/ossec/etc/rules/local_rules.xml /var/ossec/etc/rules/local_rules.xml.bak-2026-06-17
+    2. <group>-Block ans Ende von local_rules.xml einfügen
+    3. /var/ossec/bin/wazuh-logtest  (Sysmon-3-Sample testen → matcht 100951/Level 3)
+    4. /var/ossec/bin/wazuh-control restart
+
+  ROLLBACK:
+    - den <group name="nexora_sysmon_network,">-Block entfernen
+    - /var/ossec/bin/wazuh-control restart
+    (oder Backup zurückkopieren). Keine anderen Regeln/Decoder berührt.
+
+  ERWARTETES VOLUMEN: ~4 Events/Tag (17 Signal-Events in 4,5 Tagen auf DC01).
+  Buffer-/Indexer-Risiko: praktisch null.
+  ============================================================================
+-->
+<group name="nexora_sysmon_network,">
+
+  <rule id="100951" level="3">
+    <if_group>sysmon_event3</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(?:powershell|powershell_ise|pwsh|cmd|wscript|cscript|mshta|rundll32|regsvr32|certutil|bitsadmin|schtasks|nslookup|wmic|net|net1|psexec|nc|ncat|tor)\.exe$</field>
+    <description>Nexora: NetworkConnect durch High-Signal-Prozess $(win.eventdata.image) -> $(win.eventdata.destinationIp):$(win.eventdata.destinationPort)</description>
+    <mitre>
+      <id>T1071</id>
+    </mitre>
+    <group>nexora_sysmon_network,</group>
+  </rule>
+
+</group>

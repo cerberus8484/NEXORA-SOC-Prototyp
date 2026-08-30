@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QRadar CE / Curator Evaluierungswiki</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #11182b;
+      --panel2: #16213a;
+      --line: #2a3553;
+      --text: #eef3ff;
+      --muted: #b8c3df;
+      --accent: #79c2ff;
+      --ok: #7ddc95;
+      --warn: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #09101d 0%, #0e1730 100%);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    .hero, .panel {
+      background: linear-gradient(180deg, rgba(22,33,58,.98), rgba(17,24,43,.98));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 12px;
+    }
+    p, li {
+      color: var(--muted);
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      font-size: 13px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .metric {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .ok {
+      color: var(--ok);
+      border: 1px solid rgba(125,220,149,.35);
+      background: rgba(125,220,149,.12);
+    }
+    .warn {
+      color: var(--warn);
+      border: 1px solid rgba(255,209,102,.35);
+      background: rgba(255,209,102,.12);
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: rgba(255,255,255,.05);
+      border-radius: 6px;
+      padding: 2px 5px;
+      color: #d9e7ff;
+    }
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    ul, ol {
+      padding-left: 20px;
+    }
+    @media (max-width: 960px) {
+      .grid, .two { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>QRadar CE / Curator Evaluierungswiki</h1>
+      <p>Private, professionelle Runbook- und Nachweisdokumentation fuer Installation, Evaluierung, Use Cases und spaetere interne Uebergabe.</p>
+      <div class="meta">
+        <span class="pill">Stand: 2026-07-08</span>
+        <span class="pill">Node: <code>pve</code></span>
+        <span class="pill">VMID: <code>180</code></span>
+        <span class="pill">Server-VLAN: <code>vmbr10</code></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Aktueller Stand</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="label">ISO</div>
+          <div class="metric">vorhanden</div>
+          <span class="status ok">bestaetigt</span>
+          <p>Die QRadar-QRFULL-ISO liegt auf dem Shared Storage und ist der VM zugeordnet.</p>
+        </div>
+        <div class="card">
+          <div class="label">VM</div>
+          <div class="metric">180</div>
+          <span class="status ok">angelegt</span>
+          <p>Dedizierte QRadar-AIO-VM auf dem Node <code>pve</code> mit 8 vCPU, 32 GB RAM und aktiver 550-GB-Systemdisk.</p>
+        </div>
+        <div class="card">
+          <div class="label">Repair-Status</div>
+          <div class="metric">install ok</div>
+          <span class="status ok">bestaetigt</span>
+          <p>Root Cause fuer Hosts/NVA, <code>frameworks.properties</code>, Zertifikate und Console-Startup wurde behoben. <code>https://10.0.10.190/console/</code> liefert wieder die QRadar-Login-Seite.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Zielumgebung</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Plattform</h3>
+          <ul>
+            <li>Proxmox Host: <code>192.168.0.100</code></li>
+            <li>Proxmox Node: <code>192.168.0.101</code> (<code>pve</code>)</li>
+            <li>Shared Storage: <code>nas-backup</code></li>
+            <li>Produktives Server-VLAN: <code>vmbr10</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>QRadar-VM</h3>
+          <ul>
+            <li>VMID: <code>180</code></li>
+            <li>Name: <code>QRadar-AIO</code></li>
+            <li>CPU: <code>8 vCPU</code></li>
+            <li>RAM: <code>32 GB</code></li>
+            <li>Aktive Systemdisk: <code>550 GB</code></li>
+            <li>Boot-ISO: <code>760-QRADAR-QRFULL-2026.4.0.20260621205226.iso</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Installationslog</h2>
+      <ol>
+        <li>QRadar-ISO auf dem Proxmox-Host gefunden.</li>
+        <li>ISO auf Shared Storage gespiegelt.</li>
+        <li>Dedizierte VM <code>180</code> fuer QRadar erstellt.</li>
+        <li>ZFS-Disk-Referenzproblem identifiziert und bereinigt.</li>
+        <li>Serielle Konsole aktiviert fuer Text-Mode-/Installer-Sichtbarkeit.</li>
+        <li>Installer-Warnscreen erfolgreich erreicht.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Installer-Bewertung</h2>
+      <p>Aktueller Screen bietet die Optionen <code>HALT</code>, <code>REBOOT</code>, <code>FLATTEN</code> und <code>WIPE</code>.</p>
+      <p>Fuer diese dedizierte, neu erstellte Evaluierungs-VM ist <code>FLATTEN</code> der korrekte Standardpfad. <code>WIPE</code> ist nur fuer eine ausdruecklich tiefere Voll-Loeschung relevant.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Wichtige Erkenntnis 2026-07-07</h2>
+      <p>Der Installer-Screen erschien mehrfach hintereinander. Ursache war nicht ein falscher Installer-Schritt, sondern die Boot-Reihenfolge der VM.</p>
+      <ul>
+        <li>Vorher: <code>boot: order=ide2</code></li>
+        <li>Bedeutung: Die VM bootete nach jedem Neustart erneut vom ISO.</li>
+        <li>Korrektur: <code>boot: order=scsi0</code></li>
+      </ul>
+      <p><code>FLATTEN</code> war also weiterhin korrekt. Nach dem Installationsschritt muss die VM aber von der Systemdisk starten.</p>
+      <p>Zusatzkorrektur: Das eingehangene ISO wurde anschliessend komplett aus der VM-Konfiguration entfernt, damit der Start reproduzierbar nur noch ueber <code>scsi0</code> erfolgt.</p>
+      <p>Weitere Anpassung: Die serielle Konsole lieferte keinen nutzbaren Folge-Output. Daher wurde die VM fuer die weitere Installation wieder auf normale grafische Proxmox-Konsole umgestellt (<code>vga: std</code>, <code>serial0</code> entfernt).</p>
+    </section>
+
+    <section class="panel">
+      <h2>Dokumentationsregeln</h2>
+      <ul>
+        <li>Jeder relevante Installations- und Konfigurationsschritt wird hier nachgetragen.</li>
+        <li>Jeder groessere Meilenstein bekommt einen Screenshot-Nachweis.</li>
+        <li>Use Cases, Regeln, Referenzsets und Integrationen werden als eigene Folgeabschnitte dokumentiert.</li>
+        <li>Diese Seite bleibt die kanonische private Evaluierungsdokumentation.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Screenshot-Plan</h2>
+      <ul>
+        <li>Proxmox-VM-Konfiguration</li>
+        <li>Installer-Start / FLATTEN-Screen</li>
+        <li>Netzwerk-/Benutzer-Setup</li>
+        <li>Erstlogin QRadar</li>
+        <li>Systemstatus / GUI</li>
+        <li>Use-Case- und Offense-Sichten</li>
+      </ul>
+      <p>Empfohlene Ablage: <code>Z:\Papa_IT_Dokumentation\Doku\assets\qradar-ce-eval\</code></p>
+    </section>
+
+    <section class="panel">
+      <h2>Partitionsfehler / Root Cause</h2>
+      <p>Im Anaconda-Installer schlug <code>Installation Destination</code> fehl mit <code>Unable to allocate requested partition scheme</code>.</p>
+      <ul>
+        <li>Zielplatte: <code>QEMU HARDDISK 300 GiB (sda)</code></li>
+        <li>effektiv frei im Installer: <code>243.46 GiB</code></li>
+      </ul>
+      <p>Bewertung: Das ist kein Bedienfehler im Installer, sondern ein Kapazitaetsproblem. Der nominelle Proxmox-Wert <code>300G</code> reicht fuer den geforderten QRadar-Partitionierungsplan hier effektiv nicht sauber aus.</p>
+      <p>Entscheidung: Die VM-Disk wird fuer die Evaluierung konservativ auf mindestens <code>500 GB</code> vergroessert.</p>
+      <p>Umsetzung: Die zu kleine alte Platte <code>scsi0</code> (300G) wurde aus der aktiven VM-Konfiguration entfernt, die neue Platte <code>scsi1</code> (550G) als einziges Boot-Ziel gesetzt. Die alte Disk bleibt nur noch als <code>unused0</code> referenziert.</p>
+      <p>Fuer die eigentliche Installation wurde die ISO anschliessend wieder eingehangen. Aktive Konstellation: Boot ueber <code>ide2</code>, Installation auf <code>scsi1</code> (550G).</p>
+      <p>Danach wurde die ISO auf ausdruecklichen Wunsch wieder entfernt. Aktiver Zustand: kein <code>ide2</code>, Boot nur noch ueber <code>scsi1</code>.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Installationsabschluss / erster Boot</h2>
+      <p>Die Installation ist erfolgreich bis zum ersten System-Login durchgelaufen.</p>
+      <ul>
+        <li><code>Installed QRadar version 7.6.0.0 GA</code></li>
+        <li>Logdatei: <code>/var/log/setup-2026.4.0.20260621205226/qradar_setup.log</code></li>
+        <li>Installer-Hinweis fuer Admin-Passwort: <code>sudo /opt/qradar/support/changePasswd.sh -a</code></li>
+        <li>System endet am Prompt: <code>localhost login:</code></li>
+      </ul>
+      <p>Bewertung: QRadar/Curator ist grundsaetzlich installiert. Der naechste Block ist nun lokaler Login, Passwort-Setzung, Netzwerkpruefung und GUI-Erstzugriff.</p>
+      <p>Sonderfall dieser Evaluierung: Es wurde kein bewusst dokumentierter lokaler OS-Login gesetzt. Der saubere Recovery-Pfad ist daher ein Root-Passwort-Reset ueber GRUB / <code>rd.break</code>, danach QRadar-Admin-Passwort getrennt setzen.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Root Cause / Repair 2026-07-07</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Isolierte Ursache</h3>
+          <ul>
+            <li>Quelle: <code>/var/log/setup-2026.4.0.20260621205226/qradar_netsetup.log</code></li>
+            <li>Fehler: <code>IsADirectoryError: /etc/resolv.conf</code></li>
+            <li>Folge: <code>qradar_netsetup.py</code> konnte die Netzkonfiguration nicht sichern und brach vor dem eigentlichen QRadar-Setup ab.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Durchgefuehrter Host-Fix</h3>
+          <ul>
+            <li>VM <code>180</code> sauber auf <code>pve</code> gestoppt</li>
+            <li>Systemdisk host-seitig per <code>guestmount</code> eingehangen</li>
+            <li><code>/etc/resolv.conf</code>-Verzeichnis nach <code>resolv.conf.dir-backup-20260707</code> verschoben</li>
+            <li>neue Datei <code>/etc/resolv.conf</code> erstellt mit DNS <code>10.0.10.1</code></li>
+            <li><code>/etc/hostname</code> und <code>/etc/hosts</code> auf <code>qradarce.nexora.local</code> vereinheitlicht</li>
+            <li>VM wieder gestartet</li>
+          </ul>
+        </div>
+      </div>
+      <p>Aktueller Stand: Der harte Dateisystem-Blocker fuer QRadar-Netzsetup ist entfernt. Als naechster Schritt ist an der VM-Konsole der erneute QRadar-Netzsetup-Lauf bzw. der GUI-Erstzugriff zu pruefen.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Live Recovery 2026-07-07</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Technische Korrekturen</h3>
+          <ul>
+            <li>Direkter Root-SSH-Zugang host-seitig wiederhergestellt</li>
+            <li>Konflikt-IP <code>10.0.10.90</code> verworfen, finale Evaluierungs-IP auf <code>10.0.10.190</code> gesetzt</li>
+            <li><code>hostcapabilities.xml</code> rekonstruiert, damit <code>myver -c</code> wieder <code>true</code> liefert</li>
+            <li>zweiten <code>resolv.conf</code>-Fehler unter <code>/opt/qradar/bin/ca_jail/etc/</code> behoben</li>
+            <li>Admin-UI-Passwort ueber QRadar-Tool gesetzt</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Webstack / Dienste</h3>
+          <ul>
+            <li><code>hostcontext</code> und <code>hostservices</code> aktiv und enabled</li>
+            <li><code>httpd-rm</code> aktiv auf <code>443</code></li>
+            <li><code>traefik</code> aktiv auf <code>14433</code></li>
+            <li>Self-Signed-Zertifikat via <code>install-ssl-cert.sh --generate</code> erzeugt</li>
+            <li>Gast-Firewall fuer <code>443/tcp</code> und <code>14433/tcp</code> geoeffnet</li>
+          </ul>
+        </div>
+      </div>
+      <p>Aktueller Stand: Die QRadar-VM ist unter <code>https://10.0.10.190/</code> fuer den weiteren GUI-Test vorbereitet. Der naechste operative Schritt ist der Browser-Login und die Dokumentation der ersten QRadar-Seiten/Screenshots.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Console Root Cause 2026-07-07</h2>
+      <div class="two">
+        <div class="card">
+          <h3>503-Ursache</h3>
+          <ul>
+            <li>Apache lieferte auf <code>/console/</code> zeitweise <code>503 Service Unavailable</code>.</li>
+            <li>Im SSL-Error-Log stand mehrfach: <code>AH00957</code> / AJP-Connect auf <code>127.0.0.1:8009</code> fehlgeschlagen.</li>
+            <li>Es lief nur <code>tomcat-rm</code>, nicht der eigentliche QRadar-Console-Tomcat.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Korrektur</h3>
+          <ul>
+            <li>Hauptdienst <code>tomcat.service</code> identifiziert und gestartet</li>
+            <li>Console-Webapps unter <code>/opt/qradar/webapps</code> verifiziert</li>
+            <li>Apache-Proxy wieder auf den echten Console-AJP-Pfad zurueckgefuehrt</li>
+            <li>Ergebnis: reiner Apache-zu-Tomcat-Connect-Fehler beseitigt</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Rekonstruierte QRadar-Konfiguration</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Fehlende Artefakte</h3>
+          <ul>
+            <li><code>CONSOLE_FQDN</code>, <code>CONSOLE_HOSTNAME</code>, <code>CONSOLE_PRIVATE_IP</code> und <code>NVAWEBURL</code> waren unvollstaendig.</li>
+            <li><code>deployment.xml</code>, <code>.ldk</code> und <code>install_timestamp</code> fehlten.</li>
+            <li>Ohne diese Dateien blieb die QRadar-Initialisierung inkonsistent.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Herstellung</h3>
+          <ul>
+            <li>Backup: <code>/root/qradar-repair-backup-20260707-105112</code></li>
+            <li><code>CONSOLE_FQDN=qradarce.nexora.local</code></li>
+            <li><code>CONSOLE_HOSTNAME=qradarce</code></li>
+            <li><code>CONSOLE_PRIVATE_IP=10.0.10.190</code></li>
+            <li><code>NVAWEBURL=https://qradarce.nexora.local</code></li>
+            <li>Dienste danach mit <code>hostcontext</code>, <code>tomcat</code> und <code>httpd</code> neu gestartet</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Live-Verifikation</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="label">HTTP-Status</div>
+          <div class="metric">200 via login</div>
+          <span class="status ok">bestaetigt</span>
+          <p><code>/console/</code> liefert Redirect auf <code>Main.jsp</code>, danach auf <code>logon.jsp</code> und schliesslich die echte QRadar-Login-Seite.</p>
+        </div>
+        <div class="card">
+          <div class="label">Tomcat-Test</div>
+          <div class="metric">connected</div>
+          <span class="status ok">bestaetigt</span>
+          <p><code>/opt/qradar/bin/test_tomcat_connection.sh</code> meldet wieder erfolgreiche Verbindung.</p>
+        </div>
+        <div class="card">
+          <div class="label">Core-Dienste</div>
+          <div class="metric">active</div>
+          <span class="status ok">bestaetigt</span>
+          <p><code>tomcat</code>, <code>httpd</code>, <code>hostcontext</code>, <code>ecs-ec</code> und <code>ecs-ep</code> laufen wieder.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Finale Recovery 2026-07-07</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Hauptursachen</h3>
+          <ul>
+            <li>Hostname-/Hosts-/NVA-Inkonsistenzen im Gast</li>
+            <li>unvollstaendige lokale CA-/Tomcat-/ConMan-/Traefik-Zertifikate</li>
+            <li>kaputte bzw. unvollstaendige <code>frameworks.properties</code> ohne zentrale JPA-Werte</li>
+            <li>dadurch blockierter kompletter QRadar-Console-Startup</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Endgueltig verifiziert</h3>
+          <ul>
+            <li><code>console</code>, <code>wfServlet</code>, <code>ForensicsAnalysisServlet</code> und <code>restapi</code> wurden komplett deployed</li>
+            <li><code>Server startup in [427029] milliseconds</code> wurde im Tomcat-Journal protokolliert</li>
+            <li><code>Connected to tomcat</code> wurde durch das QRadar-Testskript bestaetigt</li>
+            <li>Die technische Installation ist damit abgeschlossen und lauffaehig</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Naechste Schritte</h2>
+      <ol>
+        <li>Browser hart neu laden und Login-Screen auf <code>https://10.0.10.190/console/</code> mit Screenshot sichern.</li>
+        <li>Mit dem gesetzten Admin-Konto am UI anmelden und den Erstzustand dokumentieren.</li>
+        <li>Basiseinstellungen, Health-Ansichten und erste Evaluierungs-Screens professionell ablegen.</li>
+        <li>Restwarnungen aus <code>hostcontext</code> und den Plattformdiensten spaeter separat bewerten.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Native-App / Curator / Analyst-Deck Status</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Bereits verifiziert</h3>
+          <ul>
+            <li><code>qradar-analyst-deck</code> lokal korrigiert und als <code>analyst-deck-sdk.zip</code> gebaut</li>
+            <li>SDK-Deploy authentifiziert erfolgreich gegen <code>10.0.10.190</code></li>
+            <li><code>conman</code>, <code>traefik</code>, <code>docker-distribution</code> und <code>hostcontext</code> laufen</li>
+            <li><code>AppPlatformManager</code> initialisiert jetzt erfolgreich</li>
+            <li>Die GUI-App-Framework-API antwortet auf Listenaufrufe</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Aktueller Blocker</h3>
+          <ul>
+            <li>Der Create-Endpoint fuer Native Apps haengt mit echtem ZIP-Body im Timeout</li>
+            <li>Der Fehler liegt damit aktuell nicht primaer am ZIP-Paket selbst</li>
+            <li>QRadar meldet weiterhin <code>undeployed changes</code></li>
+            <li>Tomcat-/UI-Framework hatte im Verlauf <code>FrameworksContext</code>-bezogene Fehler</li>
+          </ul>
+        </div>
+      </div>
+      <p>Zwischenbewertung: QRadar CE laeuft, die App-Platform ist deutlich weiter repariert als zu Beginn, aber der Native-App-Deploy ist noch durch einen internen Plattform-/Deployment-Zustand blockiert.</p>
+      <p>Naechster sinnvoller Schritt: erst offene <code>Deploy Changes</code> sauber abschliessen, danach den Native-App-Deploy erneut ausfuehren.</p>
+      <div class="card">
+        <h3>Zusatzbefund aus lokalem SDK-Deploy</h3>
+        <ul>
+          <li><code>qapp deploy -p analyst-deck-sdk.zip -q 10.0.10.190 -u admin -o admin -t 600</code> authentifiziert erfolgreich.</li>
+          <li>Der Paket-Upload wird vollstaendig abgeschlossen.</li>
+          <li>Der Timeout tritt erst danach im serverseitigen Create-/Install-Schritt auf.</li>
+          <li>Die lokale Paketstruktur wirkt konsistent: <code>manifest.json</code>, passende Flask-Route <code>/index</code>, Templates und Services sind vorhanden.</li>
+        </ul>
+        <p>Einordnung: Der zentrale Blocker bleibt damit sehr wahrscheinlich serverseitig im QRadar App Framework bzw. im internen Deploy-Zustand.</p>
+      </div>
+      <div class="card">
+        <h3>Gegenprobe mit nackter SDK-Minimal-App</h3>
+        <ul>
+          <li>Zusaetzlich wurde eine saubere Minimal-App direkt aus dem QRadar App SDK Template als ZIP gebaut.</li>
+          <li>Der Upload auf <code>/api/gui_app_framework/application_creation_task</code> lief komplett durch.</li>
+          <li>Danach kamen erneut <strong>0 Response-Bytes</strong> zurueck, bis der Request in den Timeout lief.</li>
+          <li>Damit ist der aktuelle Blocker nicht spezifisch fuer <code>analyst-deck-sdk.zip</code>, sondern serverseitig auf QRadar eingegrenzt.</li>
+        </ul>
+        <p>Einordnung: Selbst eine nackte Referenz-App haengt auf demselben Endpoint. Der naechste echte Fix liegt damit klar auf der QRadar-Plattformseite und nicht primaer im App-Paket.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Proxmox-Statusvorfall am 2026-07-07</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Feststellungen</h3>
+          <ul>
+            <li>Im Proxmox-Tree wurde <code>pve</code> zeitweise als <code>unknown</code> angezeigt.</li>
+            <li>Per SSH auf <code>192.168.0.101</code> war der Host jedoch erreichbar und gesund.</li>
+            <li><code>pve-cluster</code>, <code>corosync</code>, <code>pvestatd</code>, <code>pvedaemon</code> und <code>pveproxy</code> liefen aktiv.</li>
+            <li>Der Cluster <code>nexora</code> war weiterhin quorate.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Technische Einordnung</h3>
+          <ul>
+            <li>Lokal auf <code>pve</code> zeigte <code>pvesh get /cluster/resources --type node</code> den Knoten zunaechst als <code>unknown</code>.</li>
+            <li>Gleichzeitig lieferte <code>pvesh get /nodes/pve/status</code> bereits gueltige Statusdaten.</li>
+            <li>Vom zweiten Node <code>proxmox</code> wurde <code>pve</code> schon korrekt als <code>online</code> gesehen.</li>
+            <li>Damit lag kein echter Node-Ausfall, sondern ein lokales Status-/GUI-/API-Refresh-Problem vor.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Durchgefuehrter Fix</h3>
+          <pre><code>ssh root@192.168.0.101 "systemctl restart pvestatd"
+ssh root@192.168.0.101 "systemctl restart pvedaemon pveproxy"</code></pre>
+        </div>
+        <div class="card">
+          <h3>Ergebnis</h3>
+          <ul>
+            <li><code>node/pve</code> wurde danach lokal wieder als <code>online</code> ausgewiesen.</li>
+            <li><code>pvestatd</code>, <code>pvedaemon</code> und <code>pveproxy</code> waren aktiv.</li>
+            <li>Kein echter Proxmox-Ausfall und kein QRadar-Schaden durch die Pruefung.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>LXC-Unknown-Status auf pve am 2026-07-07</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Befund</h3>
+          <ul>
+            <li>Nach der Node-Reparatur wurden weiterhin alle LXC auf <code>pve</code> als <code>unknown</code> angezeigt.</li>
+            <li>Mehrere Einzelabfragen lieferten bereits korrekte Daten fuer laufende Container.</li>
+            <li><code>CT 120</code> (<code>nexora-soc</code>) blockierte jedoch bei Statusabfragen.</li>
+            <li><code>lxc-attach -n 120 -- true</code> lief in den Timeout, <code>ping 10.0.10.75</code> blieb ohne Antwort.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Technische Ursache</h3>
+          <ul>
+            <li>In <code>pve-container@120.service</code> hing nur noch <code>lxc-start -F -n 120</code>.</li>
+            <li>In der zugehoerigen CGroup liefen faktisch keine Container-Prozesse mehr.</li>
+            <li>Zusatzprozesse wie <code>lxc-info -n 120 -p</code>, <code>pct stop 120</code> und <code>lxc-stop -n 120 --kill</code> hingen ebenfalls.</li>
+            <li>Damit lag ein halb-toter LXC-Monitorzustand von <code>CT 120</code> vor, der die Sammelstatus-Ermittlung fuer alle LXC auf <code>pve</code> stoerte.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Durchgefuehrter Fix</h3>
+          <pre><code>kill -9 &lt;haengende pct/lxc-info/lxc-stop/lxc-start PIDs&gt;
+systemctl reset-failed pve-container@120
+pct start 120 --skiplock 1</code></pre>
+        </div>
+        <div class="card">
+          <h3>Ergebnis</h3>
+          <ul>
+            <li><code>CT 120</code> antwortete danach wieder normal ueber die Proxmox-API.</li>
+            <li>Die komplette LXC-Liste auf <code>pve</code> sprang von <code>unknown</code> auf <code>running</code>.</li>
+            <li><code>node/pve</code> blieb dabei stabil <code>online</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Temporärer SSH-Zugang zur QRadar-VM</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Durchgefuehrte Schritte</h3>
+          <ul>
+            <li>QRadar-VM <code>180</code> auf dem Proxmox-Host kurz gestoppt.</li>
+            <li>Vorhandene SSH-Key-Konfiguration offline geprueft.</li>
+            <li>Da die laufende VM weder Ed25519- noch RSA-Authorized-Keys annahm, wurde temporaer ein Root-Passwort offline gesetzt.</li>
+            <li>Die VM wurde danach wieder gestartet und der Root-SSH-Login erfolgreich getestet.</li>
+          </ul>
+          <pre><code>qm stop 180
+virt-customize -a /mnt/pve/nas-backup/images/180/vm-180-disk-0.qcow2 --root-password password:CodexQradar2026!
+qm start 180</code></pre>
+        </div>
+        <div class="card">
+          <h3>Aktueller Diagnosezugang</h3>
+          <ul>
+            <li>Host: <code>10.0.10.190</code></li>
+            <li>Benutzer: <code>root</code></li>
+            <li>Temporaeres Passwort: <code>CodexQradar2026!</code></li>
+          </ul>
+          <p>Wichtig: Dieser Zugang wurde rein fuer die technische Diagnose gesetzt und sollte nach Abschluss der Arbeiten wieder geaendert oder entfernt werden.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Harter Plattformbefund aus Live-SSH-Analyse</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Service-Lage</h3>
+          <ul>
+            <li><code>conman</code> = <code>active</code></li>
+            <li><code>hostcontext</code> = <code>active</code></li>
+            <li><code>traefik</code> = <code>active</code></li>
+            <li><code>docker-distribution</code> = <code>active</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Konfigurationsbefund</h3>
+          <pre><code>CONSOLE_FQDN=qradarce.nexora.local
+CONSOLE_HOSTNAME=qradarce.nexora.local
+CONSOLE_PRIVATE_IP=10.0.10.190
+NVAWEBURL=https://qradarce.nexora.local.nexora.local</code></pre>
+          <p>Der Wert <code>NVAWEBURL</code> ist damit offensichtlich falsch und doppelt qualifiziert.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Log-Beweise</h3>
+          <ul>
+            <li><code>java.net.UnknownHostException: qradarce.nexora.local.nexora.local</code></li>
+            <li><code>Unexpected response returned while checking if GAF API is disabled ... 503 Service Unavailable</code></li>
+            <li><code>nslookup qradarce.nexora.local</code> liefert aktuell <code>NXDOMAIN</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Einordnung</h3>
+          <p>QRadar nutzt intern aktuell einen kaputten selbstreferenziellen URL-/Hostname-Pfad. Das passt fachlich sehr stark zum haengenden Endpoint <code>/api/gui_app_framework/application_creation_task</code>.</p>
+          <p>Damit ist der App-Deploy-Blocker nun deutlich enger eingegrenzt: nicht primaer Analyst-Deck oder SDK, sondern sehr wahrscheinlich die interne QRadar-Console-/Namensaufloesungs-Konfiguration.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>QRadar-Console-503 am 2026-07-07 behoben</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Verifizierter Root Cause</h3>
+          <p>In den live genutzten QRadar-Konfigurationsdateien war die interne Console-URL doppelt qualifiziert.</p>
+          <pre><code>NVAWEBURL=https://qradarce.nexora.local.nexora.local
+CONFIGSERVICES_URL=https://qradarce.nexora.local.nexora.local/console/services/configservices
+CONFIGURATION_DOWNLOAD_URL=https://qradarce.nexora.local.nexora.local/console/fetchConfig</code></pre>
+          <p>Betroffen waren <code>/opt/qradar/conf/nva.conf</code>, <code>/opt/qradar/conf/nva.hostcontext.conf</code> und <code>/opt/qradar/conf/nva.qflow.qflow0.conf</code>.</p>
+          <ul>
+            <li><code>java.net.UnknownHostException: qradarce.nexora.local.nexora.local</code></li>
+            <li><code>Unexpected response returned while checking if GAF API is disabled ... 503 Service Unavailable</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Durchgefuehrter Fix</h3>
+          <pre><code>cp -a /opt/qradar/conf/nva.conf /opt/qradar/conf/nva.hostcontext.conf /opt/qradar/conf/nva.qflow.qflow0.conf /root/qradar-fix-/
+sed -i 's/qradarce\.nexora\.local\.nexora\.local/qradarce.nexora.local/g' /opt/qradar/conf/nva.conf
+sed -i 's/qradarce\.nexora\.local\.nexora\.local/qradarce.nexora.local/g' /opt/qradar/conf/nva.hostcontext.conf
+sed -i 's/qradarce\.nexora\.local\.nexora\.local/qradarce.nexora.local/g' /opt/qradar/conf/nva.qflow.qflow0.conf
+systemctl restart hostcontext conman traefik docker-distribution tomcat httpd</code></pre>
+          <p>Danach zeigten die Live-Dateien wieder konsistent <code>https://qradarce.nexora.local</code> als interne Console-Basis.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Ergebnis nach dem Fix</h3>
+          <ul>
+            <li><code>tomcat</code>, <code>httpd</code>, <code>hostcontext</code>, <code>conman</code>, <code>traefik</code>, <code>podman</code> und <code>docker-distribution</code> standen danach auf <code>active</code>.</li>
+            <li><code>/api/system/about</code> antwortete wieder sauber mit JSON.</li>
+            <li><code>/api/gui_app_framework/applications</code> antwortete wieder sauber mit <code>[]</code>.</li>
+            <li><code>/console/</code> lieferte lokal und von Windows aus wieder <code>302</code> auf <code>/console/core/jsp/Main.jsp</code>.</li>
+            <li>Die QRadar-Login-Seite liefert wieder HTML und kein <code>503</code> mehr.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Restpunkt</h3>
+          <p>Im aktuellen <code>qradar.log</code> erschien nach dem Plattform-Fix noch ein TLS-/Namenshinweis:</p>
+          <pre><code>No subject alternative DNS name matching b3b0e5d5fa754073af9f.localdeployment found.</code></pre>
+          <p>Das ist kein erneuter harter Console-Ausfall, sollte aber als naechster technischer Bereinigungspunkt fuer Zertifikats- und Hostnamen-Konsistenz vorgemerkt werden.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>QRadar App Framework / Analyst Deck - Tiefendiagnose am 2026-07-08</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Registry- und Manifest-Fix</h3>
+          <p>Nach der Wiederherstellung der QRadar-Console wurde die native App <code>Analyst Deck</code> erneut technisch verfolgt. Der erste Blocker war nicht die App-Logik selbst, sondern die Registry-Basis des QRadar App Frameworks.</p>
+          <pre><code>/store/docker-data/images/deliver.sh push</code></pre>
+          <p>Danach war der alte Fehler <code>An error occurred while checking if image matching regex [(qradar-app-base:4).*] exists in the registry.</code> nicht mehr der Hauptblocker.</p>
+          <p>Zusätzlich wurde das App-Manifest auf gueltige Minimalwerte reduziert:</p>
+          <ul>
+            <li><code>name: Analyst Deck</code></li>
+            <li><code>version: 1.0.0</code></li>
+            <li><code>image: qradar-app-base:4.0.11</code></li>
+            <li><code>required_capabilities: ["ADMIN"]</code></li>
+            <li><code>python: "3"</code></li>
+            <li><code>load_flask: "true"</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Erster echter Deploy-Status</h3>
+          <p>Der Deploy erreichte danach erstmals den Build- und Push-Schritt. QRadar legte die App-ID <code>1153</code> an und pushte das Image:</p>
+          <pre><code>console.localdeployment:5000/qapp/1153:1.0.0-20260707232838</code></pre>
+          <p>Der App-Create schlug anschliessend jedoch auf der Workload-Schnittstelle fehl:</p>
+          <pre><code>PlatformCreateAppTask: An error occurred while attempting to execute task to create app [1153].
+ApplicationPlatformServiceException: Unable to create app with id [qapp-1153] on host [https://b3b0e5d5fa754073af9f.localdeployment:9000/v1/api/], responseCode [0], responseBody [null]</code></pre>
+          <p>Danach wurde die App-Instanz wieder zurueckgerollt und das Image entfernt.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Conman / TLS / Hostname-RCA</h3>
+          <p>Die direkte TLS-Analyse zeigte: <code>conman</code> selbst laeuft sauber auf Port <code>9000</code>, sein Zertifikat enthaelt aber den Namen <code>b4bfd3831e60107b66c4.localdeployment</code> und nicht den alten Namen <code>b3b0e5d5fa754073af9f.localdeployment</code>.</p>
+          <ul>
+            <li>Serverzertifikat-SANs: <code>qradarce.nexora.local</code>, <code>b4bfd3831e60107b66c4.localdeployment</code>, <code>10.0.10.190</code></li>
+            <li>Fehlender Altname: <code>b3b0e5d5fa754073af9f.localdeployment</code></li>
+          </ul>
+          <p>Der entscheidende Restfehler war anschliessend nicht nur in <code>/etc/hosts</code>, sondern auch in <code>/opt/qradar/conf/hosts</code> sichtbar.</p>
+        </div>
+        <div class="card">
+          <h3>Korrigierte Hostdateien</h3>
+          <p>Systemweit wurde zunaechst <code>/etc/hosts</code> auf den zertifikatskonformen Namen erweitert. Der wichtigere operative Fix war danach aber die QRadar-interne Hostdatei:</p>
+          <pre><code>cp -a /opt/qradar/conf/hosts /opt/qradar/conf/hosts.bak-codex-20260708-2
+printf '10.0.10.190 qradarce.nexora.local qradarce b4bfd3831e60107b66c4.localdeployment console.localdeployment\n' &gt; /opt/qradar/conf/hosts
+systemctl restart hostcontext tomcat</code></pre>
+          <p>Direkt danach kamen <code>hostcontext</code> und <code>tomcat</code> wieder hoch, <code>conman</code> blieb aktiv.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Mutual-TLS erfolgreich verifiziert</h3>
+          <p>Ein direkter Test mit dem QRadar-internen Tomcat-Clientzertifikat gegen <code>conman</code> verlief erfolgreich:</p>
+          <pre><code>curl -sv \
+  --cert /etc/tomcat/tls/conman/tomcat-client-conman.cert \
+  --key /etc/tomcat/tls/conman/tomcat-client-conman.key \
+  --cacert /etc/conman/tls/conman_ca.crt \
+  https://qradarce.nexora.local:9000/v1/api/</code></pre>
+          <ul>
+            <li>TLS-Handshake erfolgreich</li>
+            <li>Zertifikatspruefung erfolgreich</li>
+            <li><code>conman</code> antwortet technisch wieder</li>
+            <li>Rueckgabe war fachlich <code>404</code> auf dem Testpfad, was fuer den reinen Verbindungsnachweis ausreichend war</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Aktueller Reststatus</h3>
+          <ul>
+            <li>QRadar-Console bleibt erreichbar</li>
+            <li><code>conman</code>, <code>hostcontext</code> und <code>tomcat</code> laufen</li>
+            <li>die interne Alt-Referenz auf <code>b3b0...</code> wurde aktiv bereinigt</li>
+            <li>die GUI-App-API reagiert weiterhin teils traege bzw. blockierend</li>
+            <li>naechster Schritt ist ein frischer <code>qapp deploy</code> auf Basis der bereinigten Hostnamenlage</li>
+          </ul>
+          <p>Hinweis: Fuer die Live-Diagnose wurde temporaer ein Root-SSH-Zugang auf <code>10.0.10.190</code> verwendet. Dieser sollte nach Abschluss der Evaluierung wieder geaendert oder entfernt werden.</p>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>QRadar Admin-Passwort-Recovery und Web-Layer-Recovery am 2026-07-08</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Ausgangslage und Root Cause</h3>
+          <p>Nach mehreren API- und Deploy-Tests war der QRadar-Benutzer <code>admin</code> nicht mehr sauber nutzbar. Gleichzeitig hing noch ein alter Prozess <code>changePasswd.sh -a</code>, der einen frueheren interaktiven Reset blockierte.</p>
+          <ul>
+            <li>API-Tests gegen <code>/api/system/about</code> schlugen fehl</li>
+            <li>wiederholte Fehlversuche fuehrten anschliessend zu einem Host-Lockout mit QRadar-Fehlercode <code>24</code></li>
+            <li>Root-Zugang auf <code>10.0.10.190</code> blieb erhalten und erlaubte die direkte Recovery</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Offizielles Reset-Skript analysiert</h3>
+          <p>Das QRadar-Skript <code>/opt/qradar/support/changePasswd.sh</code> wurde vollstaendig gelesen. Die wichtige Erkenntnis war, dass bei neueren QRadar-Versionen intern der <code>PasswordCommandLineClient</code> verwendet wird und sich das interaktive Prompt umgehen laesst, wenn die Variable <code>PASSWORD</code> bereits gesetzt ist.</p>
+          <pre><code>head -n 260 /opt/qradar/support/changePasswd.sh
+sed -n '260,420p' /opt/qradar/support/changePasswd.sh
+ps -ef | grep changePasswd | grep -v grep</code></pre>
+          <p>Der blockierende Altprozess wurde anschliessend bewusst beendet, bevor der eigentliche Reset neu gestartet wurde.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Nicht-interaktiver Admin-Reset erfolgreich</h3>
+          <p>Der funktionierende Reset wurde nicht ueber eine fehleranfaellige TTY-Eingabe, sondern direkt mit gesetzter Passwortvariable ausgefuehrt:</p>
+          <pre><code>PASSWORD='QradarAdmin2026!' /opt/qradar/support/changePasswd.sh -a -V</code></pre>
+          <p>Verifizierte Rueckgabe:</p>
+          <pre><code>The admin password has been changed.</code></pre>
+          <p>Dokumentierter Soll-Stand danach:</p>
+          <ul>
+            <li>Benutzer: <code>admin</code></li>
+            <li>Passwort: <code>QradarAdmin2026!</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Lockout nach Fehlversuchen</h3>
+          <p>Direkt nach den vorherigen Fehltests lieferte die QRadar-API zeitweise nicht nur <code>401</code>, sondern den Host-Lockout:</p>
+          <pre><code>{
+  "code": 24,
+  "message": "Your host has been locked out due to too many failed login attempts. Please try again later."
+}</code></pre>
+          <p>Das ist wichtig fuer die Auswertung: ab diesem Punkt bedeutet ein fehlgeschlagener Test nicht automatisch mehr, dass das neue Passwort falsch ist.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Web-Layer gezielt wiederhergestellt</h3>
+          <p>Im Verlauf der Recovery wurden <code>tomcat</code> und spaeter auch <code>httpd</code> neu aufgebaut. Ein einfaches <code>restart</code> reichte nicht, weil <code>httpd</code> im Zustand <code>deactivating</code> bzw. <code>failed</code> haengen blieb.</p>
+          <p>Der stabile Weg war:</p>
+          <pre><code>systemctl reset-failed httpd
+systemctl start httpd
+ss -ltnp | egrep ':443|:8080|:8009'</code></pre>
+          <ul>
+            <li><code>:443</code> wieder durch <code>httpd</code> offen</li>
+            <li><code>:8080</code> wieder durch <code>tomcat</code> offen</li>
+            <li><code>:8009</code> (AJP) wieder durch <code>tomcat</code> offen</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>TLS und aktueller Reststatus</h3>
+          <p>Der TLS-Handshake auf <code>443</code> war danach wieder erfolgreich:</p>
+          <pre><code>openssl s_client -connect localhost:443 -brief &lt; /dev/null</code></pre>
+          <ul>
+            <li>TLSv1.3 Handshake erfolgreich</li>
+            <li>Zertifikat mit <code>CN=qradarce.nexora.local</code> wird praesentiert</li>
+            <li>Apache nimmt wieder HTTPS-Verbindungen an</li>
+          </ul>
+          <p>Zum Zeitpunkt dieses Dokueintrags war der technische Unterbau also wieder aktiv, aber die finale frische Login-Verifikation fuer <code>admin</code> ueber Web/API musste noch einmal separat gegen den stabilisierten Webpfad bestaetigt werden.</p>
+          <p>Naechster Solltest:</p>
+          <pre><code>curl -k -u admin:QradarAdmin2026! https://10.0.10.190/api/system/about</code></pre>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Gesamtbefund am 2026-07-08: QRadar insgesamt nicht benutzbar</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Kein isolierter 503-Fehler</h3>
+          <p>Die weitere Tiefendiagnose zeigte, dass nicht nur der Webzugriff gestoert war. QRadar war insgesamt in einem nicht benutzbaren Zustand, weil mehrere Kernkomponenten den Console-Host nicht sauber aufloesen konnten.</p>
+          <ul>
+            <li><code>/console/</code> und <code>/api/system/about</code> antworteten mit <code>503</code></li>
+            <li><code>httpd-rm</code> lief, aber der eigentliche Console-<code>tomcat</code> war nach dem Boot nicht stabil aktiv</li>
+            <li>nach manuellem Start von <code>tomcat</code> oeffneten sich <code>:8080</code> und <code>:8009</code> wieder, die Console blieb aber intern blockiert</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Verifizierter Root Cause</h3>
+          <p>In <code>/var/log/qradar.error</code> traten fortlaufend Fehler wie die folgenden auf:</p>
+          <pre><code>java.net.UnknownHostException: qradarce.nexora.local.nexora.local
+Error reporting capabilities to configuration services
+Failed to persist notification messages</code></pre>
+          <p>Der Server selbst hat den Hostnamen <code>qradarce.nexora.local</code> und <code>/etc/hosts</code> kennt die Zuordnung korrekt. Der konfigurierte DNS-Server <code>10.0.10.1</code> liefert jedoch fuer <code>qradarce.nexora.local</code> ein <code>NXDOMAIN</code>.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Technische Bewertung</h3>
+          <p>QRadar verwendet fuer interne Services nicht nur die lokale Hosts-Datei, sondern auch die konfigurierte DNS-/FQDN-Aufloesung. Wenn diese Aufloesung scheitert, brechen ConfigServices, Notifications, HostContext, ECS und damit auch die Console.</p>
+          <p>Damit sind im aktuellen Zustand nicht serioes moeglich:</p>
+          <ul>
+            <li>App-Installationen</li>
+            <li><code>qapp deploy</code></li>
+            <li>Use-Case-Erstellung im UI</li>
+            <li>stabile API-Nutzung</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Naechster sauberer Schritt</h3>
+          <p>Vor allen weiteren QRadar-Arbeiten muss die DNS-Basis korrigiert werden.</p>
+          <pre><code>Pflicht:
+qradarce.nexora.local -&gt; 10.0.10.190 (A-Record im DNS)
+
+Danach pruefen:
+host qradarce.nexora.local
+getent hosts qradarce.nexora.local
+curl -k -I https://localhost/console/</code></pre>
+          <p>Erst wenn diese Aufloesung sauber funktioniert, sollten Web-Login, API-Tests, App-Deployment und Curator-/Analyst-Use-Cases fortgesetzt werden.</p>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Live-Reparatur am 2026-07-08 erfolgreich abgeschlossen</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Durchgefuehrte Live-Fixes</h3>
+          <p>Die eigentliche Stoerung lag nicht nur in einem allgemeinen Webfehler, sondern in inkonsistenten internen QRadar-URLs und einer driftenden lokalen Host-Zuordnung.</p>
+          <p>Korrigiert wurden die fehlerhaften Eintraege mit doppelter Domain:</p>
+          <pre><code>qradarce.nexora.local.nexora.local</code></pre>
+          <p>betroffen waren diese Dateien:</p>
+          <ul>
+            <li><code>/opt/qradar/conf/nva.conf</code></li>
+            <li><code>/opt/qradar/conf/nva.qflow.qflow0.conf</code></li>
+            <li><code>/store/configservices/deployed/LOCALSET/nva.conf</code></li>
+            <li><code>/store/configservices/deployed/LOCALSET/nva.qflow.qflow0.conf</code></li>
+          </ul>
+          <p>Zusaetzlich wurde <code>/etc/hosts</code> auf die produktive Zuordnung korrigiert:</p>
+          <pre><code>10.0.10.190 qradarce.nexora.local qradarce b4bfd3831e60107b66c4.localdeployment console.localdeployment</code></pre>
+        </div>
+        <div class="card">
+          <h3>Service-Recovery</h3>
+          <p>Nach der Korrektur wurden die QRadar-Kernservices gezielt wieder hochgezogen:</p>
+          <pre><code>systemctl start tomcat
+systemctl start httpd-rm
+systemctl status tomcat httpd-rm hostcontext --no-pager -l
+ss -tulpn | egrep ':443|:8080|:8009|:7778|:7779'</code></pre>
+          <ul>
+            <li><code>hostcontext</code> aktiv</li>
+            <li><code>tomcat</code> aktiv</li>
+            <li><code>httpd-rm</code> aktiv</li>
+            <li>Listener wieder offen auf <code>:443</code>, <code>:8080</code>, <code>:8009</code>, <code>:7778</code>, <code>:7779</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Verifizierter Recovery-Nachweis</h3>
+          <p>Nach einer laengeren Re-Initialisierung kippte der Zustand von <code>503</code>/<code>Timeout</code> auf eine saubere Console-Antwort.</p>
+          <p>Externer Test von Windows:</p>
+          <pre><code>curl -k -I https://10.0.10.190/console/</code></pre>
+          <p>Ergebnis:</p>
+          <pre><code>HTTP/1.1 302 302
+Location: /console/core/jsp/Main.jsp</code></pre>
+          <p>Damit ist verifiziert, dass die QRadar-Web-Console wieder antwortet und nicht mehr im 503-Fehler oder Endlos-Timeout haengt.</p>
+        </div>
+        <div class="card">
+          <h3>Restpunkte nach der Recovery</h3>
+          <p>Der Plattform-Kern ist wieder erreichbar. In den Logs existieren aber weiterhin interne QRadar-Restfehler, unter anderem:</p>
+          <ul>
+            <li><code>NullPointerException</code> in einzelnen Komponenten</li>
+            <li>CRE-/Reference-Data-Fehler</li>
+            <li>DSM-Ladefehler</li>
+          </ul>
+          <p>Diese Punkte blockieren den Grundzugriff auf die Console aktuell nicht mehr, koennen aber App-Deployments und einzelne QRadar-Funktionen weiterhin beeinflussen.</p>
+          <p>Naechster sinnvoller Schritt:</p>
+          <ol>
+            <li>Web-Login mit <code>admin</code> erneut pruefen</li>
+            <li>API gegen den stabilen Webpfad erneut testen</li>
+            <li>danach <code>qapp deploy</code> fuer das Analyst Deck erneut ausfuehren</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>App-Deploy-Diagnose am 2026-07-08</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Verifizierter Root Cause beim Deploy</h3>
+          <p>Nach der Wiederherstellung der Console schlug das Analyst-Deck nicht mehr am ZIP-Upload oder am allgemeinen Webzugriff fehl, sondern in der internen QRadar-App-Workload-Erzeugung.</p>
+          <pre><code>Application install could not be completed. See server logs for further details.
+An error occurred while creating app instance. Task state found to be [EXCEPTION].</code></pre>
+          <p>Serverseitig wurde dazu ein klarer Infrastrukturfehler sichtbar:</p>
+          <pre><code>Unable to create app with id [qapp-1301] on host [https://b3b0e5d5fa754073af9f.localdeployment:9000/v1/api/]
+java.net.UnknownHostException: b3b0e5d5fa754073af9f.localdeployment</code></pre>
+          <p>Wichtig ist: das App-Image wurde erfolgreich gebaut. Der Fehler trat erst beim Erzeugen der eigentlichen App-Instanz auf.</p>
+        </div>
+        <div class="card">
+          <h3>Conman- und Zertifikatsbefund</h3>
+          <p><code>conman.service</code> lief bereits wieder. Das aktuelle Conman-Zertifikat zeigte aber einen anderen gueltigen lokalen Deployment-Alias:</p>
+          <pre><code>openssl x509 -in /etc/conman/tls/conman.cert -noout -subject -issuer -ext subjectAltName</code></pre>
+          <ul>
+            <li>Subject: <code>CN = qradarce.nexora.local</code></li>
+            <li>SAN: <code>DNS:qradarce.nexora.local</code></li>
+            <li>SAN: <code>DNS:b4bfd3831e60107b66c4.localdeployment</code></li>
+            <li>SAN: <code>IP Address:10.0.10.190</code></li>
+          </ul>
+          <p>Damit war klar: QRadar versuchte die Workload noch ueber einen alten internen Namen aufzubauen, der nicht mehr lokal aufloesbar war.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Durchgefuehrter Alias-Fix</h3>
+          <p>Als kontrollierter Live-Workaround wurde der alte interne Apphost-Name wieder lokal auf <code>10.0.10.190</code> gemappt. Vor jedem Edit wurden Sicherungen erzeugt:</p>
+          <pre><code>cp -a /etc/hosts /etc/hosts.bak-codex-20260708-apphost
+cp -a /opt/qradar/conf/hosts /opt/qradar/conf/hosts.bak-codex-20260708-apphost
+cp -a /store/configservices/deployed/LOCALSET/hosts /store/configservices/deployed/LOCALSET/hosts.bak-codex-20260708-apphost</code></pre>
+          <p>Danach wurde die Host-Zeile auf diesen Stand erweitert:</p>
+          <pre><code>10.0.10.190 qradarce.nexora.local qradarce b4bfd3831e60107b66c4.localdeployment console.localdeployment b3b0e5d5fa754073af9f.localdeployment</code></pre>
+          <p>Betroffen waren:</p>
+          <ul>
+            <li><code>/etc/hosts</code></li>
+            <li><code>/opt/qradar/conf/hosts</code></li>
+            <li><code>/store/configservices/deployed/LOCALSET/hosts</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Verifikation und aktueller Stand</h3>
+          <p>Die Aufloesung wurde danach direkt lokal geprueft:</p>
+          <pre><code>python3 - &lt;&lt;'PY'
+import socket
+for name in [
+    'b3b0e5d5fa754073af9f.localdeployment',
+    'b4bfd3831e60107b66c4.localdeployment',
+    'console.localdeployment',
+]:
+    print(name, '->', socket.gethostbyname(name))
+PY</code></pre>
+          <ul>
+            <li><code>b3b0e5d5fa754073af9f.localdeployment -&gt; 10.0.10.190</code></li>
+            <li><code>b4bfd3831e60107b66c4.localdeployment -&gt; 10.0.10.190</code></li>
+            <li><code>console.localdeployment -&gt; 10.0.10.190</code></li>
+          </ul>
+          <p>Aktueller Befund: Console online, Admin-Login wieder moeglich, App-Deploy-Blocker auf einen internen Apphost-/Conman-Namenskonflikt reduziert. Der naechste Live-Test ist nun ein erneuter <code>qapp deploy</code> mit parallel mitlaufenden Server-Logs.</p>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>App-Paket-Fix am 2026-07-08</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Live-Fortschritt nach Infrastruktur-Fix</h3>
+          <p>Nach Alias- und Zertifikatsreparatur kam das Analyst Deck erstmals deutlich weiter: QRadar legte die App-Definition an, erzeugte den Container und startete darin den Flask-Prozess erfolgreich.</p>
+          <pre><code>curl -sk -u admin:*** https://localhost/api/gui_app_framework/application_creation_task/1353
+podman ps -a | grep qapp-1353
+podman logs qapp-1353-WtmmMBtY</code></pre>
+          <ul>
+            <li>QRadar-Status: <code>CREATING</code></li>
+            <li>Container: <code>Up</code></li>
+            <li>App-Prozess: <code>startflask entered RUNNING state</code></li>
+          </ul>
+          <p>Damit war der urspruengliche Plattform-Blocker zwar weitgehend beseitigt, aber es blieb ein App-Layer-Problem bestehen.</p>
+        </div>
+        <div class="card">
+          <h3>Verifizierter Paketfehler</h3>
+          <p>Die lokale Codepruefung zeigte einen konkreten Startseiten-Konflikt:</p>
+          <ul>
+            <li><code>manifest.json</code> verweist auf <code>url: "index"</code></li>
+            <li><code>app/views.py</code> renderte auf <code>/index</code> eine eigene <code>index.html</code></li>
+            <li>die tatsaechlich genutzte Analystenoberflaeche liegt unter <code>app/templates/notebook.html</code></li>
+          </ul>
+          <p>Damit bestand das Risiko, dass QRadar zwar den Container startet, aber beim UI-Initialisieren nicht die erwartete stabile Hauptflaeche bekommt.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Durchgefuehrter Code-Fix</h3>
+          <ol>
+            <li><code>qradar-analyst-deck/app/views.py</code>: <code>/</code> und <code>/index</code> rendern nun direkt <code>notebook.html</code></li>
+            <li><code>qradar-analyst-deck/preview_server.py</code>: lokale Vorschau fuer <code>/</code> und <code>/index</code> ebenfalls auf <code>notebook.html</code> umgestellt</li>
+            <li>Syntaxpruefung erfolgreich</li>
+            <li>Paket neu gebaut als <code>qradar-analyst-deck/analyst-deck.zip</code></li>
+          </ol>
+          <pre><code>python -m py_compile qradar-analyst-deck/app/views.py qradar-analyst-deck/preview_server.py qradar-analyst-deck/run.py qradar-analyst-deck/app/__init__.py
+python qradar-analyst-deck/package.py</code></pre>
+        </div>
+        <div class="card">
+          <h3>Aktueller Stand</h3>
+          <ul>
+            <li>QRadar-Console wieder erreichbar</li>
+            <li>Admin-Login wieder nutzbar</li>
+            <li>interner Apphost-Alias wieder aufloesbar</li>
+            <li>Conman-Zertifikat um alten Workload-Alias erweitert</li>
+            <li>App-Container startet erstmals erfolgreich</li>
+            <li>App-Startseite im Paket konsistent auf vorhandenes Template umgestellt</li>
+          </ul>
+          <p>Naechster Schritt ist nun ein frischer Deploy des neu gebauten Pakets mit parallelem Monitoring der neuen App-ID.</p>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Live-Repair und Status am 2026-07-08</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Verifiziertes Deploy-Artefakt</h3>
+          <p>Im Live-Deploy wurden zwei unterschiedliche ZIP-Dateien klar voneinander abgegrenzt. Das ist wichtig, weil nur eine davon das korrigierte Paket ist.</p>
+          <ul>
+            <li>altes Artefakt: <code>analyst-deck-sdk.zip</code> mit <code>168755</code> Bytes</li>
+            <li>neues korrektes Artefakt: <code>analyst-deck.zip</code> mit <code>82506</code> Bytes</li>
+          </ul>
+          <pre><code>Get-ChildItem .\qradar-analyst-deck</code></pre>
+          <p>Damit ist fuer alle weiteren Deploys festgehalten: Das gueltige Paket fuer die reparierte App ist <code>analyst-deck.zip</code>.</p>
+        </div>
+        <div class="card">
+          <h3>Erste gesunde App-Instanz 1355</h3>
+          <p>Mit App-ID <code>1355</code> wurde erstmals eine Instanz verifiziert, bei der der Container selbst fachlich sauber laeuft.</p>
+          <pre><code>curl -sk -u admin:*** https://localhost/api/gui_app_framework/application_creation_task/1355
+curl -sk -u admin:*** https://localhost/api/gui_app_framework/applications/1355
+podman ps --format '{{.Names}} {{.Status}} {{.Ports}}' | grep qapp-1355
+curl -sk http://127.0.0.1:43335/
+curl -sk http://127.0.0.1:43335/debug</code></pre>
+          <ul>
+            <li>QRadar-Taskstatus: <code>CREATING</code></li>
+            <li>Container: <code>qapp-1355-oLlR2K2n</code></li>
+            <li>Port-Mapping: <code>0.0.0.0:43335-&gt;5000/tcp</code></li>
+            <li><code>/</code> liefert die HTML-Oberflaeche</li>
+            <li><code>/debug</code> liefert <code>{"ok":true,"status":"pong"}</code></li>
+          </ul>
+          <p>Einordnung: Der fruehere App-Code-/UI-Blocker ist fuer diese Instanz beseitigt. Der verbleibende Haker sitzt in der QRadar-Finalisierung.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Gezielte Plattform-Reparaturen</h3>
+          <p>Da die App trotz gesundem Container auf <code>CREATING</code> blieb, wurden zwei kontrollierte Plattform-Eingriffe durchgefuehrt.</p>
+          <pre><code>systemctl restart hostcontext
+systemctl is-active hostcontext
+
+systemctl restart tomcat
+systemctl is-active tomcat
+journalctl -u tomcat --since '2026-07-08 02:37:00' --no-pager | tail -n 120
+ss -ltnp | egrep ':443|:8080|:8443|:8009'</code></pre>
+          <ul>
+            <li><code>hostcontext</code> kam sauber wieder hoch, ohne den Task zu finalisieren</li>
+            <li><code>tomcat</code> musste beim Stoppen per Timeout hart beendet werden und startete danach neu</li>
+            <li>Listener danach wieder aktiv auf <code>443</code>, <code>8080</code> und <code>8009</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Aktueller Live-Befund</h3>
+          <ul>
+            <li><code>hostcontext</code> laeuft wieder</li>
+            <li><code>tomcat</code> laeuft wieder, befindet sich aber noch in einem schweren Warmup</li>
+            <li><code>httpd</code> lauscht wieder auf <code>443</code></li>
+            <li>der App-Container <code>qapp-1355-oLlR2K2n</code> bleibt stabil <code>Up</code></li>
+            <li>QRadar pollt den Container weiterhin zyklisch</li>
+            <li>bis zu diesem Stand wurde <code>1355</code> noch nicht von <code>CREATING</code> nach <code>RUNNING</code> oder <code>ERROR</code> umgeschaltet</li>
+          </ul>
+          <p>Naechster Fokus: vollstaendigen Abschluss des Tomcat-Warmups abwarten und danach die GUI-App-Framework-API fuer <code>1355</code> erneut pruefen.</p>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Finaler Registry- und Deploy-Repair am 2026-07-08</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Verifizierter Root Cause</h3>
+          <p>Der letzte harte Deploy-Blocker lag nicht mehr im ZIP oder im allgemeinen Webzugriff, sondern in den Registry-Client-Zertifikaten fuer die interne App-Plattform.</p>
+          <ul>
+            <li><code>qradar-app-base:4.0.11</code> war bereits in der Registry vorhanden</li>
+            <li>der Task <code>RegistryImageRegexQueryTask</code> fiel trotzdem mit <code>EXCEPTION</code> aus</li>
+            <li><code>docker-distribution</code> loggte dazu TLS-Handshake-Fehler fuer den Client</li>
+            <li>Root Cause: die Kopien von <code>podman-client-registry.cert</code> unter <code>/etc/containers/certs.d/*:5000/</code> waren noch alt und ungueltig</li>
+          </ul>
+          <p>Die Quelle unter <code>/etc/podman/tls/registry/</code> war bereits korrekt, aber QRadar nutzte fuer die Registry-Abfragen die veralteten Zielkopien.</p>
+        </div>
+        <div class="card">
+          <h3>Durchgefuehrter Live-Fix</h3>
+          <p>Die gueltigen Client-Zertifikate wurden mit dem QRadar-/IBM-Skript erneut in die aktiven Zielverzeichnisse synchronisiert:</p>
+          <pre><code>/opt/ibm/si/si-podman/bin/place-registry-client-certs.sh \
+/etc/podman/tls/registry \
+b4bfd3831e60107b66c4.localdeployment \
+qradarce.nexora.local \
+console.localdeployment</code></pre>
+          <p>Danach validierten alle Zielkopien wieder sauber gegen die aktive <code>DOCKER-DISTRIBUTION-CA</code>.</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>Nachweis des erfolgreichen Reparaturpfads</h3>
+          <ul>
+            <li><code>RegistryAvailableTask</code> = <code>COMPLETED</code></li>
+            <li><code>RegistryImageRegexQueryTask</code> = <code>COMPLETED</code></li>
+            <li><code>BuildImageTask</code> lief real auf dem Host</li>
+            <li><code>PushImageTask</code> = <code>COMPLETED</code></li>
+            <li><code>PlatformCreateAppTask</code> lief danach in die App-Instanz-Erzeugung weiter</li>
+          </ul>
+          <p>Damit war der alte Registry-/Regex-Blocker technisch vollstaendig beseitigt.</p>
+        </div>
+        <div class="card">
+          <h3>Erfolgreicher Endstatus</h3>
+          <p>Der reparierte Deploy lief mit dem korrekten Paket:</p>
+          <pre><code>qapp deploy -p analyst-deck.zip -q 10.0.10.190 -u admin -o admin -t 600</code></pre>
+          <p>Verifiziert wurden danach:</p>
+          <ul>
+            <li><code>Application 1452: COMPLETED</code></li>
+            <li><code>Final application state: RUNNING 1.0.0</code></li>
+            <li>App-Status in der API: <code>RUNNING</code></li>
+            <li>laufender Container: <code>qapp-1452-vScXPhUg</code></li>
+            <li>Container-Log: <code>startflask entered RUNNING state</code></li>
+          </ul>
+          <p>Belastbarer Gesamtstand: QRadar-Console laeuft, Admin-Login ist nutzbar, die Registry-TLS-Probleme sind repariert und das Analyst Deck ist als App <code>1452</code> erfolgreich gestartet.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

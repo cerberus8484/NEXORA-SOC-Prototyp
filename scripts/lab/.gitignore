@@ -1,0 +1,8 @@
+# Secrets — niemals committen
+secrets.env
+
+# OPNsense-Backup mit potenziell sensiblen Daten
+assets/opnsense-config.xml
+
+# Generierte autounattend-ISOs (enthalten Admin-PW im Klartext)
+*.iso

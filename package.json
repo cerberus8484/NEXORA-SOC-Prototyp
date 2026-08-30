@@ -1,0 +1,36 @@
+{
+  "name": "soc-ticket-tool",
+  "version": "1.0.0",
+  "description": "SOC Ticket Tool — Enterprise Incident Orchestration System",
+  "main": "index.html",
+  "scripts": {
+    "dev":           "npx serve -p 5500 .",
+    "start":         "npx serve -p 5500 .",
+    "test":          "jest",
+    "test:watch":    "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "collectCoverageFrom": ["tests/lib/**/*.js"],
+    "coverageThreshold": {
+      "global": { "lines": 80 }
+    }
+  },
+  "keywords": [
+    "soc",
+    "analyst",
+    "incident",
+    "security",
+    "notebook"
+  ],
+  "license": "Apache-2.0",
+  "private": true,
+  "devDependencies": {
+    "@jest/globals": "^30.4.1",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "serve": "^14.0.0"
+  }
+}

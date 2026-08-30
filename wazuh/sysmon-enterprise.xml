@@ -1,0 +1,500 @@
+<Sysmon schemaversion="4.90">
+  <!--
+    ╔══════════════════════════════════════════════════════════════════════════╗
+    ║  NEXORA SOC — Enterprise Sysmon Configuration                           ║
+    ║  Basis: SwiftOnSecurity + olafhartong/sysmon-modular + MITRE ATT&CK     ║
+    ║  Ziel: Vollständige ATT&CK-Abdeckung bei minimalem FP-Rauschen          ║
+    ║  Getestet für: Windows 10/11, Windows Server 2019/2022                  ║
+    ║  Stand: 2026-06                                                          ║
+    ╚══════════════════════════════════════════════════════════════════════════╝
+
+    PHILOSOPHIE
+    ===========
+    1. Alles unbekannte wird geloggt (onmatch="exclude" = Whitelist-Ansatz)
+    2. Bekannte legitime Microsoft/Vendor-Prozesse werden gefiltert
+    3. LSASS, Injection, Persistence, Lateral Movement = IMMER loggen
+    4. Netzwerk: Rauschen (Browser-Calls, Windows Update) ausblenden
+    5. Registry: Nur Persistence-relevante Pfade
+
+    ABGEDECKTE MITRE ATT&CK TECHNIKEN
+    ==================================
+    T1003 - OS Credential Dumping (LSASS ProcessAccess)
+    T1027 - Obfuscated Files (PowerShell -EncodedCommand)
+    T1036 - Masquerading (falsche Prozess-Parent-Beziehungen)
+    T1047 - WMI Execution (Event 19/20/21)
+    T1055 - Process Injection (CreateRemoteThread, ProcessAccess)
+    T1059 - Command and Scripting Interpreter (PowerShell, cmd, wscript)
+    T1071 - Application Layer Protocol (Netzwerk-Verbindungen)
+    T1078 - Valid Accounts (Logon-Events)
+    T1105 - Ingress Tool Transfer (Netzwerk von unerwarteten Prozessen)
+    T1106 - Native API (RawAccessRead)
+    T1112 - Modify Registry (Registry-Persistence-Pfade)
+    T1136 - Create Account (net.exe user /add)
+    T1218 - Signed Binary Proxy Execution (rundll32, regsvr32, mshta)
+    T1505 - Server Software Component (Webshell-Detection)
+    T1543 - Create/Modify System Process (Services, scheduled tasks)
+    T1547 - Boot/Logon Autostart (Run-Keys, Startup-Folder)
+    T1548 - Abuse Elevation Control (UAC-Bypass)
+    T1566 - Phishing (Office-Makro-Kindprozesse)
+    T1569 - System Services (PsExec, sc.exe)
+  -->
+
+  <EventFiltering>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 1 — PROCESS CREATION
+         Strategie: ALLE loggen, bekannte System-Noise ausschließen.
+         Jeder unbekannte oder suspicious Prozess-Start wird erfasst.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="ProcessCreate" groupRelation="or">
+      <ProcessCreate onmatch="exclude">
+
+        <!-- Windows Update / TrustedInstaller -->
+        <Image condition="contains">TiWorker.exe</Image>
+        <Image condition="contains">TrustedInstaller.exe</Image>
+        <Image condition="contains">WaaSMedicAgent.exe</Image>
+        <Image condition="contains">UsoClient.exe</Image>
+        <Image condition="contains">wuauclt.exe</Image>
+        <Image condition="contains">MpCmdRun.exe</Image>
+
+        <!-- Windows Defender / Antimalware Service (sehr gesprächig) -->
+        <ParentImage condition="contains">MsMpEng.exe</ParentImage>
+        <Image condition="contains">MsMpEng.exe</Image>
+        <Image condition="contains">NisSrv.exe</Image>
+        <Image condition="contains">SecurityHealthService.exe</Image>
+
+        <!-- Sysmon selbst -->
+        <Image condition="contains">Sysmon</Image>
+        <Image condition="contains">Sysmon64</Image>
+
+        <!-- Wazuh Agent -->
+        <Image condition="contains">wazuh-agent.exe</Image>
+        <Image condition="contains">ossec-agent.exe</Image>
+        <ParentImage condition="contains">wazuh-agent.exe</ParentImage>
+
+        <!-- Shell-Interna (erzeugen tausende Events ohne Erkennungswert) -->
+        <CommandLine condition="contains">conhost.exe 0xffffffff</CommandLine>
+        <CommandLine condition="is">"C:\Windows\system32\conhost.exe"</CommandLine>
+
+        <!-- Visual Studio / Development Tools (nur wenn kein SOC-Dev auf Endpoint) -->
+        <!-- <Image condition="contains">msbuild.exe</Image>  NICHT ausschließen — LOLBin! -->
+
+        <!-- AUSDRÜCKLICH NICHT ausgeschlossen (hoher ATT&CK-Wert, immer loggen):
+             powershell.exe, cmd.exe, wscript.exe, cscript.exe,
+             mshta.exe, rundll32.exe, regsvr32.exe, certutil.exe,
+             bitsadmin.exe, net.exe, net1.exe, psexec.exe,
+             whoami.exe, nltest.exe, mimikatz.exe, procdump.exe,
+             schtasks.exe, at.exe, wmic.exe, sc.exe, reg.exe -->
+
+      </ProcessCreate>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 2 — FILE CREATION TIME CHANGED (Timestomping)
+         T1070.006 — Indicator Removal: Timestomp
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="FileCreateTime" groupRelation="or">
+      <FileCreateTime onmatch="include">
+        <!-- Alles in Temp-Pfaden und User-Dirs ist suspekt -->
+        <TargetFilename condition="contains">\Temp\</TargetFilename>
+        <TargetFilename condition="contains">\AppData\</TargetFilename>
+        <TargetFilename condition="contains">\Downloads\</TargetFilename>
+        <!-- Ausführbare Dateien überall -->
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.dll</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="end with">.bat</TargetFilename>
+        <TargetFilename condition="end with">.vbs</TargetFilename>
+        <TargetFilename condition="end with">.js</TargetFilename>
+      </FileCreateTime>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 3 — NETWORK CONNECTIONS
+         Strategie: Bekannte legitime Verbindungen ausschließen.
+         Alle anderen werden geloggt — besonders Prozesse die NICHT
+         normalerweise Netzwerkverbindungen aufbauen.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="NetworkConnect" groupRelation="or">
+      <NetworkConnect onmatch="exclude">
+
+        <!-- Browser-Traffic (sehr hohes Volumen, geringer SOC-Wert) -->
+        <Image condition="end with">chrome.exe</Image>
+        <Image condition="end with">firefox.exe</Image>
+        <Image condition="end with">msedge.exe</Image>
+        <Image condition="end with">iexplore.exe</Image>
+        <Image condition="end with">brave.exe</Image>
+        <Image condition="end with">opera.exe</Image>
+
+        <!-- Windows Systemdienste — legitime Verbindungen -->
+        <Image condition="end with">svchost.exe</Image>
+        <Image condition="end with">lsass.exe</Image>
+        <Image condition="end with">services.exe</Image>
+        <Image condition="end with">wininit.exe</Image>
+        <Image condition="end with">WmiPrvSE.exe</Image>
+        <Image condition="end with">SearchIndexer.exe</Image>
+
+        <!-- Windows Update Infrastruktur -->
+        <Image condition="end with">wuauclt.exe</Image>
+        <Image condition="end with">UsoClient.exe</Image>
+        <Image condition="end with">TiWorker.exe</Image>
+        <Image condition="end with">MsMpEng.exe</Image>
+
+        <!-- Microsoft Office (sehr gesprächig, Cloud-Verbindungen) -->
+        <Image condition="end with">OUTLOOK.EXE</Image>
+        <Image condition="end with">WINWORD.EXE</Image>
+        <Image condition="end with">EXCEL.EXE</Image>
+        <Image condition="end with">POWERPNT.EXE</Image>
+        <!-- HINWEIS: Office-Prozesse die cmd/ps1 spawnen → Event 1 bereits geloggt -->
+
+        <!-- DNS (Port 53) — normaler System-Traffic, DNS-Queries via Event 22 -->
+        <DestinationPort condition="is">53</DestinationPort>
+
+        <!-- AUSDRÜCKLICH NICHT ausgeschlossen (immer loggen):
+             powershell.exe, cmd.exe, wscript.exe, cscript.exe,
+             mshta.exe, rundll32.exe, regsvr32.exe, certutil.exe,
+             bitsadmin.exe, msiexec.exe — Netzwerkverbindungen dieser
+             Prozesse sind fast immer IOCs -->
+
+      </NetworkConnect>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 5 — PROCESS TERMINATED
+         Nur für kritische Prozesse — verhindert Flood bei normaler Arbeit.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="ProcessTerminate" groupRelation="or">
+      <ProcessTerminate onmatch="include">
+        <!-- Security-Tool-Terminierung = kritisch (T1562 - Impair Defenses) -->
+        <Image condition="contains">MsMpEng</Image>
+        <Image condition="contains">MpCmdRun</Image>
+        <Image condition="contains">sysmon</Image>
+        <Image condition="contains">Sysmon64</Image>
+        <Image condition="contains">wazuh-agent</Image>
+        <Image condition="contains">ossec-agent</Image>
+        <!-- Anti-Cheat / EDR Terminierung -->
+        <Image condition="contains">tanium</Image>
+        <Image condition="contains">sentinel</Image>
+        <Image condition="contains">crowdstrike</Image>
+        <Image condition="contains">CbDefense</Image>
+      </ProcessTerminate>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 6 — DRIVER LOADED
+         T1014 - Rootkit / T1543.003 - Windows Service
+         IMMER loggen — besonders unsigned/unverified Treiber.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="DriverLoad" groupRelation="or">
+      <DriverLoad onmatch="exclude">
+        <!-- Bekannte legitime Microsoft-Treiber mit valider Signatur -->
+        <Signature condition="contains">Microsoft Windows</Signature>
+        <Signature condition="contains">Microsoft Corporation</Signature>
+        <Signature condition="contains">Windows Hardware Compatibility Publisher</Signature>
+      </DriverLoad>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 7 — IMAGE LOADED (DLL)
+         T1055 Process Injection / T1218 Signed Binary Proxy Execution
+         Strategie: Nur kritische DLLs / Pfade loggen — Event 7 ist sehr laut.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="ImageLoad" groupRelation="or">
+      <ImageLoad onmatch="include">
+
+        <!-- DLLs aus User-Writable Pfaden — immer suspekt -->
+        <ImageLoaded condition="contains">\AppData\</ImageLoaded>
+        <ImageLoaded condition="contains">\Temp\</ImageLoaded>
+        <ImageLoaded condition="contains">\Downloads\</ImageLoaded>
+        <ImageLoaded condition="contains">\ProgramData\</ImageLoaded>
+        <ImageLoaded condition="contains">\Users\Public\</ImageLoaded>
+
+        <!-- Credential-Access relevante DLLs -->
+        <ImageLoaded condition="end with">samlib.dll</ImageLoaded>
+        <ImageLoaded condition="end with">vaultcli.dll</ImageLoaded>
+        <ImageLoaded condition="end with">wdigest.dll</ImageLoaded>
+        <ImageLoaded condition="end with">dpapi.dll</ImageLoaded>
+
+        <!-- Unsigned DLLs geladen durch kritische Prozesse -->
+        <Signed condition="is">false</Signed>
+
+        <!-- Bekannte Angreifer-Tools / reflective injection -->
+        <ImageLoaded condition="contains">meterpreter</ImageLoaded>
+        <ImageLoaded condition="contains">cobalt</ImageLoaded>
+        <ImageLoaded condition="contains">beacon</ImageLoaded>
+
+      </ImageLoad>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 8 — CREATEREMOTETHREAD
+         T1055 - Process Injection
+         IMMER vollständig loggen — kein legitimes Programm braucht das
+         außer Debuggern. Jede Ausnahme ist eine bewusste Entscheidung.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="CreateRemoteThread" groupRelation="or">
+      <CreateRemoteThread onmatch="exclude">
+        <!-- Bekannte legitime Debugger / Profiler -->
+        <SourceImage condition="end with">AcroRd32.exe</SourceImage>
+        <!-- JIT Compiler (.NET / Java) -->
+        <StartModule condition="contains">clr.dll</StartModule>
+        <StartModule condition="contains">mscorwks.dll</StartModule>
+      </CreateRemoteThread>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 9 — RAWACCESS READ
+         T1003 / T1006 — Disk Image, Credential Dumping
+         Nur für kritische Targets loggen.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="RawAccessRead" groupRelation="or">
+      <RawAccessRead onmatch="include">
+        <Device condition="contains">\\Device\\HarddiskVolume</Device>
+      </RawAccessRead>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 10 — PROCESS ACCESS
+         T1003.001 — LSASS Memory (Credential Dumping)
+         LSASS-Zugriffe von nicht-autorisierten Prozessen = kritisch.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="ProcessAccess" groupRelation="or">
+      <ProcessAccess onmatch="exclude">
+        <!-- Legitime LSASS-Zugreifer (Windows-intern) -->
+        <SourceImage condition="end with">wmiprvse.exe</SourceImage>
+        <SourceImage condition="end with">GoogleUpdate.exe</SourceImage>
+        <SourceImage condition="end with">TOTALCMD64.EXE</SourceImage>
+        <SourceImage condition="end with">taskhost.exe</SourceImage>
+        <SourceImage condition="end with">taskhostw.exe</SourceImage>
+        <SourceImage condition="end with">taskeng.exe</SourceImage>
+        <!-- Windows intern -->
+        <SourceImage condition="end with">NisSrv.exe</SourceImage>
+        <SourceImage condition="end with">SecurityHealthService.exe</SourceImage>
+        <SourceImage condition="end with">MsMpEng.exe</SourceImage>
+        <!-- Wazuh -->
+        <SourceImage condition="end with">wazuh-agent.exe</SourceImage>
+        <SourceImage condition="end with">ossec-agent.exe</SourceImage>
+      </ProcessAccess>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 11 — FILE CREATE
+         T1547 Autostart / T1505 Webshell / T1566 Phishing
+         Nur für hochwertige Pfade loggen.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="FileCreate" groupRelation="or">
+      <FileCreate onmatch="include">
+
+        <!-- Startup-Pfade — Persistence -->
+        <TargetFilename condition="contains">\Start Menu\Programs\Startup\</TargetFilename>
+        <TargetFilename condition="contains">\AppData\Roaming\Microsoft\Windows\Start Menu\</TargetFilename>
+        <TargetFilename condition="contains">C:\ProgramData\Microsoft\Windows\Start Menu\</TargetFilename>
+
+        <!-- Temp-Pfade + ausführbare Typen -->
+        <TargetFilename condition="contains">\Temp\</TargetFilename>
+        <TargetFilename condition="contains">\AppData\Local\Temp\</TargetFilename>
+
+        <!-- Ausführbare Typen in User-Dirs -->
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.dll</TargetFilename>
+        <TargetFilename condition="end with">.bat</TargetFilename>
+        <TargetFilename condition="end with">.cmd</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="end with">.psm1</TargetFilename>
+        <TargetFilename condition="end with">.vbs</TargetFilename>
+        <TargetFilename condition="end with">.js</TargetFilename>
+        <TargetFilename condition="end with">.hta</TargetFilename>
+        <TargetFilename condition="end with">.lnk</TargetFilename>
+
+        <!-- Webshell-Pfade (IIS / Apache auf Windows) -->
+        <TargetFilename condition="contains">inetpub</TargetFilename>
+        <TargetFilename condition="contains">wwwroot</TargetFilename>
+        <TargetFilename condition="contains">htdocs</TargetFilename>
+
+        <!-- Scheduled Task XML -->
+        <TargetFilename condition="contains">\Tasks\</TargetFilename>
+
+        <!-- Treiber / Kernel-Mode -->
+        <TargetFilename condition="end with">.sys</TargetFilename>
+
+      </FileCreate>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 12 + 13 + 14 — REGISTRY EVENTS
+         T1547.001 Run Keys / T1112 Modify Registry / T1546 Event Triggered
+         Nur Persistence-relevante Pfade.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="RegistryEvent" groupRelation="or">
+      <RegistryEvent onmatch="include">
+
+        <!-- ── Persistence Run-Keys ───────────────────────────────────── -->
+        <TargetObject condition="contains">HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run</TargetObject>
+        <TargetObject condition="contains">HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run</TargetObject>
+        <TargetObject condition="contains">HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run</TargetObject>
+
+        <!-- ── Services / Treiber ─────────────────────────────────────── -->
+        <TargetObject condition="contains">HKLM\SYSTEM\CurrentControlSet\Services</TargetObject>
+
+        <!-- ── AppInit_DLLs — DLL-Injection via Registry ──────────────── -->
+        <TargetObject condition="contains">AppInit_DLLs</TargetObject>
+
+        <!-- ── Winlogon — Credential-Hijacking ────────────────────────── -->
+        <TargetObject condition="contains">\Winlogon\</TargetObject>
+
+        <!-- ── Image File Execution Options — Debugger Hijack ─────────── -->
+        <TargetObject condition="contains">Image File Execution Options</TargetObject>
+
+        <!-- ── LSA Packages — Credential-Provider Hijacking ───────────── -->
+        <TargetObject condition="contains">HKLM\SYSTEM\CurrentControlSet\Control\Lsa</TargetObject>
+
+        <!-- ── COM-Hijacking ───────────────────────────────────────────── -->
+        <TargetObject condition="contains">HKCU\Software\Classes\CLSID</TargetObject>
+
+        <!-- ── Security-Tool-Deaktivierung ────────────────────────────── -->
+        <TargetObject condition="contains">DisableAntiSpyware</TargetObject>
+        <TargetObject condition="contains">DisableRealtimeMonitoring</TargetObject>
+
+        <!-- ── Browser-Hijacking ───────────────────────────────────────── -->
+        <TargetObject condition="contains">ProxyServer</TargetObject>
+        <TargetObject condition="contains">AutoConfigURL</TargetObject>
+
+        <!-- ── Scheduled Tasks via Registry ───────────────────────────── -->
+        <TargetObject condition="contains">\Microsoft\Windows NT\CurrentVersion\Schedule</TargetObject>
+
+      </RegistryEvent>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 15 — FILE CREATE STREAM HASH (Alternate Data Streams)
+         T1564.004 — Hide Artifacts: NTFS ADS
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="FileCreateStreamHash" groupRelation="or">
+      <FileCreateStreamHash onmatch="exclude">
+        <!-- Zone.Identifier ist normales Browser-Download-Verhalten -->
+        <Contents condition="is">Zone.Identifier</Contents>
+        <TargetFilename condition="end with">.browser_download</TargetFilename>
+      </FileCreateStreamHash>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 16 — SYSMON CONFIG STATE CHANGED
+         IMMER loggen — Sysmon-Deaktivierung ist ein kritischer IOC.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="ServiceConfigurationChange" groupRelation="or">
+      <ServiceConfigurationChange onmatch="include">
+        <Configuration condition="begin with">C:\</Configuration>
+      </ServiceConfigurationChange>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 17 + 18 — NAMED PIPES
+         T1559.001 — Inter-Process Communication / Lateral Movement
+         PsExec, CobaltStrike, Metasploit benutzen Named Pipes.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="PipeEvent" groupRelation="or">
+      <PipeEvent onmatch="include">
+        <!-- Bekannte Angreifer-Pipes -->
+        <PipeName condition="contains">msagent_</PipeName>
+        <PipeName condition="contains">isapi_</PipeName>
+        <PipeName condition="contains">postex_</PipeName>
+        <PipeName condition="contains">mojo.</PipeName>
+        <PipeName condition="begin with">\</PipeName>
+        <!-- PsExec Pattern -->
+        <PipeName condition="contains">PSEXESVC</PipeName>
+        <PipeName condition="contains">psexec</PipeName>
+        <!-- Metasploit Default Pipes -->
+        <PipeName condition="contains">meterpreter</PipeName>
+        <!-- CobaltStrike Default -->
+        <PipeName condition="begin with">\\.</PipeName>
+      </PipeEvent>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 19 + 20 + 21 — WMI
+         T1047 — WMI Execution / T1546.003 — WMI Event Subscription
+         IMMER vollständig loggen — WMI ist ein Top-Persistence-Vektor.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="WmiEvent" groupRelation="or">
+      <WmiEvent onmatch="exclude">
+        <!-- Nichts ausschließen — WMI-Events sind immer relevant -->
+      </WmiEvent>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 22 — DNS QUERY
+         T1071.004 — DNS C2 / T1568 — Dynamic Resolution
+         Browser und Windows-Noise ausschließen, Rest loggen.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="DnsQuery" groupRelation="or">
+      <DnsQuery onmatch="exclude">
+        <!-- Browser -->
+        <Image condition="end with">chrome.exe</Image>
+        <Image condition="end with">firefox.exe</Image>
+        <Image condition="end with">msedge.exe</Image>
+        <Image condition="end with">iexplore.exe</Image>
+        <!-- Windows-Update / Store -->
+        <Image condition="end with">WaaSMedicAgent.exe</Image>
+        <Image condition="end with">UsoClient.exe</Image>
+        <Image condition="end with">SearchApp.exe</Image>
+        <!-- Office (cloud lookups) -->
+        <Image condition="end with">OUTLOOK.EXE</Image>
+        <Image condition="end with">Teams.exe</Image>
+        <!-- NICHT ausgeschlossen (DNS von diesen = suspicious):
+             powershell.exe, cmd.exe, wscript.exe, rundll32.exe,
+             mshta.exe, regsvr32.exe, certutil.exe, bitsadmin.exe -->
+      </DnsQuery>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 23 — FILE DELETE (archiviert)
+         T1070 — Indicator Removal: Anti-Forensik
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="FileDelete" groupRelation="or">
+      <FileDelete onmatch="include">
+        <!-- Ausführbare Typen die gelöscht werden -->
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.dll</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="end with">.bat</TargetFilename>
+        <!-- Treiber-Löschung -->
+        <TargetFilename condition="end with">.sys</TargetFilename>
+        <!-- Log-Löschung -->
+        <TargetFilename condition="end with">.evtx</TargetFilename>
+        <!-- Von unerwarteten Prozessen gelöscht -->
+        <Image condition="end with">cmd.exe</Image>
+        <Image condition="end with">powershell.exe</Image>
+        <Image condition="end with">wscript.exe</Image>
+        <Image condition="end with">cscript.exe</Image>
+      </FileDelete>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 25 — PROCESS TAMPERING
+         T1055 - Process Injection / T1036 - Masquerading
+         IMMER loggen — niemand tamppert legitim mit Prozessen.
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="ProcessTampering" groupRelation="or">
+      <ProcessTampering onmatch="exclude">
+        <!-- Nichts ausschließen -->
+      </ProcessTampering>
+    </RuleGroup>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         EVENT 26 — FILE DELETE DETECTED
+         T1070.004 — Indicator Removal: File Deletion
+         ════════════════════════════════════════════════════════════════════ -->
+    <RuleGroup name="FileDeleteDetected" groupRelation="or">
+      <FileDeleteDetected onmatch="exclude">
+        <!-- Browser-Cache Cleanup -->
+        <Image condition="end with">chrome.exe</Image>
+        <Image condition="end with">msedge.exe</Image>
+        <Image condition="end with">firefox.exe</Image>
+        <!-- Windows-eigene Cleanup-Prozesse -->
+        <Image condition="end with">cleanmgr.exe</Image>
+        <Image condition="end with">TiWorker.exe</Image>
+      </FileDeleteDetected>
+    </RuleGroup>
+
+  </EventFiltering>
+</Sysmon>

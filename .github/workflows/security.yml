@@ -1,0 +1,66 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # wöchentlich Mo 06:00 UTC (laufende Überwachung)
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: npm audit (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [backend, frontend]
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
+      - run: npm ci
+      # Harte Schranke: Produktions-Abhängigkeiten dürfen KEINE high/critical-Lücken
+      # haben (das ist es, was wirklich ausgeliefert wird).
+      - name: Audit Produktions-Deps (fail bei high/critical)
+        run: npm audit --omit=dev --audit-level=high
+      # Voller Audit inkl. Dev-/Build-Tooling — nur Bericht, blockt nicht (Dev-Tooling-
+      # Lücken brauchen oft Major-Upgrades und gehen nicht in das Prod-Bundle).
+      - name: Audit voll (nur Bericht)
+        run: npm audit || true
+
+  sbom:
+    name: SBOM CycloneDX (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [backend, frontend]
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
+      - run: npm ci
+      - name: SBOM erzeugen (CycloneDX)
+        run: npx --yes @cyclonedx/cyclonedx-npm@latest --output-file sbom-${{ matrix.dir }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.dir }}
+          path: ${{ matrix.dir }}/sbom-${{ matrix.dir }}.json
+          retention-days: 90

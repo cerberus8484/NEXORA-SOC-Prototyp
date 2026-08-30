@@ -1,0 +1,74 @@
+/* SOC Orchestrator — Design Tokens
+   Light Investigation Workspace (Main/Header/Cards) + dunkle Navy-Sidebar (in Sidebar.css gescopt).
+   Ruhige 3 Ebenen: heller Off-White-Grund → weiße Cards → feine blaugraue Linien. */
+
+:root {
+  /* Backgrounds — heller Workspace, weiße Cards, sehr feine Divider */
+  --bg: #f8fafd;            /* Main-Workspace (nahezu weiß, nur ein Hauch kühler als die Cards) */
+  --surface-rail: transparent; /* Decision-Rail-Zone: kein Panel, nur Cards auf hellem Grund */
+  --bg-card: #ffffff;       /* Cards — weiß */
+  --bg-card-soft: #f5f8fc;  /* sehr subtile Fläche (Hover, Meta) */
+  --bg-elevated: #ffffff;   /* Header · Popover/Menü (weiß mit feinem Schatten) */
+  --bg-input: #ffffff;
+  --sidebar-bg: #0b1726;    /* Sidebar-Fläche (dunkles Navy) — brandbar via BrandingPanel */
+  --border: #d8e0ea;        /* feine blaugraue Trennkante */
+  --border-soft: #e8edf4;   /* sehr dezenter Divider */
+
+  /* Text — dunkles Navy auf Hell, klar lesbar */
+  --text: #1d2a3b;
+  --text-muted: #5c6b7e;
+  --text-dim: #8593a4;
+
+  /* Accent — Nexora Blue (klar, nicht Neon/Cyan) */
+  --accent: #2f6bed;
+  --accent-soft: rgba(47, 107, 237, 0.10);
+
+  /* Zonen-Akzente (nicht mehr als Card-Border genutzt — nur Referenz für Icons) */
+  --zone-evidence: #2f6bed;
+  --zone-network: #2f6bed;
+  --zone-correlation: #2f6bed;
+
+  /* Status — gedeckt, nicht neon */
+  --success: #1f9d57;       /* Open · Healthy · bestätigt */
+  --success-soft: rgba(31, 157, 87, 0.12);
+  --warning: #e0830d;       /* Need More Evidence */
+  --warning-soft: rgba(224, 131, 13, 0.13);
+  --danger: #df3b48;        /* Critical · Delete · Confirm Suspicious */
+  --danger-soft: rgba(223, 59, 72, 0.11);
+  --purple: #7c5cff;
+  --purple-soft: rgba(124, 92, 255, 0.12);
+
+  /* Chart-/Severity-Zusatzfarben + Sonderflächen */
+  --accent-orange: #e0830d;   /* Priorität "Hoch" */
+  --chart-slate: #5b8bb0;     /* Hunt-Status "Abgeschlossen" */
+  --bg-terminal: #0c1622;     /* Command-Queue-Hintergrund (bleibt dunkel) */
+  --on-accent: #ffffff;       /* Text auf Akzent-/Action-Flächen (weiß) */
+
+  /* Layout */
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 68px;
+  --topbar-h: 60px;
+
+  /* Radii */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  /* Elevation — sehr dezent (helle, fast flache Cards), trägt die Trennung zum hellen Grund */
+  --shadow-card: 0 1px 2px rgba(20, 38, 66, 0.06), 0 1px 1px rgba(20, 38, 66, 0.04);
+  --shadow-raised: 0 2px 8px rgba(20, 38, 66, 0.08);
+  --shadow-pop: 0 12px 32px rgba(20, 38, 66, 0.16);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+}

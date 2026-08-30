@@ -1,0 +1,91 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# filebeat-suricata-flows.yml — REVIEW-ARTEFAKT (Step 1). KEIN Apply.
+#
+# Eigener Filebeat AUF DEM SENSOR (<sensor-host>), liest lokal /var/log/suricata/eve.json,
+# filtert auf relevante FLOW-Events und schreibt in einen SEPARATEN Telemetrie-Index
+# `suricata-flows-*`. Der Wazuh-Agent→Manager→`wazuh-alerts-*`-Pfad bleibt UNBERÜHRT.
+#
+# Entscheidung: ROHES Suricata-Schema beibehalten — Felder top-level (src_ip, dest_ip,
+# flow.*, event_type), NICHT künstlich unter data.* verschachteln. Nexora bekommt
+# später einen separaten Suricata-Index-Adapter.
+#
+# Zielversion: Filebeat OSS 7.10.2 (wie vom Wazuh-Stack bekannt) → `type: log`
+# (filestream ist dort erst beta). Bei neuerem Filebeat ggf. filestream + ndjson-parser.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# PLATZHALTER (vor dem Einsatz ersetzen — echte Config liegt lokal außerhalb des Repos,
+# z.B. /etc/nexora-suricata-flows/filebeat.yml; im Repo bleibt nur diese Vorlage):
+#   ${HONEYPOT_IP}          Honeypot-IP — Phase-1-Asset
+#   ${FLOW_ASSET_IPS}       Phase-2-Allowlist bewusst gewählter Assets (Honeypot, DC01, WEC01,
+#                           ...) als Einzel-IPs/CIDR-Liste — NICHT das ganze Server-VLAN
+#   ${WAZUH_INDEXER_HOST}   Wazuh-Indexer (OpenSearch), z.B. <wazuh-indexer-host>
+#   ${FLOW_INDEXER_PW}      via `filebeat keystore` / ENV — NIE im File
+
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/suricata/eve.json
+    json.keys_under_root: true     # rohes Schema: JSON-Keys landen top-level
+    json.add_error_key: true
+    fields_under_root: true
+    fields:
+      pipeline_source: suricata-flows
+
+# ── Filter in KLAR GETRENNTEN Schritten (testbar/wartbar) ────────────────────
+processors:
+  # Schritt 1 — nur Flow-Events durchlassen (alles andere raus).
+  - drop_event:
+      when:
+        not:
+          equals:
+            event_type: "flow"
+
+  # Schritt 2 — ASSET-SCOPE (Entscheidung B): behalten NUR, wenn Source ODER Destination
+  # ein bewusst definiertes Asset ist. Drop, wenn KEINE Asset-Bedingung zutrifft.
+  # Folge: externe Gegenstellen + kritische Ports zählen NUR im Asset-Kontext (die andere
+  # Seite ist ein Asset) — KEINE generische `public`-Regel, KEIN beliebiger Heimnetz↔Internet-
+  # Traffic. So bleibt der Index SOC-Telemetrie und wird kein allgemeines Heimnetz-Flow-Archiv.
+  - drop_event:
+      when:
+        not:
+          or:
+            # Phase 1 — Honeypot
+            - equals:  { src_ip:  "${HONEYPOT_IP}" }
+            - equals:  { dest_ip: "${HONEYPOT_IP}" }
+            # ── Phase 2 — Asset-Allowlist GEZIELT erweitern (NIE das ganze /24) ──
+            # Bewusst ausgewählte Server-Assets (Honeypot, DC01, WEC01, ...).
+            # Als Einzel-IPs:
+            #   - equals:  { src_ip:  "<asset-ip>" }
+            #   - equals:  { dest_ip: "<asset-ip>" }
+            # ODER als IP/CIDR-Allowlist ${FLOW_ASSET_IPS} (Asset-Liste, NICHT das VLAN):
+            #   - network: { src_ip:  ["<honeypot>/32", "<dc01>/32", "<wec01>/32"] }
+            #   - network: { dest_ip: ["<honeypot>/32", "<dc01>/32", "<wec01>/32"] }
+
+  # Schritt 3 — Multicast/Broadcast/mDNS/SSDP explizit entfernen (Defense-in-depth).
+  - drop_event:
+      when:
+        or:
+          - network: { dest_ip: ["multicast"] }     # IPv4 224.0.0.0/4 + IPv6 ff00::/8
+          - network: { src_ip:  ["multicast"] }
+          - equals:  { dest_ip: "255.255.255.255" } # limited broadcast
+          - equals:  { dest_port: 5353 }            # mDNS
+          - equals:  { dest_port: 1900 }            # SSDP
+
+# ── Output: SEPARATER Index, eigener User, TLS gegen den Indexer ─────────────
+output.elasticsearch:
+  hosts: ["https://${WAZUH_INDEXER_HOST}:9200"]     # operativ setzen (Wazuh-Indexer)
+  protocol: "https"
+  username: "filebeat-flows"                        # dedizierter Write-User (nur suricata-flows-*)
+  password: "${FLOW_INDEXER_PW}"                    # via `filebeat keystore` / ENV — NIE im File
+  ssl.certificate_authorities: ["/etc/filebeat/certs/indexer-ca.pem"]
+  ssl.verification_mode: "full"
+  index: "suricata-flows"                           # ISM-Rollover-Write-Alias
+
+# Template + Lifecycle manuell (OpenSearch ISM) — NICHT Filebeats eigenes ILM/Template.
+setup.template.enabled: false
+setup.ilm.enabled: false
+setup.template.name: "suricata-flows"
+setup.template.pattern: "suricata-flows-*"
+
+logging.level: info

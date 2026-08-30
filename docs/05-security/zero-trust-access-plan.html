@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC - Zero-Trust-Access-Plan</title>
+<style>
+  :root{
+    --bg:#080c14;--bg-card:#141824;--bg-soft:#0f1521;--border:#1f293a;
+    --text:#e6edf6;--text-dim:#8a98ac;--accent:#00d4ff;--accent2:#00ff88;
+    --font:Inter,system-ui,Segoe UI,Roboto,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
+  #wrap{display:flex;min-height:100vh} a{color:var(--accent);text-decoration:none}
+  aside{position:sticky;top:0;align-self:flex-start;width:280px;height:100vh;overflow-y:auto;background:var(--bg-card);border-right:1px solid var(--border);padding:22px 16px}
+  aside h1{margin:0;font-size:15px} aside p{margin:6px 0 18px;color:var(--text-dim);font-size:12px}
+  aside nav a{display:block;padding:7px 10px;margin:2px 0;border-radius:8px;color:var(--text-dim);font-size:12.5px}
+  aside nav a:hover,aside nav a.active{background:rgba(0,212,255,.08);color:var(--accent)}
+  main{flex:1;max-width:980px;padding:36px 44px 100px}
+  .hero{border:1px solid var(--border);background:linear-gradient(180deg,rgba(0,212,255,.08),rgba(0,212,255,.02));border-radius:14px;padding:24px;margin-bottom:28px}
+  .hero h1{margin:0 0 8px;font-size:28px;color:var(--accent)}
+  .hero p{margin:6px 0;color:var(--text-dim)}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid rgba(0,255,136,.35);color:var(--accent2);background:rgba(0,255,136,.08);font-size:11px;font-family:var(--mono)}
+  section{margin:30px 0;scroll-margin-top:20px}
+  h2{font-size:20px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);color:var(--accent)}
+  p,li{font-size:13.5px} ul,ol{padding-left:20px}
+  table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent)}
+  code{font-family:var(--mono);background:rgba(0,212,255,.08);padding:1px 5px;border-radius:4px}
+  .note{border-left:3px solid var(--accent);background:rgba(0,212,255,.05);padding:10px 14px;border-radius:0 8px 8px 0;color:var(--text-dim);font-size:13px}
+</style>
+<script>
+window.addEventListener('load', () => {
+  const links = [...document.querySelectorAll('aside nav a')];
+  const map = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      links.forEach((link) => link.classList.remove('active'));
+      const link = map.get(entry.target.id);
+      if (link) link.classList.add('active');
+    });
+  }, { rootMargin: '-10% 0px -75% 0px' });
+  document.querySelectorAll('section[id]').forEach((section) => obs.observe(section));
+});
+</script>
+</head>
+<body>
+<div id="wrap">
+  <aside>
+    <h1>Zero-Trust Access</h1>
+    <p>Nexora SOC Architektur-/Security-Track</p>
+    <nav>
+      <a href="#ziel">01 Ziel</a>
+      <a href="#bausteine">02 Bausteine</a>
+      <a href="#ziele">03 Sicherheitsziele</a>
+      <a href="#threats">04 Threat Model</a>
+      <a href="#architektur">05 Architekturziel</a>
+      <a href="#kriterien">06 Bewertungsrahmen</a>
+      <a href="#phasen">07 Arbeitsablauf</a>
+      <a href="#offen">08 Offene Entscheidungen</a>
+    </nav>
+  </aside>
+  <main>
+    <div class="hero">
+      <div class="badge">Track vorbereitet</div>
+      <h1>Zero-Trust-Access-Plan</h1>
+      <p>Identitaetszentrierter Zugang statt pauschalem Netz-Zutritt fuer Nexora, Operator-Zugriffe und spaetere Node-nahe Funktionen.</p>
+      <p>Der Plan ist bewusst produktneutral. `Twingate` oder `Tailscale` sind moegliche Vergleichskandidaten, aber keine Vorfestlegung.</p>
+    </div>
+
+    <section id="ziel">
+      <h2>01 Ziel</h2>
+      <p>Privilegierter Zugang soll nicht aus LAN-/VPN-Naehe abgeleitet werden, sondern aus Identitaet, Kontext, expliziter Policy und Audit.</p>
+      <ol>
+        <li>App Access</li>
+        <li>Operator Access</li>
+        <li>Managed Node Access</li>
+      </ol>
+    </section>
+
+    <section id="bausteine">
+      <h2>02 Bereits vorhandene Bausteine</h2>
+      <ul>
+        <li>Cookie-only-Session + CSRF</li>
+        <li>Rollen und serverseitige Role-Gates</li>
+        <li>MFA/TOTP</li>
+        <li>OIDC-SSO</li>
+        <li>WebAuthn/Passkey</li>
+        <li>Audit-Log / Audit-Export</li>
+        <li>Control-Plane mit No-Apply-Modell</li>
+      </ul>
+    </section>
+
+    <section id="ziele">
+      <h2>03 Sicherheitsziele</h2>
+      <ul>
+        <li>Kein privilegierter Zugang nur wegen Netzlage</li>
+        <li>MFA / Step-up fuer privilegierte Pfade</li>
+        <li>Kurze, widerrufbare Sessions</li>
+        <li>Ressourcenfreigabe pro Ziel statt Subnetzfreigabe</li>
+        <li>Zentrale Auditierbarkeit</li>
+        <li>Expliziter Break-Glass-Pfad</li>
+      </ul>
+      <div class="note">Nicht-Ziel dieses Tracks ist ein freier Remote-Exec-Kanal ueber die Nexora-Control-Plane.</div>
+    </section>
+
+    <section id="threats">
+      <h2>04 Threat Model</h2>
+      <table>
+        <thead><tr><th>Risiko</th><th>Zielkontrolle</th></tr></thead>
+        <tbody>
+          <tr><td>Gestohlene Zugangsdaten</td><td>MFA, Passkey, Re-Auth, Session-Revocation</td></tr>
+          <tr><td>Zu breite Netzfreigaben</td><td>Ressourcenscharfe Policies statt ganzer Netze</td></tr>
+          <tr><td>Schattenzugang ueber Direktpfade</td><td>Zielinventar, Policy, Audit, Abschaltung alter Pfade</td></tr>
+          <tr><td>IdP-/Broker-Ausfall</td><td>Break-Glass-Konzept</td></tr>
+          <tr><td>Missbrauch kuenftiger Node-Funktionen</td><td>Pull-Modell, Approval, Signatur, No-Apply-Grenze</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="architektur">
+      <h2>05 Architekturziel</h2>
+      <ul>
+        <li><strong>Ebene A - App Access:</strong> OIDC, MFA/Passkey, Re-Auth fuer High-Risk-Aktionen.</li>
+        <li><strong>Ebene B - Operator Access:</strong> brokered access statt flat network reachability.</li>
+        <li><strong>Ebene C - Managed Node Access:</strong> weiterhin keine freie Remote-Ausfuehrung.</li>
+      </ul>
+    </section>
+
+    <section id="kriterien">
+      <h2>06 Bewertungsrahmen</h2>
+      <p>Ein Kandidat ist nur geeignet, wenn er OIDC/MFA sauber integrieren kann, Audit liefert, Windows- und Linux-Adminpfade praktikabel abdeckt und keine breite Netzfreigabe als Default erfordert.</p>
+    </section>
+
+    <section id="phasen">
+      <h2>07 Arbeitsablauf</h2>
+      <ol>
+        <li>Management-Zielsysteme und Direktpfade inventarisieren</li>
+        <li>Zugriffsklassen und Step-up-Matrix definieren</li>
+        <li>2-3 Zieloptionen gegen den Kriterienkatalog vergleichen</li>
+        <li>Danach einen Implementierungs-ADR fuer die gewaehlte Loesung schreiben</li>
+      </ol>
+    </section>
+
+    <section id="offen">
+      <h2>08 Offene Entscheidungen</h2>
+      <ul>
+        <li>Welche Infrastrukturpfade muessen wirklich remote erreichbar sein?</li>
+        <li>Wie wird Break-Glass dokumentiert und technisch abgesichert?</li>
+        <li>Welche alten Direktpfade werden spaeter bewusst abgeschaltet?</li>
+      </ul>
+    </section>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,100 @@
+# Nexora Data-Plane Stack auf nexora (10.99.99.75).
+# Kette: (VPS-conntrack) → intake → outbox → outbox-worker (Fusion) → soc_api_prod (A4) → Prod-Ticket.
+# intake/worker mit eigener DB; der Worker postet an das Prod-Backend über das Netz soc_internal.
+#
+#   .env (0600) muss setzen: INTAKE_PG_PASSWORD, DATAPLANE_WEBHOOK_SECRET (= Prod WEBHOOK_SECRET_GENERIC)
+#   Start:  docker compose up -d --build
+name: nexora-dataplane
+
+services:
+  intake:
+    build: { context: ../../dataplane }
+    image: nexora-intake:prod
+    container_name: nexora_intake
+    environment:
+      PORT: "8081"
+      DATAPLANE_DB_URL: "postgres://nexora:${INTAKE_PG_PASSWORD:?}@intake-postgres:5432/nexora_intake"
+      INTAKE_RATE_LIMIT: "6000"
+    depends_on:
+      intake-postgres: { condition: service_healthy }
+    ports: ["8081:8081"]
+    restart: unless-stopped
+
+  intake-postgres:
+    image: postgres:16-alpine
+    container_name: nexora_intake_pg
+    environment:
+      POSTGRES_DB: nexora_intake
+      POSTGRES_USER: nexora
+      POSTGRES_PASSWORD: "${INTAKE_PG_PASSWORD:?}"
+    volumes: [intake_pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexora -d nexora_intake"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # Korrelierungs-Engine: claimt Outbox → Cross-Domain-Fusion → HMAC-POST an die A4-Ingress.
+  outbox-worker:
+    image: nexora-intake:prod      # gleiches Image (enthält src/engine/), anderer Entrypoint
+    container_name: nexora_outbox_worker
+    command: ["node", "src/engine/outboxWorkerMain.js"]
+    environment:
+      DATAPLANE_DB_URL: "postgres://nexora:${INTAKE_PG_PASSWORD:?}@intake-postgres:5432/nexora_intake"
+      # PROD-Ingress: echtes soc_api_prod über das Prod-Netz (soc_internal). Secret = WEBHOOK_SECRET_GENERIC.
+      INGRESS_URL: "http://soc_api_prod:3000/api/v1/dataplane/incidents"
+      INGRESS_SECRET: "${DATAPLANE_WEBHOOK_SECRET:?}"
+      WORKER_ID: "nexora-worker-1"
+      POLL_INTERVAL_MS: "3000"
+      FUSION_WINDOW_MS: "300000"
+    depends_on:
+      intake-postgres: { condition: service_healthy }
+    networks: [default, soc_prod]
+    # Worker hat keinen HTTP-Port → geerbten Intake-Healthcheck des Images abschalten.
+    healthcheck: { disable: true }
+    restart: unless-stopped
+
+  # Collector-Hub (ADR-036): zieht intern per read-only ssh-tail die Logs der Quellen → Intake.
+  # Ersetzt die Push-Kollektoren auf den Quell-Hosts. Config + read-only SSH-Keys liegen NUR hier (intern).
+  collector-hub:
+    image: nexora-intake:prod      # gleiches Image (enthält src/collector/ + openssh-client), anderer Entrypoint
+    container_name: nexora_collector_hub
+    command: ["node", "src/collector/collectorHubMain.js"]
+    environment:
+      HUB_CONFIG_FILE: /config/hub.config.json
+      CRED_HP_COWRIE: "${CRED_HP_COWRIE:?}"
+      CRED_HP_SURICATA: "${CRED_HP_SURICATA:?}"
+      CRED_LAB_WAZUH: "${CRED_LAB_WAZUH:?}"
+      # OPNsense-Quelle vorbereitet, aber PAUSIERT (live = reines LAN-Broadcast/Multicast-Rauschen;
+      # braucht WAN/extern-Scope + Broadcast-Ausschluss, s. docs/00-overview/schulden-report). Optional.
+      CRED_LAB_OPNSENSE: "${CRED_LAB_OPNSENSE:-}"
+      # Hub↔Backend-Status-Brücke: meldet Collector-/Intake-/Outbox-Status periodisch an
+      # soc_api_prod (über soc_prod-Netz, HMAC). nodeId explizit (kein HOSTNAME-Leak).
+      # DATAPLANE_DB_URL → echte Intake-/Outbox-Zähler aus der Intake-DB.
+      NEXORA_STATUS_URL: "http://soc_api_prod:3000/api/v1/dataplane/status"
+      WEBHOOK_SECRET_DATAPLANE: "${DATAPLANE_WEBHOOK_SECRET:?}"
+      NEXORA_NODE_ID: "nexora-collector-hub-1"
+      STATUS_INTERVAL_MS: "30000"
+      DATAPLANE_DB_URL: "postgres://nexora:${INTAKE_PG_PASSWORD:?}@intake-postgres:5432/nexora_intake"
+      # Anti-Flut: Angreifer-Aggregation je Quell-IP (1 Ticket/IP statt N je Zeit-Fenster).
+      # Default aus (= bisheriges Verhalten); Operator setzt FUSION_ATTACKER_AGG=true in .env.
+      FUSION_ATTACKER_AGG: "${FUSION_ATTACKER_AGG:-false}"
+    volumes:
+      - ./hub.config.json:/config/hub.config.json:ro   # operator-privat (gitignored); Vorlage: deploy/collector-hub/hub.config.example.json
+      - ./keys:/keys:ro                                # read-only SSH-Keys zu den Quellen (operator-privat)
+    depends_on:
+      intake: { condition: service_started }
+    networks: [default, soc_prod]                      # default = Intake-DB erreichbar · soc_prod = soc_api_prod erreichbar
+    healthcheck: { disable: true }
+    restart: unless-stopped
+
+volumes:
+  intake_pgdata:
+
+networks:
+  default:
+  # Prod-Netz von soc_*_prod (extern) — der Worker postet darüber an soc_api_prod.
+  soc_prod:
+    external: true
+    name: soc_internal

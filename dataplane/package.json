@@ -1,0 +1,13 @@
+{
+  "name": "nexora-dataplane",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nexora Data Plane (vereint) — Kollektoren (Collectors), EventEnvelopeV1-Contract, Intake-Server. Operator-intern.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.22.2",
+    "pg": "^8.22.0"
+  }
+}

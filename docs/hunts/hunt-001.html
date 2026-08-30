@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Ticket Tool — HUNT-001: C2 / Beaconing Detection</title>
+<style>
+  :root{--bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;--accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;--purple:#9b59f5;--text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;--font-mono:'JetBrains Mono','Courier New',monospace;--font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:18px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .sb-badge{display:inline-block;margin:10px 16px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--crit);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:12px 16px 4px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:5px 16px;font-size:11px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .hid{font-size:9px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);min-width:36px;flex-shrink:0;}
+  #content{margin-left:var(--sw);flex:1;padding:40px 50px 80px;}
+  .cover{margin-bottom:36px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+  .hunt-id-cover{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.25);color:var(--crit);margin-bottom:8px;}
+  .cover h1{font-size:24px;font-weight:800;color:var(--text-head);letter-spacing:1px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:6px;}
+  .doc-section{margin-bottom:48px;scroll-margin-top:24px;}
+  h2{font-size:18px;font-weight:700;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+  h3{font-size:13px;font-weight:700;color:var(--text-head);margin:18px 0 8px;text-transform:uppercase;letter-spacing:.5px;}
+  p{margin-bottom:10px;color:var(--text);font-size:13px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-radius:5px;padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:8px 0 16px;}
+  pre.qradar{border-left:3px solid var(--accent);}
+  pre.splunk{border-left:3px solid var(--warn);}
+  pre.sysmon{border-left:3px solid var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:11px;}
+  .conf-bar{display:flex;align-items:center;gap:10px;}
+  .conf-num{font-family:var(--font-mono);font-size:12px;font-weight:700;min-width:34px;color:var(--text-head);}
+  .conf-track{flex:1;background:var(--bg-input);border-radius:3px;height:8px;overflow:hidden;}
+  .conf-fill{height:100%;border-radius:3px;}
+  .c-crit{background:var(--crit);}
+  .c-high{background:var(--warn);}
+  .c-med{background:#ffc800;}
+  .c-low{background:var(--accent2);}
+  code{font-family:var(--font-mono);font-size:11px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:22px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  .info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-left:3px solid var(--accent);border-radius:5px;padding:11px 14px;margin:12px 0;font-size:12px;}
+  .warn-box{background:rgba(255,45,85,.05);border:1px solid rgba(255,45,85,.2);border-left:3px solid var(--crit);border-radius:5px;padding:11px 14px;margin:12px 0;font-size:12px;}
+  .var-label{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:2px;background:rgba(155,89,245,.1);border:1px solid rgba(155,89,245,.25);color:var(--purple);margin-right:6px;font-family:var(--font-mono);}
+  .tp-label{color:var(--accent2);font-weight:700;font-size:10px;margin-right:6px;}
+  .fp-label{color:var(--crit);font-weight:700;font-size:10px;margin-right:6px;}
+  ol{padding-left:20px;}
+  ol li{margin-bottom:14px;font-size:13px;}
+  .status-active{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>SOC Ticket Tool</h1><p>Hunt Reference</p></div>
+  <span class="sb-badge">Hunt-001</span>
+  <div class="sb-section">Ubersicht</div>
+  <a class="sb-link" href="index.html"><span class="hid">—</span> Alle Hunts</a>
+  <div class="sb-section">C2 / Netzwerk</div>
+  <a class="sb-link active" href="hunt-001.html"><span class="hid">H-001</span> C2 / Beaconing</a>
+  <div class="sb-section">Credential Access</div>
+  <a class="sb-link" href="hunt-002.html"><span class="hid">H-002</span> Credential Theft</a>
+  <div class="sb-section">Lateral Movement</div>
+  <a class="sb-link" href="hunt-003.html"><span class="hid">H-003</span> Lateral Movement</a>
+  <div class="sb-section">Persistence</div>
+  <a class="sb-link" href="hunt-004.html"><span class="hid">H-004</span> Persistence</a>
+  <div class="sb-section">Defense Evasion</div>
+  <a class="sb-link" href="hunt-005.html"><span class="hid">H-005</span> LOLBins / Evasion</a>
+  <div class="sb-section">Exfiltration</div>
+  <a class="sb-link" href="hunt-006.html"><span class="hid">H-006</span> Exfiltration / DNS</a>
+  <div class="sb-section">Impact</div>
+  <a class="sb-link" href="hunt-007.html"><span class="hid">H-007</span> Ransomware Precursors</a>
+  <div class="sb-section">Privilege Escalation</div>
+  <a class="sb-link" href="hunt-008.html"><span class="hid">H-008</span> Privilege Escalation</a>
+  <div class="sb-section">Discovery</div>
+  <a class="sb-link" href="hunt-009.html"><span class="hid">H-009</span> AD Enumeration</a>
+  <div class="sb-section">Initial Access</div>
+  <a class="sb-link" href="hunt-010.html"><span class="hid">H-010</span> Initial Access / Phishing</a>
+  <div class="sb-section" style="margin-top:12px;">Sections</div>
+  <a class="sb-link" href="#overview"><span class="hid">01</span> Uberblick</a>
+  <a class="sb-link" href="#beschreibung"><span class="hid">02</span> Beschreibung</a>
+  <a class="sb-link" href="#qradar"><span class="hid">03</span> QRadar AQL</a>
+  <a class="sb-link" href="#splunk"><span class="hid">04</span> Splunk SPL</a>
+  <a class="sb-link" href="#sysmon"><span class="hid">05</span> Sysmon / WinSec</a>
+  <a class="sb-link" href="#tp"><span class="hid">06</span> True Positives</a>
+  <a class="sb-link" href="#fp"><span class="hid">07</span> False Positives</a>
+  <a class="sb-link" href="#varianten"><span class="hid">08</span> Varianten &amp; Evasion</a>
+  <a class="sb-link" href="#scoring"><span class="hid">09</span> Konfidenz-Berechnung</a>
+  <a class="sb-link" href="#tests"><span class="hid">10</span> Test Cases</a>
+</nav>
+
+<main id="content">
+  <a class="back-link" href="index.html">&#8592; Hunt-Ubersicht</a>
+  <div class="cover">
+    <span class="hunt-id-cover">HUNT-001</span>
+    <h1>C2 / Beaconing Detection</h1>
+    <div class="meta">MITRE: T1071.001, T1095, T1571, T1090 &nbsp;|&nbsp; Taktik: Command and Control &nbsp;|&nbsp; Quellen: Firewall, Proxy, Sysmon 3+22, DNS</div>
+  </div>
+
+  <!-- 1. UBERBLICK -->
+  <section class="doc-section" id="overview">
+    <h2>1. Uberblick</h2>
+    <table class="doc-table">
+      <thead><tr><th>Attribut</th><th>Wert</th></tr></thead>
+      <tbody>
+        <tr><td>Hunt-ID</td><td>HUNT-001</td></tr>
+        <tr><td>MITRE Techniques</td><td>T1071.001 (HTTP/S), T1095 (Non-App Layer), T1571 (Non-Standard Port), T1090 (Proxy)</td></tr>
+        <tr><td>Taktik</td><td>Command and Control</td></tr>
+        <tr><td>Benotigte Log-Quellen</td><td>Firewall Netflow, Web Proxy, Sysmon Event 3 (NetworkConnect), Sysmon Event 22 (DNSQuery), DNS Resolver Logs</td></tr>
+        <tr><td>Basis-Konfidenz</td><td>40 (Einzelsignal) — steigt durch Korrelation</td></tr>
+        <tr><td>Status</td><td><span class="status-active">ACTIVE</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2. BESCHREIBUNG -->
+  <section class="doc-section" id="beschreibung">
+    <h2>2. Beschreibung</h2>
+    <p>Dieser Hunt erkennt periodisches Beaconing-Verhalten, das typisch fur Command-and-Control-Implantate ist. Angegriffene Systeme verbinden sich in regelmasigen Intervallen mit einem externen Server — oft mit minimalem Jitter (Cobalt Strike Default: 60s, 0% Jitter) oder einem berechneten Pseudo-Random-Intervall (Malleable C2 mit Jitter-Faktor).</p>
+    <p>Das Kernprinzip: Legitimer Nutzerverkehr zeigt hohe Varianz in Verbindungsintervallen. C2-Beaconing zeigt niedrige Standardabweichung (STDDEV) der Intervalle uber einen langeren Zeitraum. Kombiniert mit kleinen, gleichformigen Paketgroßen und suspekten User-Agents ergibt sich ein starkes Signal.</p>
+    <div class="info-box">Warum es funktioniert: Menschen surfen nicht in 60-Sekunden-Zyklen. Maschinen schon. Die Standardabweichung der Verbindungsintervalle ist das starkste Signal — bei echtem C2 liegt sie typischerweise unter 15 Sekunden.</div>
+    <div class="warn-box">Limitation: Hochfrequenz-Beaconing (&lt;5s) produziert extrem viele Events. Sleep Obfuscation (variierendes Sleep mit Jitter bis 50%) erhoht die STDDEV und kann diesen Hunt umgehen.</div>
+  </section>
+
+  <!-- 3. QRADAR AQL -->
+  <section class="doc-section" id="qradar">
+    <h2>3. QRadar AQL</h2>
+    <h3>Beacon Pattern Query — Interval STDDEV</h3>
+    <pre class="qradar">
+-- HUNT-001: C2 Beaconing Detection via QRadar AQL
+-- Erkennt periodische Verbindungsmuster zu externen IPs
+-- Quellen: Firewall Netflow, Sysmon Event 3
+
+SELECT
+    sourceip                                          AS src_ip,
+    destinationip                                     AS dst_ip,
+    destinationport                                   AS dst_port,
+    COUNT(*)                                          AS connection_count,
+
+    -- Zeitliche Intervall-Analyse
+    MAX(starttime) - MIN(starttime)                   AS observation_window_sec,
+    (MAX(starttime) - MIN(starttime)) / COUNT(*)      AS avg_interval_sec,
+
+    -- Standardabweichung der Intervalle (approximiert via Varianz)
+    SQRT(
+        AVG(POWER(starttime - (
+            SELECT AVG(starttime)
+            FROM events e2
+            WHERE e2.sourceip = events.sourceip
+              AND e2.destinationip = events.destinationip
+        ), 2))
+    )                                                 AS interval_stddev,
+
+    -- Datenmenge je Verbindung (gleichformige Beacons haben aehnliche Bytezahl)
+    AVG(eventpayload)                                 AS avg_bytes,
+    STDDEV(eventpayload)                              AS bytes_stddev,
+
+    -- Zeitraum
+    MIN(DATEFORMAT(starttime, 'yyyy-MM-dd HH:mm:ss')) AS first_seen,
+    MAX(DATEFORMAT(starttime, 'yyyy-MM-dd HH:mm:ss')) AS last_seen
+
+FROM events
+
+WHERE
+    -- Nur ausgehende Verbindungen zu externen IPs
+    INCIDR('10.0.0.0/8', destinationip) = FALSE
+    AND INCIDR('172.16.0.0/12', destinationip) = FALSE
+    AND INCIDR('192.168.240.0/16', destinationip) = FALSE
+    AND INCIDR('127.0.0.0/8', destinationip) = FALSE
+
+    -- Relevante Event-Kategorien: Firewall Permit + Sysmon Net
+    AND (
+        category = 'Firewall Permit'
+        OR (qid = 5000012 AND EventID = '3')  -- Sysmon Event 3
+    )
+
+    -- Zeitfenster: letzte 24 Stunden
+    AND starttime > (NOW() - 86400000)
+
+    -- Nur TCP/UDP (kein ICMP auf diesem Hunt)
+    AND protocol IN (6, 17)
+
+GROUP BY
+    sourceip,
+    destinationip,
+    destinationport
+
+HAVING
+    -- Mindestens 10 Verbindungen im Beobachtungszeitraum
+    connection_count >= 10
+
+    -- Durchschnittliches Intervall zwischen 30s und 600s (typischer C2-Bereich)
+    AND avg_interval_sec BETWEEN 30 AND 600
+
+    -- Niedrige Standardabweichung = hochregulares Timing
+    AND interval_stddev &lt; 15
+
+    -- Mindestbeobachtungszeitraum: 10 Minuten
+    AND observation_window_sec > 600
+
+ORDER BY
+    interval_stddev ASC,   -- Niedrigste STDDEV zuerst = regularstes Beaconing
+    connection_count DESC
+
+LIMIT 200;
+</pre>
+
+    <h3>DNS Beacon Query (lange NXDomain-Ketten)</h3>
+    <pre class="qradar">
+-- HUNT-001b: DNS-basiertes C2 Beaconing
+-- Quelle: DNS Resolver Logs (Sysmon Event 22)
+
+SELECT
+    sourceip                     AS client_ip,
+    domainname                   AS queried_domain,
+    COUNT(*)                     AS query_count,
+    COUNT(DISTINCT domainname)   AS unique_subdomains,
+
+    -- Entropie-Indikator: lange Subdomains = Base64/Hex encoded
+    AVG(LENGTH(domainname))      AS avg_domain_length,
+    MAX(LENGTH(domainname))      AS max_domain_length,
+
+    -- Record-Typ-Verteilung (TXT/NULL = Tunnel-Indikator)
+    SUM(CASE WHEN recordtype = 'TXT'  THEN 1 ELSE 0 END) AS txt_count,
+    SUM(CASE WHEN recordtype = 'NULL' THEN 1 ELSE 0 END) AS null_count,
+    SUM(CASE WHEN recordtype = 'A'    THEN 1 ELSE 0 END) AS a_count,
+
+    MIN(DATEFORMAT(starttime, 'yyyy-MM-dd HH:mm:ss')) AS first_seen,
+    MAX(DATEFORMAT(starttime, 'yyyy-MM-dd HH:mm:ss')) AS last_seen
+
+FROM events
+
+WHERE
+    -- DNS Events
+    (EventID = '22' OR category = 'DNS Query')
+    AND starttime > (NOW() - 86400000)
+
+    -- Externe Domains (eigene Domains ausschliessen)
+    AND domainname NOT LIKE '%.intern'
+    AND domainname NOT LIKE '%.local'
+    AND domainname NOT LIKE '%.corp'
+
+GROUP BY
+    sourceip,
+    -- Basisdomaene extrahieren (letzte 2 Labels)
+    SUBSTRING(domainname, LENGTH(domainname) - POSITION('.' IN REVERSE(domainname)) - POSITION('.' IN SUBSTRING(REVERSE(domainname), POSITION('.' IN REVERSE(domainname))+1)) + 2)
+
+HAVING
+    -- Viele Queries zur gleichen Basisdomain
+    query_count >= 50
+
+    -- Oder lange Subdomains (Encoding-Indikator)
+    OR avg_domain_length > 30
+
+    -- Oder TXT/NULL Records (Tunnel-Indikator)
+    OR (txt_count + null_count) > 5
+
+ORDER BY
+    (txt_count + null_count) DESC,
+    avg_domain_length DESC,
+    query_count DESC
+
+LIMIT 100;
+</pre>
+  </section>
+
+  <!-- 4. SPLUNK SPL -->
+  <section class="doc-section" id="splunk">
+    <h2>4. Splunk SPL</h2>
+    <h3>Beacon Score — Zeitbasierte Erkennung</h3>
+    <pre class="splunk">
+`*** HUNT-001: C2 Beaconing Detection — Splunk SPL ***`
+`*** Index: firewall, sysmon | Zeitraum: -24h ***`
+
+index=firewall OR index=sysmon
+    (EventCode=3 OR sourcetype="pan:traffic" OR sourcetype="cisco:asa")
+    action=allowed OR action=permitted
+    earliest=-24h
+
+`-- Nur externe Ziel-IPs --`
+| where NOT match(dest_ip, "^10\.")
+    AND NOT match(dest_ip, "^172\.(1[6-9]|2[0-9]|3[0-1])\.")
+    AND NOT match(dest_ip, "^192\.168\.")
+    AND NOT match(dest_ip, "^127\.")
+
+`-- Zeitstempel als Unix-Sekunden normalisieren --`
+| eval epoch = if(isnum(_time), _time, strptime(_time, "%Y-%m-%dT%H:%M:%S"))
+
+`-- Pro Connection Group: Intervalle berechnen --`
+| sort 0 src_ip dest_ip dest_port epoch
+| streamstats window=2 current=true
+    last(epoch) AS prev_epoch
+    by src_ip dest_ip dest_port
+| eval interval_sec = epoch - prev_epoch
+| where interval_sec > 0 AND interval_sec < 7200
+
+`-- Aggregation pro Host-Ziel-Paar --`
+| stats
+    count                    AS conn_count,
+    avg(interval_sec)        AS avg_interval,
+    stdev(interval_sec)      AS stdev_interval,
+    min(epoch)               AS first_seen_epoch,
+    max(epoch)               AS last_seen_epoch,
+    avg(bytes_out)           AS avg_bytes,
+    stdev(bytes_out)         AS stdev_bytes,
+    values(dest_port)        AS ports_used
+    by src_ip dest_ip
+
+`-- Zeitfenster-Berechnung --`
+| eval observation_min = round((last_seen_epoch - first_seen_epoch) / 60, 1)
+| eval first_seen = strftime(first_seen_epoch, "%Y-%m-%d %H:%M:%S")
+| eval last_seen  = strftime(last_seen_epoch,  "%Y-%m-%d %H:%M:%S")
+
+`-- Beacon Score berechnen (0-100) --`
+| eval beacon_score = 0
+
+`  Regulares Timing: niedrige STDDEV = hoher Score`
+| eval beacon_score = beacon_score + case(
+    stdev_interval < 5,   40,
+    stdev_interval < 15,  30,
+    stdev_interval < 30,  15,
+    stdev_interval < 60,   5,
+    true(),                0
+)
+
+`  Ausreichend Verbindungen`
+| eval beacon_score = beacon_score + case(
+    conn_count >= 100, 20,
+    conn_count >= 50,  15,
+    conn_count >= 20,  10,
+    conn_count >= 10,   5,
+    true(),             0
+)
+
+`  Typische C2-Intervalle (30-300s)`
+| eval beacon_score = beacon_score + case(
+    avg_interval >= 30  AND avg_interval <= 65,  20,
+    avg_interval >= 65  AND avg_interval <= 300, 15,
+    avg_interval >= 300 AND avg_interval <= 600, 10,
+    true(),                                        0
+)
+
+`  Gleichformige Paketgrosse`
+| eval beacon_score = beacon_score + case(
+    stdev_bytes < 50,  10,
+    stdev_bytes < 200,  5,
+    true(),             0
+)
+
+`  Schwellwert: nur Score >= 40 weiterverarbeiten`
+| where beacon_score >= 40
+
+`-- Zusaetzliche Anreicherung --`
+| eval risk_level = case(
+    beacon_score >= 80, "CRITICAL",
+    beacon_score >= 60, "HIGH",
+    beacon_score >= 40, "MEDIUM",
+    true(),             "LOW"
+)
+
+`-- Ausgabe --`
+| table
+    risk_level beacon_score
+    src_ip dest_ip ports_used
+    conn_count avg_interval stdev_interval
+    avg_bytes observation_min
+    first_seen last_seen
+
+| sort - beacon_score
+</pre>
+  </section>
+
+  <!-- 5. SYSMON / WINSEC -->
+  <section class="doc-section" id="sysmon">
+    <h2>5. Sysmon / Windows Events</h2>
+    <h3>Sysmon Event 3 — Netzwerkverbindungen verdaechtige Prozesse</h3>
+    <pre class="sysmon">
+-- Sysmon Event ID 3: NetworkConnect
+-- Erkennt ungewoehnliche Prozesse mit ausgehenden Verbindungen
+
+index=sysmon EventCode=3 earliest=-24h
+
+`-- Prozesse die keine Netzwerkverbindungen haben sollten --`
+| where match(Image, "(?i)(notepad|calc|mspaint|wordpad|explorer|svchost)\.exe$")
+    OR (match(Image, "(?i)powershell\.exe$") AND Initiated="true")
+    OR (match(Image, "(?i)(cmd|wscript|cscript|mshta)\.exe$") AND Initiated="true")
+
+`-- Externe Ziele --`
+| where NOT match(DestinationIp, "^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.)")
+
+| stats
+    count AS conn_count,
+    values(DestinationIp)   AS dest_ips,
+    values(DestinationPort) AS dest_ports,
+    dc(DestinationIp)       AS unique_dests
+    by Computer Image User SourcePort
+
+| where conn_count >= 3
+
+| sort - conn_count
+</pre>
+
+    <h3>Sysmon Event 22 — DNS Queries auf verdaechtige Domains</h3>
+    <pre class="sysmon">
+-- Sysmon Event ID 22: DNSEvent
+-- Erkennt ungewoehnliche DNS-Anfragen (hohe Entropie, TXT-Records)
+
+index=sysmon EventCode=22 earliest=-24h
+
+`-- Subdomains mit hoher Entropie (Laenge > 20 Zeichen vor erstem Punkt) --`
+| rex field=QueryName "^(?P&lt;subdomain&gt;[^.]+)\."
+| eval subdomain_len = len(subdomain)
+| where subdomain_len > 20
+
+`-- ODER: bekannte C2/Tunnel-Indikatoren --`
+| where match(QueryName, "(?i)\.(xyz|top|club|pw|tk|ga|cf|ml)$")
+    OR match(QueryName, "[0-9a-f]{32,}")     -- Hex-Strings
+    OR match(QueryName, "[A-Za-z0-9+/]{20,}") -- Base64-Strings
+
+| stats
+    count AS query_count,
+    values(QueryName)    AS queried_domains,
+    avg(subdomain_len)   AS avg_subdomain_len,
+    dc(QueryName)        AS unique_domains
+    by Computer User Image
+
+| sort - query_count
+</pre>
+  </section>
+
+  <!-- 6. TRUE POSITIVES -->
+  <section class="doc-section" id="tp">
+    <h2>6. True Positives</h2>
+    <ol>
+      <li>
+        <span class="tp-label">TP-001</span><strong>Cobalt Strike Default Profile</strong><br>
+        Verbindungsintervall exakt 60 Sekunden, STDDEV &lt; 2s. User-Agent: <code>Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)</code> (CS-Default). Self-signed TLS-Zertifikat auf Port 443. Prozess: <code>beacon.exe</code>, <code>svchost.exe</code> oder injizierter Prozess. EventID 3 (Sysmon) mit konstanter Bytezahl.
+        <div class="conf-bar" style="margin-top:6px;"><span class="conf-num">85</span><div class="conf-track"><div class="conf-fill c-crit" style="width:85%"></div></div></div>
+      </li>
+      <li>
+        <span class="tp-label">TP-002</span><strong>Cobalt Strike Malleable C2 (angepasstes Profil)</strong><br>
+        Beaconing mit konfiguriertem Jitter (z.B. 20%). STDDEV zwischen 5-12s bei 60s Basis-Intervall. Legitim aussehende URI-Pfade (<code>/jquery-3.3.1.slim.min.js</code>). Header-Profile imitieren bekannte Software. Erkennung via Jitter-Analyse und Paketgroessen-Fingerprinting.
+        <div class="conf-bar" style="margin-top:6px;"><span class="conf-num">65</span><div class="conf-track"><div class="conf-fill c-high" style="width:65%"></div></div></div>
+      </li>
+      <li>
+        <span class="tp-label">TP-003</span><strong>Meterpreter HTTPS Reverse Shell</strong><br>
+        Port 443 oder 4444. Verbindungsintervall 5-30s (Standard). Prozess typischerweise injiziert in <code>explorer.exe</code>, <code>notepad.exe</code> oder <code>svchost.exe</code>. TLS-Zertifikat: selbstsigniert, CN oft generisch. Gleichfoermige Paketgroessen durch Stage-Traffic.
+        <div class="conf-bar" style="margin-top:6px;"><span class="conf-num">75</span><div class="conf-track"><div class="conf-fill c-high" style="width:75%"></div></div></div>
+      </li>
+      <li>
+        <span class="tp-label">TP-004</span><strong>DNS C2 (DNScat2 / iodine)</strong><br>
+        TXT oder NULL Record Queries. Subdomains: Base64-kodierte Daten, Laenge 30-60 Zeichen. Query-Frequenz: 10-100/min zur gleichen Basisdomain. Sysmon Event 22: <code>QueryName</code> mit hex/base64-Pattern. EventID 22, <code>QueryResults</code>: TXT-Antworten mit Nutzdaten.
+        <div class="conf-bar" style="margin-top:6px;"><span class="conf-num">80</span><div class="conf-track"><div class="conf-fill c-crit" style="width:80%"></div></div></div>
+      </li>
+      <li>
+        <span class="tp-label">TP-005</span><strong>HTTP Beacon mit Jitter (generische Implantate)</strong><br>
+        Interval 30-300s mit 10-30% Jitter. POST-Requests an statische URI. Kleine Payloads (100-500 Bytes). User-Agent konsistent (kein Browser-Update). Evtl. HTTP 200 mit verschluesseltem Body (erkennbar an hoher Entropie der Antwort).
+        <div class="conf-bar" style="margin-top:6px;"><span class="conf-num">55</span><div class="conf-track"><div class="conf-fill c-med" style="width:55%"></div></div></div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 7. FALSE POSITIVES -->
+  <section class="doc-section" id="fp">
+    <h2>7. False Positives</h2>
+    <ol>
+      <li>
+        <span class="fp-label">FP-001</span><strong>Windows Update / WSUS</strong><br>
+        Regelmaessige Check-in-Verbindungen zu <code>windowsupdate.microsoft.com</code> und WSUS-Server alle 60-90 Minuten. Whitelist: <code>*.microsoft.com</code>, <code>*.windowsupdate.com</code>, lokaler WSUS-Server-IP-Bereich.
+      </li>
+      <li>
+        <span class="fp-label">FP-002</span><strong>CrowdStrike / AV-Agenten</strong><br>
+        EDR-Agenten beacon zum Management-Server mit konfigurierten Intervallen (Standard: 30-60s). Whitelist: bekannte EDR-Management-IPs, Prozesse wie <code>CSFalconService.exe</code>, <code>MsMpEng.exe</code>.
+      </li>
+      <li>
+        <span class="fp-label">FP-003</span><strong>Monitoring-Agenten (Nagios/Zabbix/PRTG)</strong><br>
+        Zabbix-Agent: alle 60s Check-in zur Zabbix-Server-IP. Nagios NRPE: auf Anfrage. Whitelist: Monitoring-Server-IPs, Ports 10050 (Zabbix), 5666 (NRPE), 161 (SNMP).
+      </li>
+      <li>
+        <span class="fp-label">FP-004</span><strong>Backup-Software (Veeam/Backup Exec)</strong><br>
+        Backup-Agenten verbinden sich periodisch zum Backup-Server. Whitelist: Backup-Server-IPs, bekannte Backup-Agenten-Prozesse.
+      </li>
+      <li>
+        <span class="fp-label">FP-005</span><strong>NTP (Network Time Protocol)</strong><br>
+        UDP Port 123, alle 64-1024 Sekunden. Sehr kleine Pakete (48 Bytes). Einfach herauszufiltern: UDP/123 von Port 123.
+      </li>
+      <li>
+        <span class="fp-label">FP-006</span><strong>Browser-Telemetrie / Auto-Update</strong><br>
+        Chrome, Firefox, Edge: regelmaessige Updates und Telemetrie. Whitelist: <code>*.google.com</code>, <code>*.mozilla.org</code>, <code>*.microsoft.com</code> fur bekannte Browser-Prozesse.
+      </li>
+    </ol>
+  </section>
+
+  <!-- 8. VARIANTEN & EVASION -->
+  <section class="doc-section" id="varianten">
+    <h2>8. Varianten &amp; Evasion</h2>
+
+    <h3><span class="var-label">VAR-001</span> Domain Fronting</h3>
+    <p>C2-Traffic wird uber legitime CDN-Domains (Cloudflare, Azure, Akamai) geleitet. Der SNI-Header zeigt eine legitime Domain, der Host-Header zeigt die echte C2-Domain. Konfidenz-Modifier: <strong>-15</strong>.<br>
+    Erkennung trotzdem: TLS-Inspektion (SNI vs. tatsaechlicher Server-IP), ungewoehnliche Zieldomains mit Cloud-IPs aber hohem Traffic-Volumen, Proxy-Logs zeigen unterschiedliche CONNECT-Ziele.</p>
+
+    <h3><span class="var-label">VAR-002</span> Sleep Obfuscation</h3>
+    <p>Beacon-Payload ist im Speicher verschluesselt waehrend er schlaeft. Jitter-Faktor bis 50% macht Timing-Analyse schwieriger. STDDEV steigt auf 15-30s. Konfidenz-Modifier: <strong>-20</strong>.<br>
+    Erkennung trotzdem: Prozess-Memory-Analyse (encrypted heap sections), langerer Beobachtungszeitraum (24h statt 1h), Volatility-Analyse fur CS-Beacons.</p>
+
+    <h3><span class="var-label">VAR-003</span> SMB P2P Beacon (CS-Feature)</h3>
+    <p>Interne Hosts kommunizieren uber Named Pipes (<code>\\.\pipe\*</code>). Nur ein Host hat externe C2-Verbindung. Lateral Movement via SMB-Beacon. Konfidenz-Modifier: <strong>+10</strong> wenn kombiniert mit Sysmon Event 17/18 (PipeEvent).<br>
+    Erkennung: Sysmon Event 17 PipeName enthalt CS-Default-Namen (<code>postex_ssh_*</code>, <code>mojo.*</code>), ungewoehnliche SMB-Verbindungen zwischen Workstations.</p>
+
+    <h3><span class="var-label">VAR-004</span> IPv6 C2</h3>
+    <p>C2-Traffic uber IPv6 — viele Firewalls/SIEMs ignorieren IPv6 standardmaessig. Konfidenz-Modifier: <strong>-10</strong> wenn IPv6-Monitoring fehlt.<br>
+    Erkennung: Explizit IPv6-Netflow-Logs einsammeln, Sysmon Event 3 erfasst auch IPv6-Verbindungen. AAAA-Record-Anfragen fur C2-Domains.</p>
+
+    <h3><span class="var-label">VAR-005</span> ICMP Tunneling</h3>
+    <p>C2-Daten werden in ICMP Echo Request/Reply Paketen versteckt. Erkennung durch diesen Hunt (TCP/UDP fokussiert) erschwert. Konfidenz-Modifier: <strong>-25</strong>.<br>
+    Erkennung: ICMP-Pakete mit ungewoehnlicher Payloadgroesse (&gt; 64 Bytes), hohe ICMP-Rate zu einer einzelnen externen IP, ICMP-Payload-Entropie-Analyse.</p>
+  </section>
+
+  <!-- 9. SCORING -->
+  <section class="doc-section" id="scoring">
+    <h2>9. Konfidenz-Berechnung</h2>
+    <pre class="sysmon">
+# HUNT-001 Confidence Scoring — Python Pseudocode
+# Basis: 40 Punkte (Beaconing-Pattern erkannt)
+
+def calculate_confidence(beacon: BeaconEvent) -> int:
+    score = 40  # Basis: Beaconing-Pattern mit STDDEV < 15s detektiert
+
+    # --- Timing-Praezision ---
+    if beacon.interval_stddev < 2:
+        score += 25   # Sehr primaer: CS-Default (kein Jitter)
+    elif beacon.interval_stddev < 8:
+        score += 15   # Geringer Jitter
+    elif beacon.interval_stddev < 15:
+        score += 5    # Moderater Jitter
+
+    # --- Bekannte C2-Intervalle ---
+    if beacon.avg_interval == 60:
+        score += 10   # CS-Default-Intervall
+    elif 30 <= beacon.avg_interval <= 120:
+        score += 5
+
+    # --- Verbindungsanzahl ---
+    if beacon.conn_count >= 100:
+        score += 10
+    elif beacon.conn_count >= 50:
+        score += 5
+
+    # --- Paketgroessen-Uniformitaet ---
+    if beacon.bytes_stddev < 50:
+        score += 10
+    elif beacon.bytes_stddev < 200:
+        score += 5
+
+    # --- Verdaechtiger Prozess ---
+    suspicious_procs = ['notepad.exe', 'calc.exe', 'explorer.exe',
+                        'svchost.exe', 'werfault.exe']
+    if beacon.process_name in suspicious_procs:
+        score += 15
+
+    # --- Evasion-Abzuege ---
+    if beacon.uses_domain_fronting:
+        score -= 15
+    if beacon.jitter_factor > 0.3:
+        score -= 20
+    if beacon.uses_ipv6:
+        score -= 10
+
+    # --- Cap ---
+    return min(100, max(0, score))
+
+# Schwellwerte fuer Aktionen:
+# >= 90: Sofort eskalieren, Isolation vorschlagen
+# 70-89: An Analyst eskalieren, Evidence sammeln
+# 50-69: Ticket erstellen, weitere Analyse
+# 30-49: Nur loggen
+# < 30:  Verwerfen
+</pre>
+  </section>
+
+  <!-- 10. TEST CASES -->
+  <section class="doc-section" id="tests">
+    <h2>10. Test Cases</h2>
+    <table class="doc-table">
+      <thead>
+        <tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartetes Ergebnis</th><th>Min. Confidence</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-001</td><td style="color:var(--accent2)">TP</td><td>Cobalt Strike Default-Profil, 60s Intervall, kein Jitter, CS-Default-UA</td><td>Alert ausgeloest, Confidence &gt;= 85</td><td>85</td></tr>
+        <tr><td>TC-002</td><td style="color:var(--accent2)">TP</td><td>Malleable C2, 60s + 20% Jitter, legitimer UA, HTTPS</td><td>Alert ausgeloest, Confidence &gt;= 65</td><td>65</td></tr>
+        <tr><td>TC-003</td><td style="color:var(--accent2)">TP</td><td>DNS C2: TXT-Records, Base64-Subdomains, 50+ Queries/min</td><td>DNS-Hunt erkennt, Confidence &gt;= 75</td><td>75</td></tr>
+        <tr><td>TC-004</td><td style="color:var(--crit)">FP</td><td>Windows Update Check-in alle 90 Minuten zu windowsupdate.microsoft.com</td><td>Kein Alert (Whitelist greift)</td><td>0</td></tr>
+        <tr><td>TC-005</td><td style="color:var(--crit)">FP</td><td>CrowdStrike Falcon Agent, 30s Check-in zur bekannten CS-Cloud-IP</td><td>Kein Alert (EDR-Whitelist)</td><td>0</td></tr>
+        <tr><td>TC-006</td><td style="color:var(--purple)">VAR</td><td>Domain Fronting via Cloudflare, STDDEV &lt; 5s, legitime SNI-Domain</td><td>Alert mit reduzierter Confidence</td><td>50</td></tr>
+        <tr><td>TC-007</td><td style="color:var(--purple)">VAR</td><td>Sleep Obfuscation, 50% Jitter, STDDEV ~30s</td><td>Moeglicher Alert, niedrige Confidence</td><td>35</td></tr>
+        <tr><td>TC-008</td><td style="color:var(--warn)">EDGE</td><td>NTP-Traffic, UDP/123, 64-Byte-Pakete, alle 128s</td><td>Kein Alert (UDP/123 gefiltert)</td><td>0</td></tr>
+        <tr><td>TC-009</td><td style="color:var(--warn)">EDGE</td><td>Monitoring-Agent (Zabbix) auf Port 10050, jede Minute</td><td>Kein Alert (Whitelist nach IP)</td><td>0</td></tr>
+        <tr><td>TC-010</td><td style="color:var(--purple)">VAR</td><td>SMB P2P Beacon via Named Pipe postex_ssh_1234</td><td>Sysmon Event 17 Alert, Confidence &gt;= 70</td><td>70</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+<script>
+  const links = document.querySelectorAll('.sb-link[href^="#"]');
+  const sections = document.querySelectorAll('.doc-section');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        links.forEach(l=>l.classList.remove('active'));
+        const a=document.querySelector(`.sb-link[href="#${e.target.id}"]`);
+        if(a){ links.forEach(l=>l.classList.remove('active')); a.classList.add('active'); }
+      }
+    });
+  }, {rootMargin:'-10% 0px -80% 0px'});
+  sections.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

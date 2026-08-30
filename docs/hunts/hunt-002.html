@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOC Ticket Tool — HUNT-002: Credential Theft</title>
+<style>
+  :root{--bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;--accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;--purple:#9b59f5;--text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;--font-mono:'JetBrains Mono','Courier New',monospace;--font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:18px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .sb-badge{display:inline-block;margin:10px 16px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--crit);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:12px 16px 4px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:5px 16px;font-size:11px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .hid{font-size:9px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);min-width:36px;flex-shrink:0;}
+  #content{margin-left:var(--sw);flex:1;padding:40px 50px 80px;max-width:1000px;}
+  .cover{margin-bottom:36px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+  .hunt-id-cover{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.25);color:var(--crit);margin-bottom:8px;}
+  .cover h1{font-size:24px;font-weight:800;color:var(--text-head);letter-spacing:1px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:6px;}
+  .doc-section{margin-bottom:44px;}
+  h2{font-size:16px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  h3{font-size:12px;font-weight:700;color:var(--text-head);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px;}
+  p{margin-bottom:10px;color:var(--text);font-size:13px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-radius:5px;padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:6px 0 14px;white-space:pre;}
+  pre.qradar{border-left:3px solid var(--accent);}
+  pre.splunk{border-left:3px solid var(--warn);}
+  pre.sysmon{border-left:3px solid var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:12px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:11px;}
+  code{font-family:var(--font-mono);font-size:11px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:22px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  ul.dl{list-style:none;padding:0;margin:8px 0 14px;}
+  ul.dl li{padding:3px 0 3px 16px;position:relative;font-size:12px;color:var(--text);}
+  ul.dl li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;}
+  ul.dl li.tp::before{content:'+';color:var(--accent2);}
+  ul.dl li.fp::before{content:'✗';color:var(--crit);}
+  ul.dl li.var::before{content:'~';color:var(--purple);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>SOC Ticket Tool</h1><p>Hunt Reference</p></div>
+  <span class="sb-badge">🎯 Hunt Docs</span>
+  <div class="sb-section">Übersicht</div>
+  <a class="sb-link" href="index.html"><span class="hid">—</span> Alle Hunts</a>
+  <div class="sb-section">Credential Access</div>
+  <a class="sb-link active" href="hunt-002.html"><span class="hid">H-002</span> Credential Theft</a>
+  <div class="sb-section">Weitere Hunts</div>
+  <a class="sb-link" href="hunt-001.html"><span class="hid">H-001</span> C2 / Beaconing</a>
+  <a class="sb-link" href="hunt-003.html"><span class="hid">H-003</span> Lateral Movement</a>
+  <a class="sb-link" href="hunt-004.html"><span class="hid">H-004</span> Persistence</a>
+  <a class="sb-link" href="hunt-005.html"><span class="hid">H-005</span> LOLBins / Evasion</a>
+  <a class="sb-link" href="hunt-006.html"><span class="hid">H-006</span> Exfiltration / DNS</a>
+  <a class="sb-link" href="hunt-007.html"><span class="hid">H-007</span> Ransomware</a>
+  <a class="sb-link" href="hunt-008.html"><span class="hid">H-008</span> Privilege Escalation</a>
+  <a class="sb-link" href="hunt-009.html"><span class="hid">H-009</span> AD Enumeration</a>
+  <a class="sb-link" href="hunt-010.html"><span class="hid">H-010</span> Initial Access</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="index.html">← Hunt-Übersicht</a>
+  <div class="cover">
+    <div class="hunt-id-cover">HUNT-002</div>
+    <h1>Credential Theft</h1>
+    <div class="meta">MITRE: T1003.001 · T1558.003 · T1558.004 · T1550.002 · T1003.006 &nbsp;|&nbsp; Taktik: Credential Access &nbsp;|&nbsp; Basis-Konfidenz: 50</div>
+  </div>
+
+  <section class="doc-section">
+    <h2>Beschreibung</h2>
+    <p>Erkennt Zugriff auf den LSASS-Prozessspeicher zur Extraktion von Credentials (Mimikatz, ProcDump, comsvcs.dll MiniDump), Kerberoasting (TGS-Requests mit schwacher RC4-Verschlüsselung zum Offline-Cracken), AS-REP Roasting (Accounts ohne Kerberos Pre-Auth), Pass-the-Hash (NTLM-Authentifizierung ohne Klartextpasswort) und DCSync (Replikation von Passwort-Hashes direkt vom DC).</p>
+    <p>Diese Techniken sind nach der initialen Kompromittierung der häufigste nächste Schritt. Ohne valide Credentials kann ein Angreifer keine Lateral Movement oder Privilege Escalation durchführen.</p>
+  </section>
+
+  <section class="doc-section">
+    <h2>QRadar AQL</h2>
+    <h3>LSASS Handle-Anfragen (Event 4656)</h3>
+    <pre class="qradar">SELECT sourceip, username, ProcessName, ObjectName, AccessMask, LogonId
+FROM events
+WHERE EventID = 4656
+  AND ObjectType = 'Process'
+  AND ObjectName ILIKE '%lsass%'
+  AND AccessMask IN ('0x1010','0x1410','0x1438','0x143a','0x1fffff','0x1f3fff')
+  AND username NOT IN ('SYSTEM','LOCAL SERVICE','NETWORK SERVICE')
+  AND ProcessName NOT ILIKE '%MsMpEng%'
+  AND ProcessName NOT ILIKE '%werfault%'
+  AND ProcessName NOT ILIKE '%csrss%'
+LAST 24 HOURS
+
+-- Kerberoasting: viele RC4-Service-Tickets von einer IP
+SELECT sourceip, username,
+       COUNT(*) AS ticket_count,
+       UNIQUECOUNT(ServiceName) AS unique_spns
+FROM events
+WHERE EventID = 4769
+  AND TicketEncryptionType = '0x17'
+  AND ServiceName NOT LIKE '%$'
+  AND ServiceName != 'krbtgt'
+GROUP BY sourceip, username
+HAVING ticket_count > 5
+LAST 1 HOURS
+
+-- DCSync: Replikations-GUIDs von Nicht-DC
+SELECT sourceip, username, ObjectDN, Properties
+FROM events
+WHERE EventID = 4662
+  AND (Properties CONTAINS '1131f6aa-9c07-11d1-f79f-00c04fc2dcd2'
+    OR Properties CONTAINS '1131f6ad-9c07-11d1-f79f-00c04fc2dcd2')
+  AND username NOT LIKE '%$'
+  AND username NOT ILIKE '%MSOL_%'
+LAST 24 HOURS</pre>
+
+    <h3>Pass-the-Hash (Event 4624)</h3>
+    <pre class="qradar">SELECT sourceip, TargetUserName, WorkstationName,
+       LogonType, AuthenticationPackageName
+FROM events
+WHERE EventID = 4624
+  AND LogonType = '3'
+  AND AuthenticationPackageName = 'NTLM'
+  AND SubjectUserSID = 'S-1-0-0'
+  AND TargetUserName NOT LIKE '%$'
+  AND TargetUserName != 'ANONYMOUS LOGON'
+GROUP BY sourceip, TargetUserName
+HAVING COUNT(*) > 3
+LAST 1 HOURS</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Splunk SPL</h2>
+    <pre class="splunk">-- LSASS ProcessAccess via Sysmon Event 10
+index=sysmon EventCode=10 TargetImage="*\\lsass.exe"
+| eval suspicious_mask=if(match(GrantedAccess,
+    "0x1010|0x1410|0x1438|0x143a|0x1fffff|0x1f3fff"),1,0)
+| where suspicious_mask=1
+  AND NOT match(SourceImage,"MsMpEng|werfault|wmiprvse|csrss|svchost|lsm")
+| eval tool_hint=case(
+    match(SourceImage,"(?i)procdump"),"ProcDump",
+    match(CommandLine,"(?i)comsvcs"),"comsvcs.dll MiniDump",
+    match(SourceImage,"(?i)taskmanager"),"Task Manager Dump",
+    match(GrantedAccess,"0x1438|0x143a"),"Mimikatz (typische AccessMask)",
+    1==1,"Unbekanntes Tool — manuelle Prüfung")
+| table _time, ComputerName, User, SourceImage,
+        GrantedAccess, tool_hint, CallTrace
+
+-- Kerberoasting: RC4 Service Tickets
+index=wineventlog EventCode=4769 TicketEncryptionType="0x17"
+| where ServiceName!="krbtgt"
+  AND NOT match(ServiceName,"\\$")
+| stats count as ticket_count, values(ServiceName) as targets
+  by src_ip, Account_Name, _time span=30m
+| where ticket_count > 5
+| eval severity=if(ticket_count>20,"CRITICAL","HIGH")
+
+-- AS-REP Roasting: keine Pre-Auth
+index=wineventlog EventCode=4768
+| where PreAuthType="0"
+  AND NOT match(TargetUserName,"\\$")
+| stats count by TargetUserName, src_ip, _time span=1h</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Sysmon / Windows Security Events</h2>
+    <pre class="sysmon">-- Kritische Event IDs
+-- Sysmon Event 10: ProcessAccess auf lsass.exe
+--   GrantedAccess 0x1438/0x143a = Mimikatz Standard
+--   GrantedAccess 0x1fffff      = PROCESS_ALL_ACCESS
+--   CallTrace auf UNKNOWN       = kein legitimer Modul-Pfad
+
+-- WinSec Event 4769: Kerberos Service Ticket
+--   TicketEncryptionType = 0x17 = RC4-HMAC (Kerberoasting möglich)
+--   TicketEncryptionType = 0x12 = AES256   (kein Kerberoasting)
+
+-- WinSec Event 4768: TGT-Anfrage
+--   PreAuthType = 0 = KEIN Pre-Auth = AS-REP Roasting möglich
+
+-- WinSec Event 4624: Anmeldung
+--   LogonType = 3 + NTLM + SubjectUserSID = S-1-0-0 → Pass-the-Hash
+
+-- WinSec Event 4662: Objekt-Zugriff (DCSync)
+--   GUID 1131f6aa = DS-Replication-Get-Changes
+--   GUID 1131f6ad = DS-Replication-Get-Changes-All
+--   Wenn SubjectUserName kein $ (Computer-Account) → DCSync!</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>True Positives</h2>
+    <ul class="dl">
+      <li class="tp"><strong>Mimikatz sekurlsa::logonpasswords</strong> (Konfidenz: 98) — GrantedAccess 0x1438 oder 0x143a, CallTrace enthält UNKNOWN-Speicherbereiche, typisch: umbenannte Kopie von mimikatz.exe</li>
+      <li class="tp"><strong>ProcDump -ma lsass.exe</strong> (Konfidenz: 95) — procdump.exe mit -ma Flag auf lsass PID, .dmp-Datei in C:\Users\...\AppData oder C:\Temp</li>
+      <li class="tp"><strong>comsvcs.dll MiniDump (LOLBin)</strong> (Konfidenz: 97) — rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump &lt;PID&gt; lsass.dmp full</li>
+      <li class="tp"><strong>Kerberoasting (RC4)</strong> (Konfidenz: 85) — Event 4769, EncryptionType=0x17, &gt;5 verschiedene SPNs von einer Workstation innerhalb von 30 Minuten</li>
+      <li class="tp"><strong>DCSync von Workstation</strong> (Konfidenz: 98) — Event 4662 mit DS-Replication GUIDs, SubjectUserName ist kein Computer-Account ($)</li>
+      <li class="tp"><strong>Pass-the-Hash (NTLM Type 3)</strong> (Konfidenz: 80) — Event 4624, LogonType=3, NTLM-Auth, SubjectUserSID=S-1-0-0 von Workstation zu Server</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>False Positives &amp; Whitelist</h2>
+    <ul class="dl">
+      <li class="fp"><strong>AV/EDR-Prozesse</strong> — CrowdStrike, MsMpEng, SentinelOne, Carbon Black greifen legitim auf LSASS zu. Whitelist: Prozessname aus bekannter AV-Liste</li>
+      <li class="fp"><strong>WER (Windows Error Reporting)</strong> — werfault.exe nach Prozessabsturz, 100% legitim. Whitelist: werfault.exe generell</li>
+      <li class="fp"><strong>Legitime NTLM-Authentifizierung</strong> — Legacy-Systeme, Drucker, ältere Server ohne Kerberos-Support. Whitelist: bekannte Legacy-Hosts</li>
+      <li class="fp"><strong>DC-zu-DC Replikation</strong> — Echte DCs replizieren via Event 4662, SubjectUserName endet auf $. Whitelist: alle Computer-Accounts ($)</li>
+      <li class="fp"><strong>SQL Server / Exchange Service Accounts</strong> — Fordern regelmäßig Service Tickets an. Whitelist: bekannte Service-Account-Liste für Event 4769</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Varianten &amp; Evasion-Techniken</h2>
+    <ul class="dl">
+      <li class="var"><strong>VAR-001: Nanodump / PPLdump</strong> (Conf-Modifier: -10) — Umgeht PPL (Protected Process Light) via Kernel-Treiber. Kein direkter LSASS-Zugriff sichtbar, aber Treiber-Load (Sysmon 6) erkennbar</li>
+      <li class="var"><strong>VAR-002: AS-REP Roasting</strong> (Conf-Modifier: 0) — Accounts ohne Pre-Auth. Kein Passwort nötig. Event 4768 mit PreAuthType=0. Häufig übersehen</li>
+      <li class="var"><strong>VAR-003: Task Manager LSASS-Dump</strong> (Conf-Modifier: -25) — Legitimes Windows-Tool. Nur verdächtig wenn non-admin User oder Dump in ungewöhnlichem Pfad</li>
+      <li class="var"><strong>VAR-004: Schemaless DCSync (Impacket)</strong> (Conf-Modifier: 0) — secretsdump.py von Linux, erscheint als NTLM-Auth von unbekannter IP gegen DC</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Test Cases</h2>
+    <table class="doc-table">
+      <thead><tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th><th>Min. Conf.</th></tr></thead>
+      <tbody>
+        <tr><td>TP-001</td><td>TP</td><td>Mimikatz direkt (GrantedAccess 0x1438)</td><td>Erkannt</td><td>98</td></tr>
+        <tr><td>TP-002</td><td>TP</td><td>ProcDump -ma lsass.exe</td><td>Erkannt</td><td>95</td></tr>
+        <tr><td>TP-003</td><td>TP</td><td>comsvcs.dll MiniDump via rundll32</td><td>Erkannt</td><td>97</td></tr>
+        <tr><td>TP-004</td><td>TP</td><td>Kerberoasting: 20 RC4-Tickets in 5 Min</td><td>Erkannt</td><td>90</td></tr>
+        <tr><td>TP-005</td><td>TP</td><td>DCSync von Workstation (non-DC)</td><td>Erkannt</td><td>98</td></tr>
+        <tr><td>TP-006</td><td>TP</td><td>Pass-the-Hash, LogonType 3 NTLM S-1-0-0</td><td>Erkannt</td><td>80</td></tr>
+        <tr><td>FP-001</td><td>FP</td><td>CrowdStrike greift auf LSASS zu</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>FP-002</td><td>FP</td><td>WER-Dump nach Prozessabsturz</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>FP-003</td><td>FP</td><td>DC repliziert mit anderem DC (Computer-Account $)</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>VAR-001</td><td>VAR</td><td>Nanodump via Kernel-Treiber (Sysmon 6)</td><td>Erkannt</td><td>80</td></tr>
+        <tr><td>VAR-002</td><td>VAR</td><td>AS-REP Roasting (PreAuthType=0)</td><td>Erkannt</td><td>80</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

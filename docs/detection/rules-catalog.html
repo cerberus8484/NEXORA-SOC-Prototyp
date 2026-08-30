@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detection Rules Catalog — Nexora SOC Lab</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #080c14;
+      --bg-secondary: #0f1419;
+      --bg-card: #141824;
+      --bg-hover: #1a202e;
+      --border-color: #2a3344;
+      --text-primary: #e0e6ed;
+      --text-secondary: #a8b0bb;
+      --accent-cyan: #00d4ff;
+      --accent-green: #00ff88;
+      --accent-red: #ff4444;
+      --accent-yellow: #ffcc00;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 3rem 2rem;
+      margin-bottom: 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+
+    header .subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* Table of Contents */
+    .toc {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .toc h2 {
+      color: var(--accent-cyan);
+      margin-bottom: 1.5rem;
+      font-size: 1.3rem;
+    }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: item;
+    }
+
+    .toc li {
+      counter-increment: item;
+      margin-bottom: 0.8rem;
+    }
+
+    .toc li:before {
+      content: counter(item) ". ";
+      color: var(--accent-green);
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+
+    .toc a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .toc a:hover {
+      color: var(--accent-green);
+      text-decoration: underline;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 3rem;
+    }
+
+    section > h2 {
+      color: var(--accent-cyan);
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    section > h3 {
+      color: var(--accent-green);
+      font-size: 1.4rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    h4 {
+      color: var(--text-primary);
+      font-size: 1.1rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    thead {
+      background-color: var(--bg-secondary);
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    th {
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      font-size: 0.95rem;
+    }
+
+    td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    tbody tr:hover {
+      background-color: var(--bg-hover);
+      transition: background-color 0.15s;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Code blocks */
+    pre {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      font-family: 'JetBrains Mono', 'Monaco', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    code {
+      color: var(--accent-green);
+      font-family: 'JetBrains Mono', 'Monaco', monospace;
+    }
+
+    inline-code {
+      background-color: var(--bg-secondary);
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      color: var(--accent-green);
+    }
+
+    /* Info boxes */
+    .info-box {
+      background-color: var(--bg-card);
+      border-left: 4px solid var(--accent-cyan);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 4px;
+    }
+
+    .info-box strong {
+      color: var(--accent-cyan);
+    }
+
+    /* Card grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .card {
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .card h4 {
+      color: var(--accent-cyan);
+      margin-top: 0;
+    }
+
+    .card .mitre {
+      color: var(--accent-green);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: 0.5rem 0;
+    }
+
+    .card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    /* Rule highlight */
+    .rule-id {
+      background-color: var(--bg-secondary);
+      color: var(--accent-yellow);
+      padding: 0.3rem 0.6rem;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .rule-level {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+
+    .rule-level.critical {
+      background-color: rgba(255, 68, 68, 0.15);
+      color: #ff6b6b;
+    }
+
+    .rule-level.high {
+      background-color: rgba(255, 102, 0, 0.15);
+      color: #ff9944;
+    }
+
+    .rule-level.medium {
+      background-color: rgba(255, 204, 0, 0.15);
+      color: #ffcc00;
+    }
+
+    .rule-level.low {
+      background-color: rgba(0, 255, 136, 0.15);
+      color: #00ff88;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 280px;
+      height: 100vh;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      padding: 2rem 1rem;
+      z-index: 200;
+    }
+
+    .sidebar-title {
+      color: var(--accent-cyan);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .sidebar-nav {
+      list-style: none;
+    }
+
+    .sidebar-nav li {
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar-nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: block;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .sidebar-nav a:hover,
+    .sidebar-nav a.active {
+      background-color: var(--bg-hover);
+      color: var(--accent-cyan);
+    }
+
+    main {
+      margin-left: 280px;
+    }
+
+    /* Footer */
+    footer {
+      background-color: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 2rem;
+      margin-top: 3rem;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .sidebar {
+        width: 200px;
+      }
+      main {
+        margin-left: 200px;
+      }
+      header h1 {
+        font-size: 2rem;
+      }
+      section > h2 {
+        font-size: 1.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      main {
+        margin-left: 0;
+      }
+      header {
+        padding: 2rem 1rem;
+      }
+      .container {
+        padding: 0 1rem;
+      }
+      header h1 {
+        font-size: 1.5rem;
+      }
+      section > h2 {
+        font-size: 1.3rem;
+      }
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+      table {
+        font-size: 0.9rem;
+      }
+      th, td {
+        padding: 0.6rem;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-secondary);
+    }
+
+    /* Anchor links */
+    a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    a:hover {
+      color: var(--accent-green);
+    }
+
+    .anchor {
+      margin-left: 0.5rem;
+      color: var(--text-secondary);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    h2:hover .anchor,
+    h3:hover .anchor,
+    h4:hover .anchor {
+      opacity: 1;
+    }
+
+    /* Stats section */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #00d4ff15 0%, #00ff8815 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card .label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* Diagram */
+    .diagram {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: var(--accent-green);
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-title">Navigation</div>
+    <ul class="sidebar-nav">
+      <li><a href="#overview">Übersicht</a></li>
+      <li><a href="#sysmon-rules">Sysmon Regeln</a></li>
+      <li><a href="#integrationen">Integrationen</a></li>
+      <li><a href="#hunts">Hunt-Katalog</a></li>
+      <li><a href="#mitre-coverage">MITRE Coverage</a></li>
+      <li><a href="#wartung">Wartung</a></li>
+    </ul>
+  </div>
+
+  <main>
+    <header>
+      <h1>Detection Rules Catalog</h1>
+      <p class="subtitle">Nexora SOC Lab — Wazuh Manager 4.14.5 | Dokumentiert: 2026-06-11</p>
+    </header>
+
+    <div class="container">
+      <!-- TOC Section -->
+      <div class="toc">
+        <h2>Inhaltsübersicht</h2>
+        <ol>
+          <li><a href="#overview">Übersicht</a> — Statistiken & Quellen</li>
+          <li><a href="#sysmon-rules">Sysmon Event-basierte Regeln</a> — FileCreate, Registry, Pipes, DNS</li>
+          <li><a href="#integrationen">Integrationen & AV-Layer</a> — VirusTotal, Defender, FIM, WEF</li>
+          <li><a href="#hunts">Threat-Hunt-Katalog</a> — 10 vorgefertigte Hunts</li>
+          <li><a href="#mitre-coverage">MITRE ATT&CK Coverage</a> — Taktiken × Techniken</li>
+          <li><a href="#wartung">Wartung & Erweiterung</a> — Best Practices</li>
+        </ol>
+      </div>
+
+      <!-- Overview Section -->
+      <section id="overview">
+        <h2>1. Übersicht</h2>
+
+        <h3>Gesamtstatistik</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="number">60</div>
+            <div class="label">Lokale Regeln (gesamt)</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">49</div>
+            <div class="label">Alert-Regeln (Level 1+)</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">11</div>
+            <div class="label">Basis/FP-Regeln (Level 0)</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">10</div>
+            <div class="label">Threat-Hunts</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Quelle</th>
+              <th>Anteil</th>
+              <th>Beschreibung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Sysmon Agent</strong></td>
+              <td>55%</td>
+              <td>Events 11, 12/13, 17/18, 22 (FileCreate, Registry, Pipes, DNS)</td>
+            </tr>
+            <tr>
+              <td><strong>Windows Security Log</strong></td>
+              <td>25%</td>
+              <td>EventID 4625/4624/4768/4769 (Authentifizierung, Kerberos)</td>
+            </tr>
+            <tr>
+              <td><strong>Wazuh Manager</strong></td>
+              <td>15%</td>
+              <td>Aggregation, Correlation, QRadar-Mimicry</td>
+            </tr>
+            <tr>
+              <td><strong>OPNsense Firewall</strong></td>
+              <td>5%</td>
+              <td>Netzwerk-Events, Multicast-Rauschen</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Detection-Pipeline</h3>
+        <div class="diagram">Windows Host (Sysmon) ──→ Wazuh Agent ──→ Wazuh Manager (192.168.240.77)
+         │
+         └──→ WEF (Windows Event Collector 01)
+             DC01 Events (4625, 4768, 4769)
+         │
+         ├→ Alert (Level N)
+         ├→ VirusTotal Lookup (Hash)
+         ├→ AbuseIPDB Lookup (IP)
+         └→ Zeek DNS Analysis
+             │
+             ├→ Ticket (Analyst Review)
+             ├→ Approval-Gate (Hunt)
+             └→ Response Console (Safe Commands)
+        </div>
+
+        <div class="info-box">
+          <strong>Wichtig:</strong> Diese Dokumentation deckt die <strong>lokalen Detection-Regeln</strong> (local_rules.xml) ab, nicht das komplette Wazuh-Ruleset. Für Sysmon-Standard-Regeln siehe offizielle Sysmon-Config (SwiftOnSecurity).
+        </div>
+      </section>
+
+      <!-- Basis & FP Rules -->
+      <section id="sysmon-rules">
+        <h2>2. Basis- & FP-Suppression-Regeln (Level 0)</h2>
+        <p>Diese Regeln werden NICHT als Alerts ausgegeben (Level 0). Sie dienen zur:</p>
+        <ul>
+          <li><strong>FP-Suppression:</strong> Unterdrückung bekannter False Positives von legitimen Prozessen (svchost, lsass, csrss beim Systemstart)</li>
+          <li><strong>Parent-Rule-Definition:</strong> Sie definieren Basis-Events, die von spezialisierteren Regeln referenziert werden</li>
+        </ul>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Beschreibung / Zweck</th>
+              <th>Parent-Prozess</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">100001</span></td>
+              <td>FP: svchost.exe von wininit.exe (Systemstart — legitim)</td>
+              <td>wininit.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100002</span></td>
+              <td>FP: svchost.exe mit bekanntem legitimen Windows-Service-Parameter</td>
+              <td>services.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100003</span></td>
+              <td>FP: svchost.exe mit bekanntem -k Parameter von services.exe</td>
+              <td>services.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100004</span></td>
+              <td>FP: svchost.exe Scan-Aktivität durch Windows Defender</td>
+              <td>MsMpEng.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100010</span></td>
+              <td>FP: lsm.exe von wininit.exe (Systemstart — legitim)</td>
+              <td>wininit.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100020</span></td>
+              <td>FP: csrss.exe von smss.exe (Systemstart — legitim)</td>
+              <td>smss.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100030</span></td>
+              <td>FP: lsass.exe von wininit.exe (Systemstart — legitim)</td>
+              <td>wininit.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100040</span></td>
+              <td>FP: winlogon.exe von smss.exe (legitim)</td>
+              <td>smss.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100050</span></td>
+              <td>FP: services.exe von wininit.exe (Systemstart — legitim)</td>
+              <td>wininit.exe</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101312</span></td>
+              <td>Basis: Kerberos TGT/TGS angefordert (Event 4768/4769 — parent rule)</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101313</span></td>
+              <td>Basis: Directory Service Access (Event 4662 — parent rule)</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Process-Injection Detection (Regeln 100401–100403)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Erkennt</th>
+              <th>MITRE</th>
+              <th>Erklärung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">100401</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td>svchost.exe von Script/Shell-Prozess</td>
+              <td>T1055</td>
+              <td><strong>KRITISCH:</strong> svchost sollte NICHT von PowerShell/cmd gestartet werden — starker Indikator für Process Injection (T1055.001)</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100402</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td>svchost.exe <strong>ohne</strong> -k Parameter</td>
+              <td>T1055.012</td>
+              <td><strong>HOCH:</strong> svchost ohne -k Parameter ist anomal — Zeichen für Process Hollowing / Malware-Verschleierung</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100403</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td>svchost.exe nicht aus System32/SysWOW64</td>
+              <td>T1036.005</td>
+              <td><strong>KRITISCH:</strong> svchost.exe mit falschem Pfad (z.B. C:\Users\svchost.exe) — Masquerading-Zeichen</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Rule 100500 — SSH FP</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Beschreibung</th>
+              <th>MITRE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">100500</span></td>
+              <td><span class="rule-level low">3</span></td>
+              <td>FP (bekannt): SSH MAC-Konfiguration auf Wazuh-Server — als akzeptiert markiert</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Sysmon Rules Section -->
+      <section>
+        <h2>3. Sysmon Event-basierte Regeln</h2>
+
+        <h3>3.1 Event 11 — FileCreate Detection (Regeln 100610–100616)</h3>
+        <p>Sysmon Event 11 wird ausgelöst, wenn eine Datei geschrieben wird. Basis: <code>if_sid 61613</code> (Level 0).</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Erkennt</th>
+              <th>MITRE</th>
+              <th>Erklärung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">100610</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td>Datei in <code>Startup\</code></td>
+              <td>T1547</td>
+              <td>Autostart-Datei in Startup-Ordner — lädt beim Logon automatisch</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100611</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td>Binary in <code>\Temp\</code></td>
+              <td>T1105</td>
+              <td>Ausführbare Datei in Windows Temp — typisches Stage-1-Dropper-Muster</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100612</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td>Binary in <code>AppData\</code></td>
+              <td>T1105</td>
+              <td>Staging-Binary ohne Installer-Ausnahmen (Chrome, Firefox, Teams, OneDrive)</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100613</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td>Office erstellt Binary</td>
+              <td>T1566</td>
+              <td><strong>Kritisch:</strong> Office-Prozess (WINWORD, EXCEL) erstellt .exe/.dll — Makro/Phishing-Indikator</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100614</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td>ASP/PHP in Web-Root</td>
+              <td>T1505</td>
+              <td><strong>Kritisch:</strong> Web-Shell in inetpub/wwwroot — unmittelbare RCE-Bedrohung</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100615</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td>Task XML von unerwarteter Binary</td>
+              <td>T1053</td>
+              <td>Scheduled Task außerhalb System-Prozesse — Persistence-Versuch</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100616</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td>.sys außerhalb <code>drivers\</code></td>
+              <td>T1014</td>
+              <td><strong>Kritisch:</strong> Kernel-Treiber außerhalb Standard-Ordner — Rootkit-Indikator</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.2 Event 12/13 — Registry Persistence (Regeln 100701–100708)</h3>
+        <p>Registry-Modifikationen. Basis: <code>if_sid 61614, 61615</code> (Level 0).</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Registry-Key</th>
+              <th>MITRE</th>
+              <th>Erklärung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">100701</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td><code>CurrentVersion\Run*</code></td>
+              <td>T1547</td>
+              <td>Auto-Start-Key ohne Installer — häufigste Persistenzmethode</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100702</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><code>AppInit_DLLs</code></td>
+              <td>T1546</td>
+              <td><strong>Kritisch:</strong> Wird von JEDER Binary beim Start geladen — DLL-Injection-Vektor</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100703</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><code>Lsa\*Packages</code></td>
+              <td>T1547</td>
+              <td><strong>Kritisch:</strong> LSA-Paket-Hijack — Passwort-Hashes abfangen</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100704</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td><code>Image File Execution Options\</code></td>
+              <td>T1546</td>
+              <td>Debugger-Hijack / UAC-Bypass — Pre-Execution Code</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100705</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><code>Winlogon\(Shell|Userinit)</code></td>
+              <td>T1547</td>
+              <td><strong>Kritisch:</strong> Logon-Persistence — Boot-Phase Code Execution</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100706</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td><code>CLSID\</code> (HKCU)</td>
+              <td>T1546</td>
+              <td>COM-Hijacking in User-Registry — Shell/Tool-Start</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100707</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><code>DisableAnti*</code></td>
+              <td>T1562</td>
+              <td><strong>Kritisch:</strong> Windows Defender via Registry deaktiviert</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100708</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td><code>Proxy*</code></td>
+              <td>T1090</td>
+              <td>Proxy von Nicht-Browser-Prozess — Traffic-Interception</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.3 Event 17/18 — Named Pipe Detection (Regeln 100801–100804)</h3>
+        <p><strong>Top-Indikator</strong> für Lateral Movement und C2. Basis: <code>if_sid 61645, 61646</code> (Level 0).</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Pipe-Pattern</th>
+              <th>MITRE</th>
+              <th>Bedeutung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">100801</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><code>psexesvc</code></td>
+              <td>T1569</td>
+              <td><strong>PsExec:</strong> Remote Service Execution über SMB</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100802</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><code>postex_*</code>, <code>msagent_*</code></td>
+              <td>T1055</td>
+              <td><strong>CobaltStrike:</strong> Charakteristische C2-Beacon-Pipes</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100803</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><code>meterpreter</code>, <code>stdapi_</code></td>
+              <td>T1055</td>
+              <td><strong>Metasploit:</strong> Active Framework-Session</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100804</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td><code>\svcctl</code>, <code>\samr</code>, <code>\lsarpc</code></td>
+              <td>T1021</td>
+              <td>Admin-Pipes von Non-System-Prozess — Impacket/Lateral Movement</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.4 Event 22 — DNS Query Detection (Regeln 100901–100906)</h3>
+        <p>Ungewöhnliche DNS-Anfragen von Shell-Prozessen oder Dateilose Malware. Basis: <code>if_sid 61650</code> (Level 0).</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Prozess / Query</th>
+              <th>MITRE</th>
+              <th>Bedeutung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">100901</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td>PowerShell DNS-Anfrage</td>
+              <td>T1071</td>
+              <td>PowerShell sollte nicht direkt DNS nutzen — C2/Staging</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100902</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td>LOLBin DNS (wscript, mshta, rundll32)</td>
+              <td>T1059</td>
+              <td>Script-Engines mit Netzwerk-API — verdächtig</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100903</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td>Verdächtige TLD (.xyz, .onion)</td>
+              <td>T1568</td>
+              <td>DGA / Malware-Domains</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100904</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td>Hostname 100+ Zeichen</td>
+              <td>T1071</td>
+              <td>DNS-Tunneling — Daten versteckt in Subdomains</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100905</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td>certutil DNS</td>
+              <td>T1218</td>
+              <td>certutil LOLBin — Datei-Download / Staging</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">100906</span></td>
+              <td><span class="rule-level medium">8</span></td>
+              <td>Office zu Nicht-MS-Domain</td>
+              <td>T1566</td>
+              <td>Phishing/Makro — Office sollte nur zu Microsoft-Domains</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Brute Force & Credential Access Section -->
+      <section id="credential-access">
+        <h2>4. Brute Force & Password Spray Detection (Rules 101000–101004)</h2>
+        <p>Diese Regeln detektieren <strong>Brute-Force</strong> sowie <strong>Password-Spray</strong>-Angriffe durch Aggregation von Authentifizierungs-Fehlern.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Erkennt</th>
+              <th>MITRE</th>
+              <th>Beschreibung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">101000</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td><strong>Brute Force:</strong> 8+ Logon Failures in 120s, gleiche IP + Account</td>
+              <td>T1110.001</td>
+              <td>Zyklische Passwort-Attacke auf einen Account. 8+ Fehlversuche in 120 Sekunden.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101001</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td><strong>Password Spray:</strong> Failures gegen mehrere Accounts von einer IP</td>
+              <td>T1110.003</td>
+              <td>Horizontal-Angriff: Wenige Passwörter gegen viele Accounts. >5 verschiedene Accounts in kurzer Zeit.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101002</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td><strong>Account Lockout:</strong> Konto nach Failure-Flood gesperrt</td>
+              <td>T1110</td>
+              <td>Event 4740 — Konto vom System nach zu vielen Fehlern gesperrt. Deutet auf erfolgreiche Brute-Force hin.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101003</span></td>
+              <td><span class="rule-level low">8</span></td>
+              <td><strong>Remote Logon Failure:</strong> Fehlgeschlagener Network-Logon</td>
+              <td>T1110</td>
+              <td>Event 4625 mit Logon Type 3/10 — Passwort-Fehler von Remote-Host (RDP, SSH, Kerberos).</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>NTLM Downgrade & Pass-the-Hash (Rules 101100–101102)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Erkennt</th>
+              <th>MITRE</th>
+              <th>Beschreibung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">101100</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td><strong>NTLMv1 Authentication:</strong> Downgrade oder Legacy-System</td>
+              <td>T1557.002</td>
+              <td>NTLMv1 ist kryptographisch schwach und kann leicht offline-gebrochen werden. Zeichen für Downgrade-Angriff.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101101</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><strong>Pass-the-Hash:</strong> NTLM mit KeyLength=0</td>
+              <td>T1550.002</td>
+              <td>KeyLength=0 bei Network-Logon = direkte Hash-Authentifizierung (PTH). Sehr verdächtig.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101102</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td><strong>Anonymous NTLM Login:</strong> Null-Session / Recon</td>
+              <td>T1135</td>
+              <td>Event 4624 mit UserName "ANONYMOUS" — unbenutzter Logon für Netzwerk-Recon.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Kerberos Attacks (Rules 101200–101204)</h3>
+        <p><strong>Erfordert:</strong> DC01 & WEC01 mit Windows Event Forwarding (Events 4768, 4769, 4662)</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Erkennt</th>
+              <th>MITRE</th>
+              <th>Beschreibung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">101200</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><strong>Kerberoasting:</strong> RC4 Service-Ticket für Service-Account</td>
+              <td>T1558.003</td>
+              <td>Event 4769 mit EncryptionType 0x17 (RC4). RC4 ist einfach zu cracken — Service-Account-Hashes gefährdet.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101201</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><strong>AS-REP Roasting:</strong> Pre-Auth deaktiviert auf User</td>
+              <td>T1558.004</td>
+              <td>Event 4768 mit PreAuthType=0. User ohne PREAUTHENTICATION-Flag: TGT kann offline-gebrochen werden.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101202</span></td>
+              <td><span class="rule-level critical">15</span></td>
+              <td><strong>Golden Ticket:</strong> krbtgt RC4-Ticket-Anfrage</td>
+              <td>T1558.001</td>
+              <td>Event 4768 mit RC4-Encryption für krbtgt. KRITISCH — Attacker mit krbtgt-Hash kann beliebig Tickets erzeugen.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101203</span></td>
+              <td><span class="rule-level critical">15</span></td>
+              <td><strong>DCSync / Credential Dump:</strong> Replikationsrechte von Non-DC</td>
+              <td>T1003.006</td>
+              <td>Event 4662 Directory-Service-Access. Non-DC versucht Directory-Datenbank zu synchronisieren — alle Hashes gefährdet.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101204</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td><strong>Silver Ticket:</strong> RC4 Service-Ticket ohne TGT-Flow</td>
+              <td>T1558.002</td>
+              <td>Event 4769 mit verdächtigem Ticket-Alter. Attacker mit Service-Hash kann forged Tickets ausstellen.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Active Directory & Account Management (Rules 101301–101308)</h3>
+        <p><strong>Erfordert:</strong> WEC01 mit Event-Forwarding von DC01</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Erkennt</th>
+              <th>MITRE</th>
+              <th>Beschreibung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">101301</span></td>
+              <td><span class="rule-level low">8</span></td>
+              <td><strong>Benutzerkonto erstellt:</strong> Neuer User in AD</td>
+              <td>T1136.001</td>
+              <td>Event 4720 oder 5137. Neue Accounts sind häufig legitim, sollten aber auditiert werden.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101302</span></td>
+              <td><span class="rule-level low">5</span></td>
+              <td><strong>Konto-Änderung:</strong> Aktiviert/deaktiviert/PW-Reset/gelöscht</td>
+              <td>T1098.002</td>
+              <td>Event 4722/4723/4725. Häufige AD-Admin-Operationen — Level 5 aber archiviert für Audit-Trail (DSGVO).</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101303</span></td>
+              <td><span class="rule-level medium">10</span></td>
+              <td><strong>Mitglied zu Gruppe hinzugefügt:</strong> User zu Security-Group</td>
+              <td>T1098.004</td>
+              <td>Event 4728, 4732, 4756. Normal-Operationen, aber archiviert für Privilege-Escalation-Analyse.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101304</span></td>
+              <td><span class="rule-level critical">13</span></td>
+              <td><strong>Zu PRIVILEGIERTER Gruppe hinzugefügt:</strong> Admin/Domain Admins</td>
+              <td>T1098.004</td>
+              <td>Event 4728 zu Domain Admins/Enterprise Admins. Level 13 = High — direkte Privilege-Escalation, sofort reviewen.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101305</span></td>
+              <td><span class="rule-level low">8</span></td>
+              <td><strong>Account Lockout:</strong> Konto gesperrt nach Failures</td>
+              <td>T1110</td>
+              <td>Event 4740. Kann auf Brute-Force oder legitimen Fehler hindeuten — zur Korrelation mit 101000–101003 nutzen.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101306</span></td>
+              <td><span class="rule-level critical">13</span></td>
+              <td><strong>Security-Audit-Log GELÖSCHT:</strong> Admin löscht Log-Einträge</td>
+              <td>T1070.001</td>
+              <td>Event 1102. <strong>Spurenbeseitigung:</strong> Sehr verdächtig — aktiver Angriff oder IR-Versuch.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101307</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td><strong>Audit-Policy geändert:</strong> Audit-Einstellungen modifiziert</td>
+              <td>T1562.002</td>
+              <td>Event 4719. <strong>Impair Defenses:</strong> Attacker könnte Audit für bestimmte Events ausschalten.</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">101308</span></td>
+              <td><span class="rule-level high">12</span></td>
+              <td><strong>Group-Policy-Objekt (GPO) geändert:</strong> GPO modifiziert</td>
+              <td>T1484.001</td>
+              <td>Event 5136. <strong>Domain Policy Manipulation:</strong> GPO-Änderungen können Netzwerk-Sicherheit umgehen.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Integrationen Section -->
+      <section id="integrationen">
+        <h2>5. Integrationen & AV-Layer</h2>
+
+        <h3>5.1 VirusTotal Integration (Rules 87101–87105)</h3>
+        <p>File-Hash-Lookup bei Datei-Erstellung. Workflow:</p>
+        <ol>
+          <li>FIM monitort <code>C:\fim-test\</code></li>
+          <li>File-Hash (SHA256) extrahiert</li>
+          <li>VT-API abgefragt</li>
+          <li>Result eskaliert zu Alert</li>
+        </ol>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Level</th>
+              <th>Bedingung</th>
+              <th>Beschreibung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">87101</span></td>
+              <td><span class="rule-level low">3</span></td>
+              <td>VT-API Error</td>
+              <td>Anfrage fehlgeschlagen (Rate-Limit, Key-Error)</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">87102</span></td>
+              <td><span class="rule-level low">0</span></td>
+              <td>0 Detektionen</td>
+              <td>File bekannt, aber von keinem Hersteller als Malware flagged</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">87103</span></td>
+              <td><span class="rule-level low">5</span></td>
+              <td>Unbekannter Hash</td>
+              <td>VT hat diese Hash noch nie gesehen</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">87105</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td>1+ Detektionen</td>
+              <td><strong>Malware erkannt!</strong> Eskalation zu Critical</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5.2 Windows Defender — Events 1116, 1117</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Event ID</th>
+              <th>Level</th>
+              <th>Beschreibung</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rule-id">1116</span></td>
+              <td><span class="rule-level high">13</span></td>
+              <td>Malware erkannt (Detection-Event)</td>
+            </tr>
+            <tr>
+              <td><span class="rule-id">1117</span></td>
+              <td><span class="rule-level critical">14</span></td>
+              <td>Malware-Aktion durchgeführt (Quarantine, Entfernung)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5.3 FIM — File Integrity Monitoring</h3>
+        <p>Scope: realtime auf <code>C:\fim-test\</code></p>
+        <ul>
+          <li><strong>Datei erstellt:</strong> Alert + VT-Check (T1105)</li>
+          <li><strong>Datei geändert:</strong> Audit-Log-Eintrag (T1565)</li>
+          <li><strong>Datei gelöscht:</strong> Warning-Alert (T1485)</li>
+          <li><strong>Berechtigung geändert:</strong> Alert wenn verdächtig (T1222)</li>
+        </ul>
+
+        <h3>5.4 WEF Pipeline — Windows Event Forwarding</h3>
+        <p>Domain Controller Events via Windows Event Forwarding (WEF) zu WEC01.</p>
+        <div class="diagram">DC01 (nexora.example, 10.99.99.10)
+  ↓ WEF Client
+  Security Channel (EventID 4768, 4769, 4720–4767)
+  ↓
+WEC01 (10.99.99.11) → Wazuh Agent → Wazuh Manager
+  ↓
+local_rules 101200–101399 (Kerberoasting, DCSync, Golden Ticket, etc.)
+        </div>
+
+        <div class="info-box">
+          <strong>Events von DC01:</strong> 4625 (Logon Failure), 4624 (Success), 4768/4769 (Kerberos TGT/TGS), 4662 (Directory Service Access), 4720–4740 (Account Management), 5136 (GPO Changes)
+        </div>
+      </section>
+
+      <!-- Hunt Catalog Section -->
+      <section id="hunts">
+        <h2>6. Threat-Hunt-Katalog</h2>
+        <p>10 vorgefertigte, deterministische Hunts — <strong>Safe</strong> (kein Remote-Execution, nur Read-Only).</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Hunt</th>
+              <th>MITRE Tactic</th>
+              <th>Kategorie</th>
+              <th>Ziel</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Suspicious PowerShell Hunt</strong></td>
+              <td>Execution</td>
+              <td>Command-Injection</td>
+              <td>Windows Host</td>
+              <td><span class="rule-level high">HIGH</span></td>
+            </tr>
+            <tr>
+              <td><strong>2. OPNsense Multicast Review</strong></td>
+              <td>FP-Review</td>
+              <td>Network Noise</td>
+              <td>OPNsense FW</td>
+              <td><span class="rule-level low">LOW</span></td>
+            </tr>
+            <tr>
+              <td><strong>3. RDP Exposure Hunt</strong></td>
+              <td>Lateral Movement</td>
+              <td>Exposure</td>
+              <td>Host Port 3389</td>
+              <td><span class="rule-level medium">MEDIUM</span></td>
+            </tr>
+            <tr>
+              <td><strong>4. Persistence Hunt</strong></td>
+              <td>Persistence</td>
+              <td>Autoruns/Services</td>
+              <td>Windows Host</td>
+              <td><span class="rule-level medium">MEDIUM</span></td>
+            </tr>
+            <tr>
+              <td><strong>5. Failed Logon Hunt</strong></td>
+              <td>Credential Access</td>
+              <td>Brute Force</td>
+              <td>Linux/Windows</td>
+              <td><span class="rule-level medium">MEDIUM</span></td>
+            </tr>
+            <tr>
+              <td><strong>6. DNS Tunneling Hunt</strong></td>
+              <td>Command & Control</td>
+              <td>Exfiltration</td>
+              <td>DNS Logs</td>
+              <td><span class="rule-level medium">MEDIUM</span></td>
+            </tr>
+            <tr>
+              <td><strong>7. Scheduled Tasks Hunt</strong></td>
+              <td>Persistence</td>
+              <td>Task Abuse</td>
+              <td>Windows Host</td>
+              <td><span class="rule-level medium">MEDIUM</span></td>
+            </tr>
+            <tr>
+              <td><strong>8. Services Hunt</strong></td>
+              <td>Persistence</td>
+              <td>Service Abuse</td>
+              <td>Windows Host</td>
+              <td><span class="rule-level medium">MEDIUM</span></td>
+            </tr>
+            <tr>
+              <td><strong>9. Autoruns Hunt</strong></td>
+              <td>Persistence</td>
+              <td>Autostart</td>
+              <td>Windows Host</td>
+              <td><span class="rule-level medium">MEDIUM</span></td>
+            </tr>
+            <tr>
+              <td><strong>10. Remote Access Tools Hunt</strong></td>
+              <td>Command & Control</td>
+              <td>RAT/RMM</td>
+              <td>Windows Host</td>
+              <td><span class="rule-level medium">MEDIUM</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="card-grid">
+          <div class="card">
+            <h4>Suspicious PowerShell Hunt</h4>
+            <div class="mitre">T1059.001</div>
+            <p>Erkennt <code>-EncodedCommand</code>, <code>-enc</code> Parameter. Flaggt verdächtige Parent-Prozesse (WINWORD, EXCEL, OUTLOOK).</p>
+          </div>
+          <div class="card">
+            <h4>OPNsense Multicast Review</h4>
+            <div class="mitre">FP-Review</div>
+            <p>Filtert lokales Multicast-Rauschen (224.0.0.0/24). Kennzeichnet mDNS, Bonjour, SSDP als Low-Risk.</p>
+          </div>
+          <div class="card">
+            <h4>RDP Exposure Hunt</h4>
+            <div class="mitre">T1021.001</div>
+            <p>Prüft Port 3389 (TCP). Häufiger Initial-Access-Vektor. Empfehlung: VPN/MFA Requirement.</p>
+          </div>
+          <div class="card">
+            <h4>Persistence Hunt</h4>
+            <div class="mitre">T1547.001</div>
+            <p>Enumerer Run-Keys, Scheduled Tasks, Services, Autoruns. Flaggt verdächtige Binär-Pfade (%APPDATA%, %TEMP%).</p>
+          </div>
+          <div class="card">
+            <h4>Failed Logon Hunt</h4>
+            <div class="mitre">T1110</div>
+            <p>Aggregiert fehlgeschlagene Logons. Erkennt Brute Force (>8 in 120s, gleiche IP/Account) und Password Spray (>5 gegen mehrere Accounts).</p>
+          </div>
+          <div class="card">
+            <h4>DNS Tunneling Hunt</h4>
+            <div class="mitre">T1071.004</div>
+            <p>Analysiert Zeek DNS Logs. Berechnet Entropy, flaggt lange Queries (&gt;100 Zeichen) zu seltenen Domains.</p>
+          </div>
+          <div class="card">
+            <h4>Scheduled Tasks Hunt</h4>
+            <div class="mitre">T1053.005</div>
+            <p>Query <code>schtasks /query</code>. Filtert Tasks mit PowerShell <code>-w hidden</code> oder <code>-enc</code>.</p>
+          </div>
+          <div class="card">
+            <h4>Services Hunt</h4>
+            <div class="mitre">T1543.003</div>
+            <p>Enumerer Services, prüft Binary-Pfade auf ungewöhnliche Ordner. Flaggt unsignierte Binaries.</p>
+          </div>
+          <div class="card">
+            <h4>Autoruns Hunt</h4>
+            <div class="mitre">T1547.001</div>
+            <p>Prüft Run-Keys, Startup-Ordner. Flaggt neu hinzugefügte Einträge mit verdächtigen Pfaden.</p>
+          </div>
+          <div class="card">
+            <h4>Remote Access Tools Hunt</h4>
+            <div class="mitre">T1219</div>
+            <p>Matched gegen RMM-Signaturen: AnyDesk, TeamViewer, ScreenConnect, ngrok. Kann legitim sein — muss validiert werden.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MITRE Coverage Section -->
+      <section id="mitre-coverage">
+        <h2>7. MITRE ATT&CK Coverage Matrix</h2>
+
+        <h3>Abdeckung nach Taktik</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Taktik</th>
+              <th>Techniken</th>
+              <th>Rule-Count</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Execution</strong></td>
+              <td>T1059 (Command), T1059.001 (PowerShell), T1218 (LOLBin)</td>
+              <td>6</td>
+              <td><span class="rule-level high">Full</span></td>
+            </tr>
+            <tr>
+              <td><strong>Persistence</strong></td>
+              <td>T1547 (Autostart), T1053 (Task), T1546 (Event), T1543 (Service)</td>
+              <td>14</td>
+              <td><span class="rule-level high">Full</span></td>
+            </tr>
+            <tr>
+              <td><strong>Credential Access</strong></td>
+              <td>T1110 (Brute Force), T1557 (NTLM), T1558 (Kerberoasting)</td>
+              <td>13</td>
+              <td><span class="rule-level high">Full</span></td>
+            </tr>
+            <tr>
+              <td><strong>Defense Evasion</strong></td>
+              <td>T1036 (Masquerade), T1562 (Impair), T1070 (Indicator Removal)</td>
+              <td>7</td>
+              <td><span class="rule-level high">Full</span></td>
+            </tr>
+            <tr>
+              <td><strong>Persistence</strong> (AD-fokus)</td>
+              <td>T1136 (Account Creation), T1098 (Account Mgmt), T1484 (GPO)</td>
+              <td>8</td>
+              <td><span class="rule-level high">Full</span></td>
+            </tr>
+            <tr>
+              <td><strong>Impact</strong></td>
+              <td>T1485 (Data Destruction), T1070 (Indicator Removal)</td>
+              <td>2</td>
+              <td><span class="rule-level medium">Partial</span></td>
+            </tr>
+            <tr>
+              <td><strong>Command & Control</strong></td>
+              <td>T1071 (App Layer), T1071.004 (DNS), T1568 (DGA)</td>
+              <td>6</td>
+              <td><span class="rule-level high">Full</span></td>
+            </tr>
+            <tr>
+              <td><strong>Lateral Movement</strong></td>
+              <td>T1021 (Remote Service), T1550 (Alternate Auth)</td>
+              <td>4</td>
+              <td><span class="rule-level medium">Partial</span></td>
+            </tr>
+            <tr>
+              <td><strong>Discovery</strong></td>
+              <td>T1135 (Network Share), T1087 (Account)</td>
+              <td>1</td>
+              <td><span class="rule-level low">Limited</span></td>
+            </tr>
+            <tr>
+              <td><strong>Exfiltration</strong></td>
+              <td>T1041 (Exfil Over C2)</td>
+              <td>2</td>
+              <td><span class="rule-level medium">Partial</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Top-Abdeckung (nach Rule-Count)</h3>
+        <ol>
+          <li><strong>Persistence</strong> — 22 Regeln — <em>Kernfähigkeit + AD-fokus</em></li>
+          <li><strong>Credential Access</strong> — 13 Regeln — <em>Brute Force + Kerberos</em></li>
+          <li><strong>Execution</strong> — 9 Regeln — <em>Process Injection + Command-Injection</em></li>
+          <li><strong>Command & Control</strong> — 6 Regeln — <em>Malware-Detection</em></li>
+          <li><strong>Defense Evasion</strong> — 7 Regeln — <em>Security-Disable-Schutz</em></li>
+        </ol>
+
+        <div class="info-box">
+          <strong>Gap-Analyse:</strong> Schwache Abdeckung bei Discovery (T1087, T1135) — können durch Netzwerk-Reconnaissance-Hunts erweitert werden. Collection/Impact weitere Kandidaten für zukünftige Erweiterung.
+        </div>
+      </section>
+
+      <!-- Maintenance Section -->
+      <section id="wartung">
+        <h2>8. Wartung & Erweiterung</h2>
+
+        <h3>8.1 Rule-ID-Bereiche (Konvention)</h3>
+        <pre>100001–100099   svchost.exe FP-Ausnahmen
+100100–100199   Critical Process FP (lsass, csrss, winlogon, smss)
+100200–100299   PowerShell / Scripting FP
+100300–100399   Netzwerk-FP
+100400–100499   Eskalations-/Anreicherungsregeln
+
+100610–100699   Event 11 (FileCreate) Detection
+100700–100799   Event 12/13 (Registry) Detection
+100800–100899   Event 17/18 (Named Pipe) Detection
+100900–100999   Event 22 (DNS) Detection
+
+101000–101099   QRadar-äquivalent: Brute Force / Password Spray
+101100–101199   QRadar-äquivalent: NTLM Downgrade / PtH
+101200–101299   QRadar-äquivalent: Kerberos Attacks (DC-required)
+101300–101399   AD / WEF Detection
+        </pre>
+
+        <h3>8.2 Neue Regel hinzufügen</h3>
+        <ol>
+          <li><strong>Bereich identifizieren:</strong> Welche Kategorie? (FileCreate, Registry, etc.)</li>
+          <li><strong>Nächste freie ID:</strong> Höchste ID im Bereich + 1</li>
+          <li><strong>XML schreiben:</strong> Wazuh-Rule mit <code>&lt;if_sid&gt;</code>, <code>&lt;field&gt;</code>, <code>&lt;mitre&gt;</code></li>
+          <li><strong>Testen:</strong> Manager restart, manueller Test-Event, Match überprüfen</li>
+          <li><strong>Dokumentieren:</strong> Changelog, Commit</li>
+        </ol>
+
+        <h3>8.3 False Positive Handling</h3>
+        <div class="info-box">
+          <strong>Golden Rule:</strong> Niemals global suppressieren. Stattdessen:
+          <ul style="margin-top: 0.5rem;">
+            <li>Schreibe <strong>Scoped FP-Exception</strong> (nur für Host/User)</li>
+            <li>Nutze <strong>Aggregation</strong> statt Blacklisting</li>
+            <li>Dokumentiere die Ausnahme-Begründung</li>
+          </ul>
+        </div>
+
+        <h3>8.4 Regelmäßige Audits</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Frequenz</th>
+              <th>Aktion</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Wöchentlich</strong></td>
+              <td>Alert-Volume-Review + Top-10 Rules</td>
+              <td>SOC-Analyst</td>
+            </tr>
+            <tr>
+              <td><strong>Monatlich</strong></td>
+              <td>False Positive Analysis + Tuning</td>
+              <td>SOC-Lead</td>
+            </tr>
+            <tr>
+              <td><strong>Quartalsweise</strong></td>
+              <td>MITRE-Coverage-Review + New-Technique-Assessment</td>
+              <td>Security-Architect</td>
+            </tr>
+            <tr>
+              <td><strong>Jährlich</strong></td>
+              <td>Full Rule-Set-Audit + Vulnerability-Assessment</td>
+              <td>CISO / Infra-Team</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- References -->
+      <section>
+        <h2>Referenzen</h2>
+        <ul>
+          <li><strong>MITRE ATT&CK Framework:</strong> <a href="https://attack.mitre.org/">https://attack.mitre.org/</a></li>
+          <li><strong>Wazuh Ruleset (4.14.5):</strong> <code>/var/ossec/etc/rules/</code> (Manager)</li>
+          <li><strong>Sysmon Enterprise Config:</strong> <a href="https://github.com/SwiftOnSecurity/sysmon-config">SwiftOnSecurity/sysmon-config</a></li>
+          <li><strong>Windows Event Forwarding (WEF):</strong> Microsoft Docs — Event Forwarding & Subscriptions</li>
+          <li><strong>OPNsense Firewall:</strong> <a href="https://docs.opnsense.org/">https://docs.opnsense.org/</a></li>
+          <li><strong>VirusTotal API:</strong> <a href="https://developers.virustotal.com/">https://developers.virustotal.com/</a></li>
+          <li><strong>Zeek DNS Logs:</strong> <a href="https://docs.zeek.org/">https://docs.zeek.org/</a></li>
+        </ul>
+      </section>
+    </div>
+
+    <footer>
+      <p><strong>Nexora SOC Lab — Detection Rules Catalog</strong></p>
+      <p>Version 1.0 | Dokumentiert: 2026-06-11 | Status: Production</p>
+      <p>Feedback: SOC-Team oder Security-Architect</p>
+    </footer>
+  </main>
+</body>
+</html>

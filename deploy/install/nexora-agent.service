@@ -1,0 +1,17 @@
+[Unit]
+Description=Nexora Provisioning Agent (heartbeat, read-only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/nexora-agent/nexora-agent.sh
+Restart=on-failure
+RestartSec=15
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/nexora-agent
+
+[Install]
+WantedBy=multi-user.target

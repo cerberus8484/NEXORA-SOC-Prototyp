@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC-LAT-002 RDP from Unusual Source — Nexora SOC / QRadar</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Nexora <span>SOC</span></div>
+    <div class="sub">UC-LAT-002 · RDP Pivoting</div>
+    <h2>Auf dieser Seite</h2>
+    <a href="#szenario">1 · Szenario</a>
+    <a href="#ablauf">2 · Angriffsablauf</a>
+    <a href="#mitre">3 · MITRE-Einordnung</a>
+    <a href="#voraussetzungen">4 · Voraussetzungen</a>
+    <a href="#logik">5 · Erkennungslogik</a>
+    <a href="#response">6 · Rule Response</a>
+    <a href="#fp">7 · False Positives</a>
+    <a href="#confidence">8 · Confidence Scoring</a>
+    <a href="#validierung">9 · Validierung</a>
+    <a href="#handlung">10 · Analyst-Handlung</a>
+    <h2>Bibliothek</h2>
+    <a href="../index.html">Übersicht</a>
+    <a href="../mitre-coverage-map.html">Coverage Map</a>
+    <a href="../../qradar-usecase-anlegen.html">Klick-Anleitung</a>
+  </nav>
+
+  <main>
+    <div class="breadcrumb"><a href="../index.html">Bibliothek</a> / <a href="../mitre-coverage-map.html">Lateral Movement</a> / UC-LAT-002</div>
+    <header class="hero">
+      <div class="kicker">Lateral Movement</div>
+      <h1>UC-LAT-002 — RDP from Unusual Source / Pivoting</h1>
+      <p>RDP (Remote Desktop, Logon Type 10) ist ein Standard-Admin-Werkzeug — und ein Standard-Angriffsweg. Verdächtig wird es, wenn die <em>Quelle</em> ungewöhnlich ist (keine Helpdesk-/Jump-/Citrix-Infra) oder wenn ein Host als RDP-Ziel <em>und</em> -Quelle auftritt: das ist <strong>Pivoting</strong> durch das Netz.</p>
+      <div class="meta">
+        <span><b>MITRE:</b> <span class="chip mitre">T1021.001</span></span>
+        <span><b>Taktik:</b> Lateral Movement</span>
+        <span><b>Confidence:</b> <span class="conf high">75–92</span></span>
+        <span><b>Status:</b> DRAFT → zu validieren</span>
+        <span><b>Quelle:</b> <span class="chip src">Windows Security 4624 (Type 10)</span></span>
+      </div>
+    </header>
+
+    <h2 class="section" id="szenario">1 · Szenario</h2>
+    <p>Der Angreifer nutzt erbeutete Credentials, um sich per RDP von Host zu Host zu hangeln. Jeder kompromittierte Rechner wird zum Sprungbrett (Pivot) zum nächsten. Da RDP ein legitimes Protokoll ist, liegt das Signal nicht im „ob", sondern im <em>Muster</em>: untypische Quelle und/oder ein Host, der kurz hintereinander RDP-Ziel und RDP-Quelle ist.</p>
+
+    <h2 class="section" id="ablauf">2 · Angriffsablauf</h2>
+    <ol class="killchain">
+      <li><b>Credentials:</b> Angreifer hat gültige (oft Admin-)Zugangsdaten.</li>
+      <li><b>Erster RDP-Hop:</b> Logon Type 10 auf Host A — von einer Quelle außerhalb der Admin-/Helpdesk-Infra.</li>
+      <li><b>Pivot:</b> Von Host A aus RDP auf Host B, von B auf C … Host A erscheint als Ziel <em>und</em> Quelle.</li>
+      <li><b>Ziel erreicht:</b> Zugriff auf File-Server, DC, Datenbank.</li>
+    </ol>
+
+    <h2 class="section" id="mitre">3 · MITRE-Einordnung</h2>
+    <table style="max-width:720px">
+      <tr><th>Feld</th><th>Wert</th></tr>
+      <tr><td>Technik</td><td><span class="chip mitre">T1021.001</span> Remote Services: Remote Desktop Protocol</td></tr>
+      <tr><td>Taktik</td><td>Lateral Movement (TA0008)</td></tr>
+      <tr><td>Verwandt</td><td>T1078 (Valid Accounts), T1563.002 (RDP Hijacking)</td></tr>
+    </table>
+
+    <h2 class="section" id="voraussetzungen">4 · Voraussetzungen</h2>
+    <ul class="steps">
+      <li><b>Windows</b> liefert <code>4624</code> mit <code>Logon Type</code> und Source Network Address.</li>
+      <li><b>Custom Property:</b> <span class="chip src">Logon Type</span></li>
+      <li><b>Reference Sets:</b> <span class="chip refset">RS:Helpdesk-Workstations</span> <span class="chip refset">RS:Jump-Hosts</span> <span class="chip refset">RS:Citrix-Servers</span></li>
+    </ul>
+
+    <h2 class="section" id="logik">5 · Erkennungslogik</h2>
+    <p class="lead">Actions → <b>New Event Rule</b> · Rule Group <b>Lateral Movement</b> · Name <code>UC-LAT-002 RDP Unusual Source</code>.</p>
+<pre class="code"><span class="cmt">-- Basis: RDP aus untypischer Quelle</span>
+<span class="kw">Apply</span> UC-LAT-002 RDP Unusual Source <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Successful Logon / 4624)</span>
+<span class="kw">and when</span> <span class="lnk">Logon Type</span> (custom) is one of the following <span class="lnk">10</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Helpdesk-Workstations</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Jump-Hosts</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Citrix-Servers</span></pre>
+    <div class="callout tip"><strong>Pivoting-Verschärfung (Conf ~90):</strong> zusätzlicher Test —
+<br><code>and when at least <span style="color:var(--qr-link)">3</span> events are seen with the same <span style="color:var(--qr-link)">Source IP</span> and different <span style="color:var(--qr-link)">Destination IP</span> in <span style="color:var(--qr-link)">30 minutes</span></code>
+<br>Ein Host, der auf mehrere Ziele RDP-t = PIVOTING.</div>
+
+    <h2 class="section" id="response">6 · Rule Response</h2>
+    <table style="max-width:760px">
+      <tr><th>Einstellung</th><th>Wert</th></tr>
+      <tr><td>Offense</td><td>✓ — <b>Index by:</b> Source IP</td></tr>
+      <tr><td>Severity</td><td>7 (Single) / 9 (Pivoting)</td></tr>
+      <tr><td>Response Limiter</td><td>1× pro 30 min pro Source IP</td></tr>
+    </table>
+
+    <h2 class="section" id="fp">7 · False Positives / Whitelist</h2>
+    <table>
+      <tr><th>FP-Quelle</th><th>Maßnahme</th></tr>
+      <tr><td>Helpdesk-RDP (Geschäftszeiten)</td><td><span class="chip refset">RS:Helpdesk-Workstations</span> + ggf. Zeitfenster</td></tr>
+      <tr><td>Admin über Jump-/Citrix-Server</td><td><span class="chip refset">RS:Jump-Hosts</span> / <span class="chip refset">RS:Citrix-Servers</span></td></tr>
+      <tr><td>Monitoring / Patch-Tools mit RDP</td><td>Quelle ergänzen, dokumentieren</td></tr>
+    </table>
+
+    <h2 class="section" id="confidence">8 · Confidence Scoring</h2>
+    <table style="max-width:640px">
+      <tr><th>Bedingung</th><th>Score</th></tr>
+      <tr><td>Pivoting: 1 Quelle → ≥ 3 unterschiedliche Ziele in 30 min</td><td><span class="conf crit">90</span></td></tr>
+      <tr><td>RDP aus untypischer Quelle → 2 Ziele</td><td><span class="conf high">75</span></td></tr>
+      <tr><td>RDP aus untypischer Quelle → 1 Ziel</td><td><span class="conf med">60</span></td></tr>
+      <tr><td>Quelle Helpdesk/Jump/Citrix</td><td>ausschließen</td></tr>
+    </table>
+
+    <h2 class="section" id="validierung">9 · Validierung</h2>
+    <table>
+      <tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th></tr>
+      <tr><td>TP-001</td><td>TP</td><td>RDP von Workstation auf 5 Server in 15 min</td><td>Offense PIVOTING, Conf ~90</td></tr>
+      <tr><td>TP-002</td><td>TP</td><td>RDP von externer/untypischer Quelle auf 1 Server</td><td>Offense, Conf ~60</td></tr>
+      <tr><td>FP-001</td><td>FP</td><td>Type-10 RDP aus Helpdesk-Subnetz</td><td>NICHT erkannt</td></tr>
+      <tr><td>FP-002</td><td>FP</td><td>Admin via Jump-Host auf 4 Server</td><td>NICHT erkannt (Jump-Host whitelisted)</td></tr>
+    </table>
+
+    <h2 class="section" id="handlung">10 · Analyst-Handlung</h2>
+    <ul class="steps">
+      <li>Quelle + Konto + Zielkette rekonstruieren (alle 4624 Type 10 derselben Quelle/Kette).</li>
+      <li>Ist die Quelle bekannt/legitim? Konto zu dieser Uhrzeit plausibel?</li>
+      <li>Bei Pivoting: alle Hops als potenziell kompromittiert behandeln.</li>
+      <li>Konto sperren/zurücksetzen, betroffene Hosts isolieren, RDP-Exposure (NLA, MFA, FW) prüfen.</li>
+    </ul>
+
+    <footer>
+      <p>UC-LAT-002 · SOC-Hunt-Framework (HUNT-003) · <code>…/szenarien/uc-lat-002-rdp-pivoting.html</code> · 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

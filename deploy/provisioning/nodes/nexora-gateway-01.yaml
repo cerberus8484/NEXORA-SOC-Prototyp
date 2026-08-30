@@ -1,0 +1,45 @@
+# Beispiel C — Gateway/NAT nur als HIGH-RISK-Wunschzustand, KEINE Installer-Aktion.
+# routing/nat sind 'requested' (nie applyDuringInstall); Apply ist ein separater,
+# genehmigter Workflow (Preview + Approval + Rollback + Audit, disabled by default).
+node:
+  name: nexora-gateway-01
+  role: gateway_sensor
+
+install:
+  mode: bootstrap_only
+  changeNetwork: false
+
+network:
+  discovery: read_only
+  desiredState:
+    mode: static
+    managementInterface: eth0
+    ip: 10.99.99.60
+    cidr: 24
+    gateway: 10.99.99.1
+    dns:
+      - 10.99.99.10
+  applyDuringInstall: false
+
+features:
+  routing:
+    requested: true
+    applyDuringInstall: false
+    requiresApproval: true
+  nat:
+    requested: true
+    outboundInterface: eth0
+    internalInterface: eth1
+    applyDuringInstall: false
+    requiresApproval: true
+
+safety:
+  changeWindowRequired: true
+  rollbackRequired: true
+  approval:
+    required: true
+    minimumReviewers: 1
+
+nexora:
+  serverUrl: https://nexora.example
+  enrollmentProfile: lab-gateway

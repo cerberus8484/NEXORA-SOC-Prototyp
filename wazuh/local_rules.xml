@@ -1,0 +1,723 @@
+<!--
+  ╔══════════════════════════════════════════════════════════════════════════╗
+  ║  NEXORA SOC — Wazuh Local Rules                                         ║
+  ║  Ergänzt das Standard-Ruleset um präzise FP-Unterdrückung               ║
+  ║  Pfad auf Manager: /var/ossec/etc/rules/local_rules.xml                 ║
+  ║  Stand: 2026-06                                                          ║
+  ╚══════════════════════════════════════════════════════════════════════════╝
+
+  REGEL-ID-VERGABE
+  =================
+  100001-100099  svchost.exe Ausnahmen
+  100100-100199  lsass / csrss / winlogon / smss Ausnahmen
+  100200-100299  PowerShell / Scripting Ausnahmen
+  100300-100399  Netzwerk-FP-Unterdrückung
+  100400-100499  Eskalations-/Anreicherungsregeln (svchost)
+  100500-100599  SSH / bekannte FP-Ausnahmen
+  100610-100699  Event 11 FileCreate Detection (100600-100604 belegt durch soc_hunt_powershell.xml)
+  101000-101099  QRadar-äquivalente Detection: Brute Force / Password Spray
+  101100-101199  QRadar-äquivalente Detection: NTLM Downgrade / Pass-the-Hash
+  101200-101299  QRadar-äquivalente Detection: Kerberos Attacks (DC — zukünftig)
+  100700-100799  Event 12/13 Registry Persistence Detection
+  100800-100899  Event 17/18 Named Pipe Detection
+  100900-100999  Event 22 DNS Detection
+  101300-101399  AD / WEF Detection (Security-Channel, DC01 via WEC01/ForwardedEvents)
+
+  WICHTIG — Parent-SIDs für Windows-Events:
+  eventchannel-Events laufen über Regel 60000 (windows_eventchannel),
+  NICHT über die 18xxx-eventlog-Regeln. Eigene Security-Event-Regeln
+  hängen deshalb an der lokalen Basis 101300 (if_sid 60000).
+-->
+
+<group name="local,fp-suppression">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       svchost.exe — Regel 61618 FP-Ausnahmen
+       Regel 61618 greift auf JEDES svchost.exe-Event, solange der Parent
+       nicht \services.exe ist (Regel 61619). Folgende legitimen Parents
+       werden explizit auf Level 0 gesetzt.
+       ══════════════════════════════════════════════════════════════════════ -->
+
+  <rule id="100001" level="0">
+    <if_sid>61618</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\wininit\.exe$</field>
+    <description>FP: svchost.exe von wininit.exe gestartet (Systemstart — legitim)</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <rule id="100002" level="0">
+    <if_sid>61618</if_sid>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)-s\s+(UmRdpService|TermService|RpcSs|DcomLaunch|nsi|BFE|MpsSvc|EventLog|SENS|Schedule|Netman|NlaSvc|Dnscache|LanmanWorkstation|LanmanServer|Spooler|W32Time|WinHttpAutoProxySvc|WebClient|WinRM)</field>
+    <description>FP: svchost.exe mit bekanntem legitimen Windows-Service-Parameter</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <rule id="100003" level="0">
+    <if_sid>61618</if_sid>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)-k\s+(LocalSystemNetworkRestricted|LocalService|NetworkService|LocalServiceNetworkRestricted|DcomLaunch|netsvcs|LocalServiceAndNoImpersonation|imgsvc|apphost)</field>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\services\.exe$</field>
+    <description>FP: svchost.exe mit bekanntem -k Parameter von services.exe</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <!-- svchost von MsMpEng (Defender scannt laufende Prozesse) -->
+  <rule id="100004" level="0">
+    <if_sid>61618</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\MsMpEng\.exe$</field>
+    <description>FP: svchost.exe Scan-Aktivität durch Windows Defender</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       lsm.exe — Regeln 61620/61622 FP-Ausnahmen
+       Local Session Manager — von wininit.exe gestartet (immer legitim)
+       ══════════════════════════════════════════════════════════════════════ -->
+
+  <rule id="100010" level="0">
+    <if_sid>61620</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\wininit\.exe$</field>
+    <description>FP: lsm.exe von wininit.exe gestartet (legitim)</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       csrss.exe — Regel 61623 FP-Ausnahmen
+       Client/Server Runtime — legitime Parents: smss.exe
+       ══════════════════════════════════════════════════════════════════════ -->
+
+  <rule id="100020" level="0">
+    <if_sid>61623</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\smss\.exe$</field>
+    <description>FP: csrss.exe von smss.exe gestartet (Systemstart — legitim)</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       lsass.exe — Regel 61625/61627 FP-Ausnahmen
+       Local Security Authority — nur von wininit.exe gestartet (legitim)
+       ══════════════════════════════════════════════════════════════════════ -->
+
+  <rule id="100030" level="0">
+    <if_sid>61625</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\wininit\.exe$</field>
+    <description>FP: lsass.exe von wininit.exe gestartet (Systemstart — legitim)</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       winlogon.exe — Regel 61628
+       ══════════════════════════════════════════════════════════════════════ -->
+
+  <rule id="100040" level="0">
+    <if_sid>61628</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\smss\.exe$</field>
+    <description>FP: winlogon.exe von smss.exe gestartet (legitim)</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       services.exe — Regel 61636
+       ══════════════════════════════════════════════════════════════════════ -->
+
+  <rule id="100050" level="0">
+    <if_sid>61636</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\wininit\.exe$</field>
+    <description>FP: services.exe von wininit.exe gestartet (legitim)</description>
+    <group>sysmon,fp_suppression</group>
+  </rule>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       ESKALATIONSREGELN — svchost WIRKLICH verdächtig
+       Wenn keine FP-Regel zutrifft: Level beibehalten oder erhöhen.
+       Diese Regeln beschreiben echte Angriffsmuster.
+       ══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- svchost von cmd/powershell → fast immer Injection -->
+  <rule id="100401" level="14">
+    <if_sid>61618</if_sid>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\(cmd|powershell|wscript|cscript|mshta|rundll32|regsvr32)\.exe$</field>
+    <description>KRITISCH: svchost.exe gestartet von Script-/Shell-Prozess — Process Injection (T1055)</description>
+    <mitre>
+      <id>T1055</id>
+    </mitre>
+    <group>sysmon,process_injection,high_confidence</group>
+  </rule>
+
+  <!-- svchost ohne -k Parameter — sehr ungewöhnlich -->
+  <rule id="100402" level="12">
+    <if_sid>61618</if_sid>
+    <field name="win.eventdata.commandLine" negate="yes" type="pcre2">(?i)-k\s+</field>
+    <description>HOCH: svchost.exe ohne -k Parameter — verdächtig auf Process Hollowing (T1055.012)</description>
+    <mitre>
+      <id>T1055</id>
+    </mitre>
+    <group>sysmon,process_hollowing</group>
+  </rule>
+
+  <!-- svchost von unbekanntem Pfad (nicht System32) -->
+  <rule id="100403" level="14">
+    <if_sid>61618</if_sid>
+    <field name="win.eventdata.image" negate="yes" type="pcre2">(?i)C:\\Windows\\(System32|SysWOW64)\\svchost\.exe$</field>
+    <description>KRITISCH: svchost.exe nicht aus System32/SysWOW64 — Masquerading (T1036.005)</description>
+    <mitre>
+      <id>T1036</id>
+    </mitre>
+    <group>sysmon,masquerading,high_confidence</group>
+  </rule>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       SSH / Konfigurationsregeln (bestehende FP-Basis)
+       ══════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Regel 19011 (SSH MACs) — auf Wazuh-Server selbst bekannt und akzeptiert -->
+  <rule id="100500" level="3">
+    <if_sid>19011</if_sid>
+    <hostname>wazuh-server</hostname>
+    <description>FP (bekannt): SSH MAC-Konfiguration auf Wazuh-Server — als akzeptiert markiert</description>
+    <group>fp_suppression,ssh,known_configuration</group>
+  </rule>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       EVENT 11 — FILECREATE DETECTION
+       Basis: Sysmon Regel 61613 (Level 0).
+       Eskalation wenn Pfad/Typ zu bekannten Angriffsvektoren passt.
+       ════════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Datei in Autostart-Ordner — Persistence T1547.001 -->
+  <rule id="100610" level="12">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\</field>
+    <description>HOCH: Datei in Autostart-Ordner erstellt — Persistence (T1547.001)</description>
+    <mitre><id>T1547</id></mitre>
+    <group>sysmon,filecreate,persistence</group>
+  </rule>
+
+  <!-- Executable/Skript in Temp — Dropper T1105 -->
+  <rule id="100611" level="10">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\\(Temp|tmp)\\.*\.(exe|dll|ps1|bat|cmd|vbs|js|hta|msi|cpl)$</field>
+    <description>MITTEL: Ausführbare Datei in Temp erstellt — Dropper/Staging (T1105)</description>
+    <mitre><id>T1105</id></mitre>
+    <group>sysmon,filecreate,dropper</group>
+  </rule>
+
+  <!-- Executable in AppData (kein bekannter Installer) -->
+  <rule id="100612" level="10">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\\AppData\\(Roaming|Local)\\.*\.(exe|dll|ps1|bat|vbs|hta)$</field>
+    <field name="win.eventdata.image" negate="yes" type="pcre2">(?i)\\(chrome|firefox|msedge|Teams|OneDrive|Dropbox|Zoom|slack|msiexec|setup|installer|update)\.exe$</field>
+    <description>MITTEL: Executable in AppData erstellt (kein bekannter Installer) — Staging (T1105)</description>
+    <mitre><id>T1105</id></mitre>
+    <group>sysmon,filecreate,staging</group>
+  </rule>
+
+  <!-- Office-Prozess erzeugt ausführbare Datei — Makro T1566.001 -->
+  <rule id="100613" level="14">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(WINWORD|EXCEL|POWERPNT|OUTLOOK|ONENOTE|VISIO|MSPUB)\.EXE$</field>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\.(exe|dll|ps1|bat|cmd|vbs|js|hta|lnk)$</field>
+    <description>KRITISCH: Office-Prozess erstellt ausführbare Datei — Makro/Phishing (T1566.001)</description>
+    <mitre><id>T1566</id></mitre>
+    <group>sysmon,filecreate,macro,high_confidence</group>
+  </rule>
+
+  <!-- Datei in Web-Root — Webshell T1505.003 -->
+  <rule id="100614" level="14">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\\(inetpub|wwwroot|htdocs|webroot)\\.*\.(asp|aspx|php|jsp|cfm|shtml|phtml)$</field>
+    <description>KRITISCH: Datei in Web-Root erstellt — Webshell Verdacht (T1505.003)</description>
+    <mitre><id>T1505</id></mitre>
+    <group>sysmon,filecreate,webshell,high_confidence</group>
+  </rule>
+
+  <!-- Scheduled Task XML durch unerwarteten Prozess — Persistence T1053 -->
+  <rule id="100615" level="10">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\\Windows\\System32\\Tasks\\</field>
+    <field name="win.eventdata.image" negate="yes" type="pcre2">(?i)\\(svchost|taskeng|taskhostw|msiexec)\.exe$</field>
+    <description>MITTEL: Scheduled Task durch unerwarteten Prozess erstellt — Persistence (T1053.005)</description>
+    <mitre><id>T1053</id></mitre>
+    <group>sysmon,filecreate,persistence,scheduled_task</group>
+  </rule>
+
+  <!-- Treiber außerhalb System32\drivers — Rootkit T1014 -->
+  <rule id="100616" level="14">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\.sys$</field>
+    <field name="win.eventdata.targetFilename" negate="yes" type="pcre2">(?i)\\Windows\\(System32|SysWOW64)\\drivers\\</field>
+    <description>KRITISCH: Treiber außerhalb System32\drivers erstellt — Rootkit (T1014)</description>
+    <mitre><id>T1014</id></mitre>
+    <group>sysmon,filecreate,rootkit,high_confidence</group>
+  </rule>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       EVENT 12/13 — REGISTRY PERSISTENCE DETECTION
+       Basis: Sysmon Regeln 61614/61615 (Level 0).
+       ════════════════════════════════════════════════════════════════════════ -->
+
+  <!-- Run-Keys (kein Installer) — T1547.001 -->
+  <rule id="100701" level="12">
+    <if_sid>61614,61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)\\CurrentVersion\\Run(Once)?$|\\CurrentVersion\\Run\\</field>
+    <field name="win.eventdata.image" negate="yes" type="pcre2">(?i)\\(MsiExec|msiexec|setup|installer|update|OneDrive|Teams|Dropbox|Zoom|chrome|msedge|firefox)\.exe$</field>
+    <description>HOCH: Registry Run-Key gesetzt (kein bekannter Installer) — Autostart-Persistence (T1547.001)</description>
+    <mitre><id>T1547</id></mitre>
+    <group>sysmon,registry,persistence,run_key</group>
+  </rule>
+
+  <!-- AppInit_DLLs — T1546.010 -->
+  <rule id="100702" level="14">
+    <if_sid>61614,61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)AppInit_DLLs</field>
+    <description>KRITISCH: AppInit_DLLs geändert — DLL-Injection via Registry (T1546.010)</description>
+    <mitre><id>T1546</id></mitre>
+    <group>sysmon,registry,dll_injection,high_confidence</group>
+  </rule>
+
+  <!-- LSA Authentication/Security Packages — T1547.002 -->
+  <rule id="100703" level="14">
+    <if_sid>61614,61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)\\Control\\Lsa\\(Authentication Packages|Security Packages|Notification Packages)</field>
+    <description>KRITISCH: LSA Packages geändert — Credential Provider Hijack (T1547.002)</description>
+    <mitre><id>T1547</id></mitre>
+    <group>sysmon,registry,lsa,credential_access,high_confidence</group>
+  </rule>
+
+  <!-- Image File Execution Options — T1546.012 -->
+  <rule id="100704" level="12">
+    <if_sid>61614,61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)\\Image File Execution Options\\</field>
+    <description>HOCH: Image File Execution Options geändert — Debugger Hijack / UAC Bypass (T1546.012)</description>
+    <mitre><id>T1546</id></mitre>
+    <group>sysmon,registry,debugger_hijack</group>
+  </rule>
+
+  <!-- Winlogon Shell/Userinit — T1547.004 -->
+  <rule id="100705" level="14">
+    <if_sid>61614,61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)\\Winlogon\\(Shell|Userinit|GinaDLL|System|Taskman)</field>
+    <description>KRITISCH: Winlogon-Schlüssel geändert — Logon Persistence (T1547.004)</description>
+    <mitre><id>T1547</id></mitre>
+    <group>sysmon,registry,winlogon,persistence,high_confidence</group>
+  </rule>
+
+  <!-- COM-Hijacking HKCU — T1546.015 -->
+  <rule id="100706" level="10">
+    <if_sid>61614,61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)HKCU\\Software\\Classes\\CLSID\\</field>
+    <description>MITTEL: HKCU CLSID geändert — COM-Hijacking (T1546.015)</description>
+    <mitre><id>T1546</id></mitre>
+    <group>sysmon,registry,com_hijacking</group>
+  </rule>
+
+  <!-- Defender/Security über Registry deaktiviert — T1562.001 -->
+  <rule id="100707" level="14">
+    <if_sid>61614,61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)(DisableAntiSpyware|DisableRealtimeMonitoring|DisableAntiVirus|DisableBehaviorMonitoring)</field>
+    <description>KRITISCH: Windows Defender via Registry deaktiviert — Impair Defenses (T1562.001)</description>
+    <mitre><id>T1562</id></mitre>
+    <group>sysmon,registry,defense_evasion,high_confidence</group>
+  </rule>
+
+  <!-- Proxy via Registry (kein Browser) — T1090 -->
+  <rule id="100708" level="10">
+    <if_sid>61614,61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)(ProxyServer|AutoConfigURL|ProxyEnable)</field>
+    <field name="win.eventdata.image" negate="yes" type="pcre2">(?i)\\(chrome|msedge|firefox|iexplore|brave|opera)\.exe$</field>
+    <description>MITTEL: Proxy-Einstellung geändert (kein Browser) — Proxy Hijacking (T1090)</description>
+    <mitre><id>T1090</id></mitre>
+    <group>sysmon,registry,proxy_hijack</group>
+  </rule>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       EVENT 17/18 — NAMED PIPE DETECTION
+       Basis: Sysmon Regeln 61645/61646 (Level 0).
+       Named Pipes sind Top-IOC für Lateral Movement und C2 Frameworks.
+       ════════════════════════════════════════════════════════════════════════ -->
+
+  <!-- PsExec — T1569.002 -->
+  <rule id="100801" level="14">
+    <if_sid>61645,61646</if_sid>
+    <field name="win.eventdata.pipeName" type="pcre2">(?i)(psexesvc|PSEXESVC)</field>
+    <description>KRITISCH: PsExec Named Pipe — Remote Service Execution (T1569.002)</description>
+    <mitre><id>T1569</id></mitre>
+    <group>sysmon,named_pipe,lateral_movement,psexec,high_confidence</group>
+  </rule>
+
+  <!-- CobaltStrike Default Pipes -->
+  <rule id="100802" level="14">
+    <if_sid>61645,61646</if_sid>
+    <field name="win.eventdata.pipeName" type="pcre2">(?i)(postex_|msagent_|isapi_|status_|mojo\.\d+\.\d+\.|wkssvc_|ntsvcs\d|scerpc_\d|mypipe-f|mypipe-h|SearchTextHarvester)</field>
+    <description>KRITISCH: CobaltStrike Default Named Pipe — C2 Beacon (T1055)</description>
+    <mitre><id>T1055</id></mitre>
+    <group>sysmon,named_pipe,c2,cobalt_strike,high_confidence</group>
+  </rule>
+
+  <!-- Meterpreter Pipes -->
+  <rule id="100803" level="14">
+    <if_sid>61645,61646</if_sid>
+    <field name="win.eventdata.pipeName" type="pcre2">(?i)(meterpreter|metasploit|stdapi_)</field>
+    <description>KRITISCH: Meterpreter Named Pipe — Metasploit C2 (T1055)</description>
+    <mitre><id>T1055</id></mitre>
+    <group>sysmon,named_pipe,c2,metasploit,high_confidence</group>
+  </rule>
+
+  <!-- Impacket / SMB Admin-Pipes von unerwartetem Prozess — T1021 -->
+  <rule id="100804" level="12">
+    <if_sid>61645,61646</if_sid>
+    <field name="win.eventdata.pipeName" type="pcre2">(?i)\\(svcctl|atsvc|samr|lsarpc|netlogon|epmapper|srvsvc)$</field>
+    <field name="win.eventdata.image" negate="yes" type="pcre2">(?i)\\(svchost|lsass|services|spoolsv)\.exe$</field>
+    <description>HOCH: Admin-Pipe von unerwartetem Prozess — Impacket/Lateral Movement (T1021)</description>
+    <mitre><id>T1021</id></mitre>
+    <group>sysmon,named_pipe,lateral_movement,impacket</group>
+  </rule>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       EVENT 22 — DNS QUERY DETECTION
+       Basis: Sysmon Regel 61650 (Level 0).
+       DNS von unerwarteten Prozessen = C2 oder Recon.
+       ════════════════════════════════════════════════════════════════════════ -->
+
+  <!-- PowerShell DNS-Anfrage — C2 T1071.004 -->
+  <rule id="100901" level="12">
+    <if_sid>61650</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(powershell|pwsh)\.exe$</field>
+    <description>HOCH: PowerShell stellt DNS-Anfrage — C2/Staging (T1071.004)</description>
+    <mitre><id>T1071</id></mitre>
+    <group>sysmon,dns,c2,powershell</group>
+  </rule>
+
+  <!-- LOLBins DNS — T1059 -->
+  <rule id="100902" level="12">
+    <if_sid>61650</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(wscript|cscript|mshta|rundll32|regsvr32)\.exe$</field>
+    <description>HOCH: LOLBin stellt DNS-Anfrage — C2 (T1059)</description>
+    <mitre><id>T1059</id></mitre>
+    <group>sysmon,dns,c2,lolbin</group>
+  </rule>
+
+  <!-- Verdächtige TLD — DGA T1568.002 -->
+  <rule id="100903" level="10">
+    <if_sid>61650</if_sid>
+    <field name="win.eventdata.queryName" type="pcre2">(?i)\.(xyz|top|tk|ml|ga|cf|gq|pw|cc|su|bit|onion)$</field>
+    <description>MITTEL: DNS an verdächtige TLD — DGA/C2 (T1568.002)</description>
+    <mitre><id>T1568</id></mitre>
+    <group>sysmon,dns,dga,suspicious_tld</group>
+  </rule>
+
+  <!-- DNS Tunneling — sehr langer Hostname T1071.004 -->
+  <rule id="100904" level="12">
+    <if_sid>61650</if_sid>
+    <field name="win.eventdata.queryName" type="pcre2">^.{100,}</field>
+    <description>HOCH: DNS-Query mit 100+ Zeichen Hostname — DNS Tunneling (T1071.004)</description>
+    <mitre><id>T1071</id></mitre>
+    <group>sysmon,dns,tunneling</group>
+  </rule>
+
+  <!-- certutil DNS — Downloader T1218 -->
+  <rule id="100905" level="12">
+    <if_sid>61650</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\certutil\.exe$</field>
+    <description>HOCH: certutil stellt DNS-Anfrage — Downloader LOLBin (T1218)</description>
+    <mitre><id>T1218</id></mitre>
+    <group>sysmon,dns,lolbin,certutil</group>
+  </rule>
+
+  <!-- Office DNS an Nicht-Microsoft-Domain — T1566 -->
+  <rule id="100906" level="8">
+    <if_sid>61650</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(WINWORD|EXCEL|POWERPNT|OUTLOOK)\.EXE$</field>
+    <field name="win.eventdata.queryName" negate="yes" type="pcre2">(?i)(microsoft|office|live|windows|azure|sharepoint|onedrive|microsoftonline|bing|msn|hotmail|outlook)\.com</field>
+    <description>MITTEL: Office DNS an Nicht-Microsoft-Domain — Phishing/Makro (T1566)</description>
+    <mitre><id>T1566</id></mitre>
+    <group>sysmon,dns,office,phishing</group>
+  </rule>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       QRADAR-ÄQUIVALENTE DETECTION-REGELN
+       Nachbau der IBM QRadar Offense-Typen als Wazuh-Regeln.
+
+       Stufe 1: Sofort aktiv (Workstation-Ebene)
+         101000–101099  Brute Force / Password Spray  (EventID 4625)
+         101100–101199  NTLM Downgrade / Pass-the-Hash (EventID 4624)
+
+       Stufe 2: Aktiv sobald Domain Controller vorhanden (dc_required)
+         101200–101299  Kerberos Attacks (EventID 4768, 4769, 4662)
+                        Kerberoasting · AS-REP Roasting · DCSync · Golden Ticket
+       ════════════════════════════════════════════════════════════════════════ -->
+
+  <!-- ──────────────────────────────────────────────────────────────────────
+       STUFE 1A — BRUTE FORCE / PASSWORD SPRAY
+       Basis: Built-in 60105 (Windows Logon Failure 4625, eventchannel)
+       ────────────────────────────────────────────────────────────────────── -->
+
+  <!-- QRadar Offense: "Brute Force Authentication"
+       8 Logon Failures in 120s, gleiche IP + gleicher Account.
+       if_matched_group statt if_matched_sid: egal welche 4625-Detailregel
+       (60105/60122/...) final gewinnt, die Gruppe stimmt immer.
+       same_field statt same_source_ip: eventchannel dekodiert kein srcip. -->
+  <rule id="101000" level="10" frequency="8" timeframe="120">
+    <if_matched_group>authentication_failed</if_matched_group>
+    <field name="win.system.eventID" type="pcre2">^4625$</field>
+    <same_field>win.eventdata.ipAddress</same_field>
+    <same_field>win.eventdata.targetUserName</same_field>
+    <description>QRADAR: Brute Force — 8+ Logon Failures in 120s von gleicher IP auf gleichen Account (T1110.001)</description>
+    <mitre><id>T1110</id></mitre>
+    <group>authentication_failures,brute_force,qradar_equivalent</group>
+  </rule>
+
+  <!-- QRadar Offense: "Password Spray Attack"
+       5 Failures in 60s von einer IP gegen VERSCHIEDENE Accounts -->
+  <rule id="101001" level="12" frequency="5" timeframe="60">
+    <if_matched_group>authentication_failed</if_matched_group>
+    <field name="win.system.eventID" type="pcre2">^4625$</field>
+    <same_field>win.eventdata.ipAddress</same_field>
+    <not_same_field>win.eventdata.targetUserName</not_same_field>
+    <description>QRADAR: Password Spray — Failures gegen mehrere Accounts von einer IP (T1110.003)</description>
+    <mitre><id>T1110</id></mitre>
+    <group>authentication_failures,password_spray,qradar_equivalent</group>
+  </rule>
+
+  <!-- QRadar Offense: "Account Lockout Anomaly"
+       EventID 4625, SubStatus 0xC0000234 = Konto gesperrt -->
+  <rule id="101002" level="10">
+    <if_sid>60105</if_sid>
+    <field name="win.eventdata.subStatus" type="pcre2">(?i)0xc0000234</field>
+    <description>QRADAR: Account Lockout — Konto nach Failure-Flood gesperrt (T1110)</description>
+    <mitre><id>T1110</id></mitre>
+    <group>authentication_failures,account_lockout,qradar_equivalent</group>
+  </rule>
+
+  <!-- QRadar Offense: "Remote Logon Failure (Network)"
+       EventID 4625, LogonType 3, SubStatus 0xC000006D = falsches Passwort -->
+  <rule id="101003" level="8">
+    <if_sid>60105</if_sid>
+    <field name="win.eventdata.logonType" type="pcre2">^3$</field>
+    <field name="win.eventdata.subStatus" type="pcre2">(?i)0xc000006d|0xc000006e</field>
+    <description>QRADAR: Remote Logon Failure (Netzwerk) — falsches Passwort von Remote-Host (T1110)</description>
+    <mitre><id>T1110</id></mitre>
+    <group>authentication_failures,remote_logon,qradar_equivalent</group>
+  </rule>
+
+  <!-- ──────────────────────────────────────────────────────────────────────
+       STUFE 1B — NTLM DOWNGRADE / PASS-THE-HASH
+       Basis: Built-in 60200 (Windows Logon Success 4624, eventchannel)
+       ────────────────────────────────────────────────────────────────────── -->
+
+  <!-- QRadar Offense: "NTLMv1 Authentication Detected"
+       LmPackageName = "NTLM V1" → veraltetes Protokoll, crackbar -->
+  <rule id="101100" level="12">
+    <if_sid>60200</if_sid>
+    <field name="win.eventdata.lmPackageName" type="pcre2">(?i)NTLM V1|^LM$</field>
+    <description>QRADAR: NTLMv1 Authentication — Downgrade-Angriff oder Legacy-System (T1557)</description>
+    <mitre><id>T1557</id></mitre>
+    <group>authentication,ntlm_downgrade,qradar_equivalent,high_confidence</group>
+  </rule>
+
+  <!-- QRadar Offense: "Pass-the-Hash via NTLM"
+       LogonType 3 + NTLM + KeyLength 0 = kein echtes Passwort, nur Hash -->
+  <rule id="101101" level="14">
+    <if_sid>60200</if_sid>
+    <field name="win.eventdata.logonType" type="pcre2">^3$</field>
+    <field name="win.eventdata.authenticationPackageName" type="pcre2">(?i)NTLM</field>
+    <field name="win.eventdata.keyLength" type="pcre2">^0$</field>
+    <description>QRADAR: Pass-the-Hash — NTLM Netzwerk-Logon mit KeyLength=0 (T1550.002)</description>
+    <mitre><id>T1550</id></mitre>
+    <group>authentication,pass_the_hash,qradar_equivalent,high_confidence</group>
+  </rule>
+
+  <!-- QRadar Offense: "Anonymous NTLM Login / Null-Session"
+       TargetUserName leer oder ANONYMOUS LOGON = Null-Session Recon -->
+  <rule id="101102" level="10">
+    <if_sid>60200</if_sid>
+    <field name="win.eventdata.logonType" type="pcre2">^3$</field>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)^\-$|^ANONYMOUS LOGON$</field>
+    <field name="win.eventdata.authenticationPackageName" type="pcre2">(?i)NTLM</field>
+    <description>QRADAR: Anonymous NTLM Login — Null-Session / Recon (T1135)</description>
+    <mitre><id>T1135</id></mitre>
+    <group>authentication,null_session,recon,qradar_equivalent</group>
+  </rule>
+
+  <!-- ──────────────────────────────────────────────────────────────────────
+       STUFE 2 — KERBEROS ATTACKS (dc_required)
+       Feuern automatisch sobald ein DC als Wazuh-Agent eingebunden ist.
+       Auf Workstations kommen diese EventIDs nur ohne Failure-Codes an.
+       ────────────────────────────────────────────────────────────────────── -->
+
+  <!-- Basis-Verteiler (Level 0) — MÜSSEN vor ihren if_sid-Verweisen stehen,
+       Wazuh löst if_sid beim Laden in Dateireihenfolge auf. -->
+  <!-- Level 3 statt 0: Kerberos-Aktivität soll als Telemetrie im Alerts-Index
+       landen (Dashboard „DC01-Logons"). Kindregeln (101200+) bleiben unberührt;
+       Volumen im Lab gering (TGT/TGS nur bei Logons + Ticket-Renewals). -->
+  <rule id="101312" level="3">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID" type="pcre2">^(4768|4769)$</field>
+    <description>Kerberos TGT/TGS angefordert (4768/4769) — Telemetrie</description>
+    <group>kerberos,wef,authentication_success</group>
+  </rule>
+
+  <rule id="101313" level="0">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID" type="pcre2">^4662$</field>
+    <description>Basis: Directory Service Access (4662)</description>
+    <group>windows_security,wef</group>
+  </rule>
+
+  <!-- QRadar Offense: "Kerberoasting Detected"
+       EventID 4769, EncryptionType 0x17 (RC4) für Service-Account-Ticket.
+       RC4-Tickets sind offline crackbar. serviceName NEGIERT auf $-Suffix:
+       Maschinen-Konten (WS01$) sind legitim — Kerberoasting zielt auf
+       menschlich verwaltete Service-Accounts (svc_sql etc.). -->
+  <rule id="101200" level="14">
+    <if_sid>101312</if_sid>
+    <field name="win.system.eventID" type="pcre2">^4769$</field>
+    <field name="win.eventdata.ticketEncryptionType" type="pcre2">(?i)0x17|0x18</field>
+    <field name="win.eventdata.serviceName" negate="yes" type="pcre2">(?i)(\$$|krbtgt)</field>
+    <description>QRADAR: Kerberoasting — RC4 Service Ticket für Service-Account (T1558.003)</description>
+    <mitre><id>T1558</id></mitre>
+    <group>kerberos,kerberoasting,qradar_equivalent,high_confidence,dc_required,wef</group>
+  </rule>
+
+  <!-- QRadar Offense: "AS-REP Roasting"
+       EventID 4768, PreAuthType 0 = DONT_REQUIRE_PREAUTH gesetzt.
+       TGT-Response kann ohne gültiges Passwort offline gecrackt werden -->
+  <rule id="101201" level="14">
+    <if_sid>101312</if_sid>
+    <field name="win.system.eventID" type="pcre2">^4768$</field>
+    <field name="win.eventdata.preAuthType" type="pcre2">^0$</field>
+    <description>QRADAR: AS-REP Roasting — Pre-Auth deaktiviert, TGT crackbar (T1558.004)</description>
+    <mitre><id>T1558</id></mitre>
+    <group>kerberos,asrep_roasting,qradar_equivalent,high_confidence,dc_required,wef</group>
+  </rule>
+
+  <!-- QRadar Offense: "Golden Ticket Activity"
+       EventID 4769, EncryptionType 0x17, TargetUserName enthält krbtgt.
+       Mimikatz-Standard für Golden Ticket: RC4 + krbtgt-Account -->
+  <rule id="101202" level="15">
+    <if_sid>101312</if_sid>
+    <field name="win.eventdata.ticketEncryptionType" type="pcre2">(?i)0x17</field>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)krbtgt</field>
+    <description>QRADAR: Golden Ticket — krbtgt RC4-Ticket angefordert (T1558.001)</description>
+    <mitre><id>T1558</id></mitre>
+    <group>kerberos,golden_ticket,qradar_equivalent,high_confidence,dc_required,wef</group>
+  </rule>
+
+  <!-- QRadar Offense: "DCSync Attack"
+       EventID 4662: Zugriff auf DS-Replication-Get-Changes-All.
+       GUIDs: 1131f6aa (Get-Changes-All), 1131f6ad (Get-Changes), 89e95b76 (replication).
+       Wenn von einem Account der kein DC ist (kein $ am Ende) = DCSync -->
+  <rule id="101203" level="15">
+    <if_sid>101313</if_sid>
+    <field name="win.eventdata.properties" type="pcre2">(?i)1131f6aa|1131f6ad|89e95b76</field>
+    <field name="win.eventdata.subjectUserName" negate="yes" type="pcre2">\$$</field>
+    <description>QRADAR: DCSync — Replikationsrechte von Nicht-DC genutzt, Credential Dump (T1003.006)</description>
+    <mitre><id>T1003</id></mitre>
+    <group>kerberos,dcsync,credential_access,qradar_equivalent,high_confidence,dc_required,wef</group>
+  </rule>
+
+  <!-- QRadar Offense: "Silver Ticket — RC4 Service Auth Anomaly"
+       EventID 4769 (Service Ticket) mit RC4 und Success — direkt ohne TGT-Flow.
+       Silver Ticket umgeht KDC komplett, deshalb kein vorheriges 4768 Event. -->
+  <rule id="101204" level="14">
+    <if_sid>101312</if_sid>
+    <field name="win.system.eventID" type="pcre2">^4769$</field>
+    <field name="win.eventdata.ticketEncryptionType" type="pcre2">(?i)0x17</field>
+    <field name="win.eventdata.status" type="pcre2">(?i)^0x0$</field>
+    <description>QRADAR: Silver Ticket — RC4 Service Ticket ohne Standard-TGT-Flow (T1558.002)</description>
+    <mitre><id>T1558</id></mitre>
+    <group>kerberos,silver_ticket,qradar_equivalent,dc_required,wef</group>
+  </rule>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       AD / WEF DETECTION — 101300-101399
+       DC01-Events kommen per WEF auf WEC01 (ForwardedEvents) an und werden
+       vom dortigen Wazuh-Agent eingelesen. Weitergeleitete Events behalten
+       im Event-XML ihren Original-Channel ("Security") und Original-Computer
+       (DC01.nexora.example) — die Regeln greifen daher identisch für lokale
+       und weitergeleitete Events.
+
+       Parent-Verdrahtung (verifiziert gegen Ruleset 4.14.5 auf dem Manager):
+         60103 = Windows AUDIT_SUCCESS Basis (Level 0)   ← Account-Mgmt, Kerberos
+         60105 = Windows Logon Failure 4625 (Level 5)    ← Lockout/Remote-Failure
+         60117 = Audit Log Cleared 1102 (Level 9)        ← Eskalation
+         60200 = Windows Logon Success 4624 (Level 3)    ← NTLM/PtH
+         60229 = Directory Object Change 5136 (Level 4)  ← GPO-Eskalation
+       Die EventIDs 4662/4719/4720-4767/4768/4769 haben KEINE Built-in-Regel
+       → eigene Kinder unter 60103, kein Shadowing.
+       ════════════════════════════════════════════════════════════════════════ -->
+
+  <!-- ── Account Management (T1136 / T1098) ── -->
+
+  <rule id="101301" level="8">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID" type="pcre2">^4720$</field>
+    <description>AD: Benutzerkonto erstellt — $(win.eventdata.targetUserName) durch $(win.eventdata.subjectUserName) (T1136.001)</description>
+    <mitre><id>T1136.001</id></mitre>
+    <group>ad_account_management,wef,dc_required</group>
+  </rule>
+
+  <rule id="101302" level="5">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID" type="pcre2">^(4722|4724|4726|4767)$</field>
+    <description>AD: Konto-Änderung (aktiviert/PW-Reset/gelöscht/entsperrt) — $(win.eventdata.targetUserName) durch $(win.eventdata.subjectUserName) (T1098)</description>
+    <mitre><id>T1098</id></mitre>
+    <group>ad_account_management,wef,dc_required</group>
+  </rule>
+
+  <rule id="101303" level="10">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID" type="pcre2">^(4728|4732|4756)$</field>
+    <description>AD: Mitglied zu Sicherheitsgruppe hinzugefügt — $(win.eventdata.memberSid) → $(win.eventdata.targetUserName) (T1098)</description>
+    <mitre><id>T1098</id></mitre>
+    <group>ad_group_change,wef,dc_required</group>
+  </rule>
+
+  <!-- Eskalation: Ziel ist eine privilegierte Gruppe -->
+  <rule id="101304" level="13">
+    <if_sid>101303</if_sid>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)^(Domain Admins|Domänen-Admins|Enterprise Admins|Organisations-Admins|Schema Admins|Schema-Admins|Administrators|Administratoren|Group Policy Creator Owners)$</field>
+    <description>AD: Mitglied zu PRIVILEGIERTER Gruppe hinzugefügt — $(win.eventdata.targetUserName) (T1098, Privilege Escalation)</description>
+    <mitre><id>T1098</id></mitre>
+    <group>ad_group_change,privilege_escalation,high_confidence,wef,dc_required</group>
+  </rule>
+
+  <rule id="101305" level="8">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID" type="pcre2">^4740$</field>
+    <description>AD: Konto gesperrt (Lockout) — $(win.eventdata.targetUserName), Quelle $(win.eventdata.callerComputerName) (T1110)</description>
+    <mitre><id>T1110</id></mitre>
+    <group>account_lockout,wef,dc_required</group>
+  </rule>
+
+  <!-- ── Defense Evasion / Policy Tampering ── -->
+
+  <!-- 1102 hat Built-in 60117 (Level 9) — Eskalation + MITRE-Mapping -->
+  <rule id="101306" level="13">
+    <if_sid>60117</if_sid>
+    <description>AD/Windows: Security-Audit-Log GELÖSCHT durch $(win.eventdata.subjectUserName) — Spurenbeseitigung (T1070.001)</description>
+    <mitre><id>T1070.001</id></mitre>
+    <group>log_tampering,defense_evasion,high_confidence,wef</group>
+  </rule>
+
+  <rule id="101307" level="12">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID" type="pcre2">^4719$</field>
+    <description>AD/Windows: Audit-Policy geändert durch $(win.eventdata.subjectUserName) — mögliche Detection-Abschaltung (T1562.002)</description>
+    <mitre><id>T1562.002</id></mitre>
+    <group>policy_tampering,defense_evasion,wef</group>
+  </rule>
+
+  <!-- 5136 hat Built-in 60229 (Level 4) — GPO-Änderungen eskalieren -->
+  <rule id="101308" level="12">
+    <if_sid>60229</if_sid>
+    <field name="win.eventdata.objectClass" type="pcre2">(?i)groupPolicyContainer</field>
+    <description>AD: Group-Policy-Objekt geändert durch $(win.eventdata.subjectUserName) (T1484.001)</description>
+    <mitre><id>T1484.001</id></mitre>
+    <group>gpo_change,wef,dc_required</group>
+  </rule>
+
+</group>

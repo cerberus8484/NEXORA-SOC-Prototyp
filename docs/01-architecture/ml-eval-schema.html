@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC - ML Eval Schema</title>
+<style>
+  :root{
+    --bg:#080c14;--bg-card:#141824;--bg-soft:#0f1521;--border:#1f293a;
+    --text:#e6edf6;--text-dim:#8a98ac;--accent:#00d4ff;--accent2:#00ff88;
+    --font:Inter,system-ui,Segoe UI,Roboto,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
+  #wrap{display:flex;min-height:100vh} a{color:var(--accent);text-decoration:none}
+  aside{position:sticky;top:0;align-self:flex-start;width:280px;height:100vh;overflow-y:auto;background:var(--bg-card);border-right:1px solid var(--border);padding:22px 16px}
+  aside h1{margin:0;font-size:15px} aside p{margin:6px 0 18px;color:var(--text-dim);font-size:12px}
+  aside nav a{display:block;padding:7px 10px;margin:2px 0;border-radius:8px;color:var(--text-dim);font-size:12.5px}
+  aside nav a:hover,aside nav a.active{background:rgba(0,212,255,.08);color:var(--accent)}
+  main{flex:1;max-width:1040px;padding:36px 44px 100px}
+  .hero{border:1px solid var(--border);background:linear-gradient(180deg,rgba(0,212,255,.08),rgba(0,212,255,.02));border-radius:14px;padding:24px;margin-bottom:28px}
+  .hero h1{margin:0 0 8px;font-size:28px;color:var(--accent)}
+  .hero p{margin:6px 0;color:var(--text-dim)}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid rgba(0,255,136,.35);color:var(--accent2);background:rgba(0,255,136,.08);font-size:11px;font-family:var(--mono)}
+  section{margin:30px 0;scroll-margin-top:20px}
+  h2{font-size:20px;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);color:var(--accent)}
+  p,li{font-size:13.5px} ul,ol{padding-left:20px}
+  table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent)}
+  code{font-family:var(--mono);background:rgba(0,212,255,.08);padding:1px 5px;border-radius:4px}
+  .note{border-left:3px solid var(--accent);background:rgba(0,212,255,.05);padding:10px 14px;border-radius:0 8px 8px 0;color:var(--text-dim);font-size:13px}
+</style>
+<script>
+window.addEventListener('load', () => {
+  const links = [...document.querySelectorAll('aside nav a')];
+  const map = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      links.forEach((link) => link.classList.remove('active'));
+      const link = map.get(entry.target.id);
+      if (link) link.classList.add('active');
+    });
+  }, { rootMargin: '-10% 0px -75% 0px' });
+  document.querySelectorAll('section[id]').forEach((section) => obs.observe(section));
+});
+</script>
+</head>
+<body>
+<div id="wrap">
+  <aside>
+    <h1>ML Eval Schema</h1>
+    <p>Erstes JSONL-Zielformat fuer Offline-Evals</p>
+    <nav>
+      <a href="#ziel">01 Ziel</a>
+      <a href="#format">02 Format</a>
+      <a href="#pflicht">03 Pflichtfelder</a>
+      <a href="#kern">04 Kernfelder</a>
+      <a href="#labels">05 Human Labels</a>
+      <a href="#norm">06 Normalisierung</a>
+      <a href="#mapping">07 Mapping</a>
+      <a href="#beispiel">08 Beispiel</a>
+    </nav>
+  </aside>
+  <main>
+    <div class="hero">
+      <div class="badge">Schema v1</div>
+      <h1>ML-Eval-Schema</h1>
+      <p>Kleines, redigierbares, providerunabhaengiges JSONL-Format fuer den ersten Offline-Eval von Nexora.</p>
+    </div>
+
+    <section id="ziel">
+      <h2>01 Ziel</h2>
+      <p>Ein gemeinsames Austauschformat fuer redigierte Offline-Eval-Snapshots, zuerst fuer <code>agent_suggestion</code> und <code>ticket</code>.</p>
+    </section>
+
+    <section id="format">
+      <h2>02 Format</h2>
+      <ul>
+        <li>Dateiformat: <code>jsonl</code></li>
+        <li>Encoding: UTF-8</li>
+        <li>Eine Zeile = ein JSON-Objekt = ein evalbarer Fall</li>
+        <li>Backend-Export: <code>POST /api/v1/ml/eval/export</code></li>
+        <li>Rolle: <code>admin</code>; Formate: <code>jsonl</code> oder <code>json</code>; Limit: <code>1..1000</code></li>
+        <li>Quellen: reviewed <code>AgentSuggestion</code> und geschlossene <code>Ticket</code>-Outcomes</li>
+        <li>Offline-Report: <code>cd backend &amp;&amp; npm run ml:eval-report -- ../docs/01-architecture/ml-eval-sample.jsonl</code></li>
+        <li>Gold-Sample-Profil: <code>label_source="gold_review"</code> mit Outcome-Label, outcome-faehigem Raw-Verdict, <code>reviewed_at</code> und redigiertem <code>human_reason</code></li>
+      </ul>
+    </section>
+
+    <section id="pflicht">
+      <h2>03 Pflichtfelder</h2>
+      <table>
+        <thead><tr><th>Feld</th><th>Bedeutung</th></tr></thead>
+        <tbody>
+          <tr><td><code>schema_version</code></td><td>Start mit <code>v1</code></td></tr>
+          <tr><td><code>entity_type</code></td><td><code>agent_suggestion</code> oder <code>ticket</code></td></tr>
+          <tr><td><code>entity_id</code></td><td>ID der bewerteten Entitaet</td></tr>
+          <tr><td><code>ticket_id</code></td><td>Ticket-Referenz</td></tr>
+          <tr><td><code>label_source</code></td><td>Quelle des menschlichen Labels</td></tr>
+          <tr><td><code>created_at</code></td><td>Zeit des Ursprungssignals</td></tr>
+          <tr><td><code>reviewed_at</code></td><td>Zeit des Reviews oder <code>null</code></td></tr>
+          <tr><td><code>human_label</code></td><td>normalisierter Zielwert</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="kern">
+      <h2>04 Kernfelder</h2>
+      <p>Wichtige Zusatzfelder fuer den ersten Eval: <code>kind</code>, <code>source_system</code>, <code>source_model</code>, <code>raw_verdict</code>, <code>raw_confidence</code>, <code>review_status</code>, <code>human_reason</code>, <code>close_reason</code>, <code>priority</code>.</p>
+    </section>
+
+    <section id="labels">
+      <h2>05 Human Labels</h2>
+      <ul>
+        <li><code>accepted</code></li>
+        <li><code>rejected</code></li>
+        <li><code>false_positive</code></li>
+        <li><code>benign</code></li>
+        <li><code>suspicious</code></li>
+        <li><code>incident</code></li>
+        <li><code>resolved_other</code></li>
+      </ul>
+      <div class="note"><code>accepted</code>/<code>rejected</code> sind Review-Labels, die anderen eher Outcome-Labels. Diese Ebenen sollen spaeter getrennt ausgewertet werden.</div>
+    </section>
+
+    <section id="norm">
+      <h2>06 Normalisierung</h2>
+      <ul>
+        <li>Confidence immer auf <code>0..1</code></li>
+        <li>Zeit immer als ISO-8601 UTC</li>
+        <li>Freitext nur kurz und redigiert</li>
+      </ul>
+    </section>
+
+    <section id="mapping">
+      <h2>07 Mapping</h2>
+      <p><strong>AgentSuggestion:</strong> <code>approved -> accepted</code>, <code>rejected -> rejected</code>, Confidence direkt aus <code>0..1</code>.</p>
+      <p><strong>Ticket:</strong> <code>closeReason=false_positive -> false_positive</code>, sonst Mapping ueber <code>decision</code>; Ticket-Confidence wird von <code>0..100</code> auf <code>0..1</code> geteilt.</p>
+    </section>
+
+    <section id="beispiel">
+      <h2>08 Beispiel</h2>
+      <p>Ein konkretes Beispiel liegt in <code>docs/01-architecture/ml-eval-sample.jsonl</code>.</p>
+      <p>Ein kuratiertes Gold-Sample-Beispiel liegt in <code>docs/01-architecture/ml-gold-sample.jsonl</code>.</p>
+      <p>Der erste Backend-Exporter und ein Offline-Slice-Report sind umgesetzt. Fuer vergleichbare Outcome-Labels berechnet der Report ein vorsichtiges Agreement; Review-Labels werden dabei uebersprungen. Der Threshold-Sweep zeigt Coverage, akzeptierte Predictions und Review-Routing fuer die Schwellen 0, 0.5, 0.7 und 0.9. Das Routing-Gate ist fail-closed und verlangt standardmaessig Agreement 0.8, Coverage 0.5 und mindestens 20 Gold-Records. Naechste Schritte sind echte Snapshots, kuratierte Gold-Samples und daraus belastbare Routing-Gates.</p>
+    </section>
+  </main>
+</div>
+</body>
+</html>

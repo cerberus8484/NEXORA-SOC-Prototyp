@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Security/Privacy Review - 2026-06-29</title>
+</head>
+<body>
+  <main>
+    <h1>Security/Privacy Review - 2026-06-29</h1>
+    <p>Scope: Auth, Audit-Logs, Threat-Intel-Adapter, KI-Triage und ausgewaehlte API-Routen.</p>
+
+    <h2>Kurzurteil</h2>
+    <p><strong>Grad:</strong> Gruen</p>
+    <p>Die Kernkontrollen sind fuer ein SOC-Tool solide umgesetzt: Auth verwendet HttpOnly-Cookies
+      mit CSRF-Schutz, Audit-Exports sind begrenzt und pseudonymisiert, KI-Triage bleibt
+      Human-in-the-loop. Eine konkrete Berechtigungsluecke wurde geschlossen: Viewer koennen
+      keine externen Threat-Intel-Enrichments mehr ausloesen.</p>
+
+    <h2>Gepruefte Bereiche</h2>
+    <ul>
+      <li>Auth: <code>authenticate</code>, <code>csrfGuard</code>, Auth-Cookies, Login/MFA, JWT-Secret-Handling.</li>
+      <li>Audit: IP-HMAC, Export-Grenzen, Audit-Event-Metadaten, Role-Gates.</li>
+      <li>Threat Intel: Enrichment-Route, Provider-Adapter, Cache, Input-Validierung.</li>
+      <li>KI-Triage: Vorschlagslogik, Confidence-Floors, Approval/Reject-Flow.</li>
+      <li>API-Routen: oeffentliche Ausnahmen wie Health, Metrics, OIDC und Data-Plane.</li>
+    </ul>
+
+    <h2>Ergebnis und Fixes</h2>
+    <ul>
+      <li><code>POST /api/v1/threat-intel/enrich</code> ist jetzt Analyst+ (<code>requireRole('analyst')</code>).</li>
+      <li>Indicator-Werte werden vor Cache/Provider-Zugriff auf Typ, Format und 2048 Zeichen begrenzt.</li>
+      <li>Domain- und URL-Indikatoren haben explizite syntaktische Validierung.</li>
+      <li>Login/MFA/MFA-Setup liefern Session-JWTs in Produktion nicht mehr automatisch im JSON-Body.
+        <code>AUTH_RETURN_TOKEN_JSON=true</code> bleibt als expliziter Kompatibilitaetsmodus fuer alte
+        Bearer-Header-Clients verfuegbar; Browser-Clients nutzen das httpOnly-Cookie.</li>
+      <li>Tests decken Viewer-403, ungueltige Domain/URL und ueberlange Werte ab.</li>
+    </ul>
+
+    <h2>Restrisiken</h2>
+    <ul>
+      <li>Wenn <code>AUTH_RETURN_TOKEN_JSON=true</code> in Produktion aktiviert wird, erhalten kompatible
+        API-Clients den Session-JWT weiterhin im Response-Body. Das sollte nur fuer bekannte
+        Altclients genutzt und mittelfristig durch PATs oder Cookie-Flow ersetzt werden.</li>
+      <li>Externe Provider erhalten bei Analyst+-Aktionen weiterhin IOCs. Das ist fachlich gewollt,
+        muss aber operatorseitig bewusst konfiguriert werden.</li>
+    </ul>
+
+    <h2>Naechster sauberer Schritt</h2>
+    <ul>
+      <li>API-Referenz fuer Threat Intel mit Rollenmatrix ergaenzen.</li>
+      <li>Optional: separate Permission <code>threat_intel:enrich</code>, falls spaeter feinere RBAC-Grenzen
+        als Rollen gebraucht werden.</li>
+    </ul>
+  </main>
+</body>
+</html>

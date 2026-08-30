@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexora SOC - Deep Scan Report - 2026-07-06</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --panel-2: #182236;
+      --line: #27324a;
+      --text: #e8eefc;
+      --muted: #aeb9d6;
+      --ok: #7ddc95;
+      --warn: #ffd166;
+      --bad: #ff7b7b;
+      --info: #74c0fc;
+      --accent: #9fd356;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, #0a101c 0%, #0f1726 100%);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    .hero, .panel {
+      background: linear-gradient(180deg, rgba(24,34,54,0.96), rgba(18,26,43,0.96));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+    }
+    .hero { padding: 28px; margin-bottom: 22px; }
+    .panel { padding: 22px; margin-bottom: 20px; }
+    h1, h2, h3 { margin: 0 0 12px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 22px; }
+    h3 { font-size: 18px; }
+    p, li { color: var(--muted); }
+    .lead { font-size: 16px; max-width: 1100px; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 13px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      min-height: 120px;
+    }
+    .metric {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .ok { background: rgba(125,220,149,0.14); color: var(--ok); border: 1px solid rgba(125,220,149,0.35); }
+    .warn { background: rgba(255,209,102,0.14); color: var(--warn); border: 1px solid rgba(255,209,102,0.35); }
+    .bad { background: rgba(255,123,123,0.14); color: var(--bad); border: 1px solid rgba(255,123,123,0.35); }
+    .info { background: rgba(116,192,252,0.14); color: var(--info); border: 1px solid rgba(116,192,252,0.35); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      color: var(--text);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      color: #d5e4ff;
+      background: rgba(255,255,255,0.05);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+    ul { margin: 8px 0 0 18px; padding: 0; }
+    .two {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+    }
+    .three {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .small { font-size: 13px; }
+    .note {
+      border-left: 3px solid var(--accent);
+      padding-left: 12px;
+      margin-top: 8px;
+    }
+    @media (max-width: 1100px) {
+      .grid, .three, .two { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Nexora SOC - Deep Scan Report</h1>
+      <p class="lead">
+        Repo-basierter Tiefenscan fuer Produktstatus, offene Schulden, Sicherheitslage, Roadmap-Fortschritt
+        und Oberflaechenabdeckung. Dieser Report trennt bewusst zwischen
+        <strong>im Code bestaetigt</strong>, <strong>in Doku behauptet</strong> und
+        <strong>live noch nicht nachgewiesen</strong>.
+      </p>
+      <div class="meta">
+        <span class="pill">Stand: 2026-07-06</span>
+        <span class="pill">Scope: Frontend, Backend, Korrelation, Data Plane, Docs, Ops</span>
+        <span class="pill">Repo: SOC_Ticket_Tool</span>
+        <span class="pill">Artefakt: Deep Scan fuer Management / Uebergabe / Review</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Executive Summary</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="label">Projektstand</div>
+          <div class="metric">Weit fortgeschritten</div>
+          <div><span class="status ok">Phase 4 stark</span></div>
+          <p>Core-SOC, Tickets, Evidence, Hunts, KI, NIS2, Provisioning und Data Plane sind im Repo umfassend gebaut.</p>
+        </div>
+        <div class="card">
+          <div class="label">Roadmap</div>
+          <div class="metric">0,1,3,4,7 live</div>
+          <div><span class="status warn">2,5,8,9 teilweise</span></div>
+          <p>Roadmap zeigt keine Fruehphase mehr. Die groessten offenen Bloecke liegen bei Reports, Wazuh/FP-Produktisierung, Ops-Nachweisen und Produktisierung.</p>
+        </div>
+        <div class="card">
+          <div class="label">Security-Lage</div>
+          <div class="metric">Solide, aber nicht fertig</div>
+          <div><span class="status warn">Keine akute CRIT-Code-Luecke belegt</span></div>
+          <p>Repo-Schutzmechanismen sind stark. Offene Restpunkte liegen jetzt vor allem bei Host-Key-Policy, Gate-Scharfschaltung an sensiblen Ops-Pfaden und Restarbeiten bei SSO/SAML.</p>
+        </div>
+        <div class="card">
+          <div class="label">Ops-/Belastbarkeit</div>
+          <div class="metric">Teilweise nachgewiesen</div>
+          <div><span class="status warn">Go-Live teils live belegt</span></div>
+          <p>Frische Prod-Snapshots, laufende Dataplane-Tickets und aktive Hub-/Worker-Logs sind jetzt belegt. Offen bleiben trotzdem Lastgrenzen, Containerlimits und gezielte Pool-/Timeout-Rauchtests.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Methodik und Scan-Scope</h2>
+      <div class="three">
+        <div class="card">
+          <div class="label">Frontend</div>
+          <div class="metric">36 Seiten</div>
+          <p>Alle Seiten unter <code>frontend/src/pages</code> inventarisiert. Zusaetzlich Abgleich gegen Seitendoku und vorhandene Seitentests.</p>
+        </div>
+        <div class="card">
+          <div class="label">Backend</div>
+          <div class="metric">45 Routen</div>
+          <p>Mounts und Route-Gates unter <code>backend/src/app.js</code> und <code>backend/src/routes</code> gesichtet. Fokus auf Auth, Settings, Data Plane, Correlators, Integrationen.</p>
+        </div>
+        <div class="card">
+          <div class="label">Kern-Engines</div>
+          <div class="metric">21 Korrelationsdateien / 17 Collector-Dateien</div>
+          <p>Asynchrone Korrelation, Cross-Domain-Fusion, Dataplane-Ingress, Collector-Hub und Status-Bruecke direkt geprueft.</p>
+        </div>
+      </div>
+      <div class="note small">
+        Verwendete Primaerquellen: <code>ROADMAP.md</code>, <code>docs/00-overview/feature-status.md</code>,
+        <code>docs/00-overview/schulden-report-2026-06-26.md</code>, <code>docs/05-security/security-review-2026-06-29.md</code>,
+        Ops-Dokus unter <code>docs/07-operations</code> sowie die relevanten Produktionspfade im Code.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Genereller Status vom System</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Bereich</th>
+            <th>Status</th>
+            <th>Code-/Doku-Beleg</th>
+            <th>Einordnung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Auth / RBAC / Session</td>
+            <td><span class="status ok">stark</span></td>
+            <td>Cookie-only Session, CSRF, Lockout, Password Policy, MFA/TOTP, PAT, OIDC-Backend laut Matrix und Routen</td>
+            <td>Reife Kernbasis fuer produktiven Betrieb</td>
+          </tr>
+          <tr>
+            <td>Ticketing / Evidence / Audit</td>
+            <td><span class="status ok">stark</span></td>
+            <td>CRUD, PDF-Export, Verlauf, Audit, Chain-of-Custody und TI-Enrichment vorhanden</td>
+            <td>Fachlicher Kern ist nicht mehr Prototyp, sondern Produktbasis</td>
+          </tr>
+          <tr>
+            <td>Threat Hunting / KI</td>
+            <td><span class="status ok">stark</span></td>
+            <td>Hunts, KI-Vorschlaege, RAG, Guardrails, Human-in-the-loop, ML-Eval-Track</td>
+            <td>Starke Plattform, aber Training/Vollausbau noch nicht abgeschlossen</td>
+          </tr>
+          <tr>
+            <td>Asynchrone Korrelation</td>
+            <td><span class="status ok">gebaut</span></td>
+            <td><code>correlationRuntime</code>, Worker, Scheduler, materialisierter Read-Pfad, Correlators-UI</td>
+            <td>Architektonisch sauber von synchronem Read-Pfad entkoppelt</td>
+          </tr>
+          <tr>
+            <td>Data Plane / Collector-Hub</td>
+            <td><span class="status warn">produktiv, aber operativ sensibel</span></td>
+            <td>Intake, Outbox, Fusion, Hub, Status-Bruecke, DataPlane-UI, OPNsense pausiert</td>
+            <td>Technisch belastbar angelegt, aber Quellabdeckung und harte Laufzeitbeweise fehlen teilweise</td>
+          </tr>
+          <tr>
+            <td>Deployment / Provisioning</td>
+            <td><span class="status warn">weit gebaut, fail-closed</span></td>
+            <td>Deploy-Center, Keypair, Host-Key-Pinning, Node-Update, Registry, Runbooks</td>
+            <td>Stark gegated. Viel vorhanden, aber bewusst noch nicht frei geschaltet oder live verifiziert</td>
+          </tr>
+          <tr>
+            <td>Ops / Monitoring</td>
+            <td><span class="status warn">halb fertig</span></td>
+            <td>Metrics, Health, Pool-Sicht, Backup, Dokumentation fuer Limits und Lasttest</td>
+            <td>Die Architektur ist vorbereitet, die Produktionsbelege sind der Engpass</td>
+          </tr>
+          <tr>
+            <td>Dokumentation</td>
+            <td><span class="status warn">gut, aber nicht konsistent</span></td>
+            <td>Breite Doku vorhanden, aber einzelne Seiten, Dokuabdeckung und Statusaktualitaet hinken hinterher</td>
+            <td>Doku ist kein Totalausfall, aber nicht ueberall auf demselben Reifegrad</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Roadmap-Fortschritt</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Stand</th>
+            <th>Bewertung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>0 - Stabilisierung</td><td><span class="status ok">fertig</span></td><td>Basis ist nicht mehr fragil.</td></tr>
+          <tr><td>1 - UI/UX-Produktisierung</td><td><span class="status ok">fertig</span></td><td>Navigations- und Produktstruktur sind da.</td></tr>
+          <tr><td>2 - Reports / Host-Detail</td><td><span class="status warn">begonnen</span></td><td>PDF/Host-Kontext gut, Incident-/Kundenreport-Generator noch offen.</td></tr>
+          <tr><td>3 - Detection Engineering / Use Cases</td><td><span class="status ok">verdrahtet</span></td><td>Backend/Frontend stark, E2E-Haertung offen.</td></tr>
+          <tr><td>4 - Enterprise Security</td><td><span class="status ok">stark</span></td><td>Viele Controls live, Rest: SAML / Vollstaendigkeit / Install-Guide.</td></tr>
+          <tr><td>5 - Wazuh Companion / FP</td><td><span class="status warn">teilweise</span></td><td>Preview/Workflow live, aber Health-Center und Feintuning fehlen.</td></tr>
+          <tr><td>6 - Endpoint Companion Agent</td><td><span class="status warn">Fundament gebaut</span></td><td>Registry/Heartbeat/Bootstrap gut, Rotation und mehr Live-Praxis offen.</td></tr>
+          <tr><td>C - NIS2 Readiness</td><td><span class="status ok">Basis live</span></td><td>Nicht als Zertifizierung verkaufen, aber funktional brauchbar.</td></tr>
+          <tr><td>7 - RAG / Qdrant</td><td><span class="status ok">Basis live</span></td><td>Quellenbasis da, Ausbau offen.</td></tr>
+          <tr><td>8 - Monitoring / Ops</td><td><span class="status warn">teilweise</span></td><td>Geruest da, harte Live-Nachweise fehlen.</td></tr>
+          <tr><td>9 - Produktisierung</td><td><span class="status warn">begonnen</span></td><td>Screenshot-/Demo-/Release-Arbeit noch offen.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Offene Schulden</h2>
+      <div class="two">
+        <div>
+          <h3>Produkt- und Architektur-Schulden</h3>
+          <ul>
+            <li>Incident-/Kunden-Report-Generator aus Phase 2 noch offen.</li>
+            <li>Hunt-Pause bleibt bewusst <code>501 NOT_SUPPORTED</code>, da der Runner noch synchron arbeitet.</li>
+            <li>Agent Commands in Analysis sind weiter out of scope und nur als Coming-Soon-Flaeche sichtbar.</li>
+            <li>Hosts-Enrollment/Add-Host hat weiterhin eine no-touch/Wazuh-write-Abhaengigkeit.</li>
+            <li>Credential Rotation im Provisioning ist noch nicht gebaut.</li>
+            <li>Update-Pull / Desired-State fuer Data Plane fehlt komplett.</li>
+            <li>ML-Track P19c/d ist nur teilweise fertig; echtes Training/Fine-Tuning bleibt Zukunftsblock.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Doku- und Release-Schulden</h3>
+          <ul>
+            <li>Dokuabdeckung fuer Seiten ist lueckenhaft: 36 produktive Seiten, aber nur 30 Seitendokus.</li>
+            <li>Seitentests existieren nur fuer 14 von 36 Seiten; wichtige Kernseiten sind abgedeckt, viele Randseiten nicht.</li>
+            <li>Statusdoku ist besser geworden, aber die Repo-Historie zeigt wiederholt das Risiko von stale Statusaussagen.</li>
+            <li>Groesserer Release-/Branch-Kontext bleibt ein Managementthema, nicht nur ein Codeproblem.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Offene Security-Luecken und Restrisiken</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Risiko</th>
+            <th>Typ</th>
+            <th>Status</th>
+            <th>Kommentar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Frontend-CSP live verifiziert, aber nicht browserseitig tief instrumentiert</td>
+            <td>Go-Live-Haertung</td>
+            <td><span class="status ok">weitgehend belegt</span></td>
+            <td>Live-Header fuer <code>/</code>, <code>/docs/</code> und <code>/health</code> wurden produktiv geprueft; Frontend nutzt lokale Assets, Docs erlauben bewusst inline-Skripte. Kein Browser-Console-Proof, aber harter Server-/Header-Nachweis.</td>
+          </tr>
+          <tr>
+            <td>SSH Strict Host Key in Collectors kann noch <code>accept-new</code> sein</td>
+            <td>Infrastruktur / Trust</td>
+            <td><span class="status warn">offen</span></td>
+            <td><code>collectorHubMain</code> warnt jetzt explizit. Fuer Produktion ist <code>yes</code> die saubere Richtung.</td>
+          </tr>
+          <tr>
+            <td><code>AUTH_RETURN_TOKEN_JSON=true</code> in Produktion waere riskant</td>
+            <td>Session Exposure</td>
+            <td><span class="status warn">konfigurationsabhaengig</span></td>
+            <td>Im Security-Review klar als Restrisiko benannt. Fuer Browser-Clients soll Cookie-Flow Standard bleiben.</td>
+          </tr>
+          <tr>
+            <td>Cloud-LLM-Provider verlassen das interne Netz</td>
+            <td>Datenschutz / Security</td>
+            <td><span class="status warn">bewusst opt-in</span></td>
+            <td>Kein Codebug, aber ein echter Governance-Punkt fuer PII und AVV.</td>
+          </tr>
+          <tr>
+            <td>Deploy- und Containment-Pfade sind stark gegated, aber nicht voll live geuebt</td>
+            <td>Operational Security</td>
+            <td><span class="status warn">teilweise</span></td>
+            <td>Release/Update in der Live-Umgebung wurde erfolgreich ausgefuehrt. Vollstaendige Uebungen fuer alle Containment-/Node-/Lab-Pfade fehlen aber weiter.</td>
+          </tr>
+          <tr>
+            <td>SSO/SAML unvollstaendig</td>
+            <td>Enterprise Access</td>
+            <td><span class="status warn">teilweise</span></td>
+            <td>OIDC-Backend ist da, aber Vollstaendigkeit in UI/SAML fehlt.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note small">
+        Wichtige Gegenbeobachtung: Im gesichteten Material ist keine neue akute CRITICAL/HIGH-Code-Luecke
+        sichtbar geworden. Die problematischeren Punkte liegen aktuell eher bei Live-Verifikation,
+        Betriebsdisziplin und bewusst noch inert gelassenen Schreibkanaelen.
+      </div>
+      <div class="note small">
+        Live-Update 2026-07-07: serverseitige CSP-Pruefung erfolgreich, frischer Prod-Eintrag in <code>dataplane_status</code>
+        belegt (<code>nexora-collector-hub-1</code>), Ticketquellen zaehlen aktuell <code>dataplane=3843</code> und
+        <code>wazuh=185</code>. Outbox-Worker verarbeitet laufend erfolgreich Batches; offene Punkte verschieben sich
+        damit von "existiert es live?" zu "wie belastbar ist es unter gezielter Last?".
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Belastbarkeit und Betriebsreife</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Bereich</th>
+            <th>Befund</th>
+            <th>Urteil</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Lokaler Lasttest</td>
+            <td>Vorhanden, reproduzierbar, aber nur InMemory und nicht als Postgres-Produktionsbeleg geeignet.</td>
+            <td><span class="status warn">teilweise</span></td>
+          </tr>
+          <tr>
+            <td>DB-Pool-Sicht</td>
+            <td>Metrics und SystemStatus koennen Pool-Druck zeigen. Zusaetzlich wurde im Live-API-Log bereits mindestens ein <code>pg_pool_saturated</code>-Signal beobachtet; ein kontrollierter Lastnachweis fehlt dennoch.</td>
+            <td><span class="status ok">technisch vorbereitet</span></td>
+          </tr>
+          <tr>
+            <td>Containerlimits</td>
+            <td>Dokumentiert und im Compose-Konzept vorbereitet, aber laut Ops-Doku noch nicht als wirksam am Live-Container bewiesen.</td>
+            <td><span class="status bad">nicht abgehakt</span></td>
+          </tr>
+          <tr>
+            <td>Health unter Last</td>
+            <td>Architektur mit separatem Health-Pool ist angelegt. Live-Health ist beobachtbar und die Prod-DB antwortet stabil; ein gezielter Stress-/Timeout-Beweis fehlt aber.</td>
+            <td><span class="status warn">teilweise</span></td>
+          </tr>
+          <tr>
+            <td>Data Plane Robustheit</td>
+            <td>Abort-Listener-Cleanup und Host-Key-Warnung sind nachgeschaerft. Das reduziert echte Laufzeitrisiken.</td>
+            <td><span class="status ok">verbessert</span></td>
+          </tr>
+          <tr>
+            <td>Quellenvollstaendigkeit</td>
+            <td>Live-Snapshot aus <code>dataplane_status</code> zeigt laufende Collector fuer Cowrie, Suricata, Wazuh und OPNsense; Cowrie/Suricata emittieren aktiv, OPNsense liefert geringe Aktivitaet, Wazuh im Hub aktuell 0. Die Quellkette ist damit deutlich besser belegt, aber nicht gleichmaessig stark.</td>
+            <td><span class="status warn">teilweise belegt</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Korrelation und Collector-Engine</h2>
+      <div class="two">
+        <div>
+          <h3>Asynchrone Korrelation</h3>
+          <ul>
+            <li><code>correlationRuntime</code> setzt bewusst auf genau eine Queue- und Repo-Instanz pro Prozess.</li>
+            <li>Kein stiller InMemory-Fallback bei aktivierter DB; Fehler sollen sichtbar bleiben.</li>
+            <li>Worker und Scheduler sind materialisiert und nicht mehr im GET-Read-Pfad versteckt.</li>
+            <li>Correlators-API ist sauber gegated nach Rolle.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Cross-Domain-Fusion und Data Plane</h3>
+          <ul>
+            <li><code>crossDomainFusion</code> arbeitet deterministisch und evidence-basiert, inklusive Sliding-Window-Sessionbildung.</li>
+            <li><code>dataplane.js</code> ist HMAC-gesichert und nutzt jetzt nur noch <code>WEBHOOK_SECRET_DATAPLANE</code>.</li>
+            <li><code>collectorHubMain</code> meldet schwache Host-Key-Policy explizit und pusht Live-Status fail-soft.</li>
+            <li><code>collectors.js</code> und <code>dataplaneStatusView.js</code> bleiben fail-honest: stale ist nicht healthy.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Seiten-Scan - komplette Frontend-Oberflaeche</h2>
+      <p class="small">
+        Jede produktive Seite aus <code>frontend/src/pages</code> wurde gegen Seitendoku und Seitentest abgeglichen.
+        "Dok" meint dedizierte User-Guide-Seite unter <code>docs/02-user-guide/pages</code>.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Seite</th>
+            <th>Dok</th>
+            <th>Test</th>
+            <th>Kurzbefund</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>AnalysisPage</td><td>ja</td><td>nein</td><td>Wichtige Kernseite, Doku da, Seitentest fehlt.</td></tr>
+          <tr><td>AuditCompliancePage</td><td>nein</td><td>nein</td><td>Dokuluecke und kein Seitentest.</td></tr>
+          <tr><td>AuditLogPage</td><td>ja</td><td>nein</td><td>Funktional wichtig, Testabdeckung noch indirekt.</td></tr>
+          <tr><td>AutonomyPoliciesPage</td><td>ja</td><td>ja</td><td>Gut abgesichert, aber Feature bleibt inert.</td></tr>
+          <tr><td>CategoryLandingPage</td><td>nein</td><td>nein</td><td>Navigationsflaeche ohne dedizierte Doku/Testspur.</td></tr>
+          <tr><td>CollectorsStatusPage</td><td>ja</td><td>ja</td><td>Gut fuer Collector-Sicht abgesichert.</td></tr>
+          <tr><td>CorrelatorsPage</td><td>ja</td><td>ja</td><td>Starker Nachweis fuer P_CORR_1-Frontend.</td></tr>
+          <tr><td>DashboardPage</td><td>ja</td><td>ja</td><td>Kern-UI mit Seitentest.</td></tr>
+          <tr><td>DataPlanePage</td><td>ja</td><td>ja</td><td>Wichtige Ops-Seite sauber abgedeckt.</td></tr>
+          <tr><td>DeployPage</td><td>nein</td><td>ja</td><td>Technisch getestet, aber dedizierte User-Guide-Seite fehlt.</td></tr>
+          <tr><td>DetectionLibraryPage</td><td>ja</td><td>nein</td><td>Doku da, Seitentest offen.</td></tr>
+          <tr><td>EvidenceCenterPage</td><td>ja</td><td>nein</td><td>Kernseite ohne dedizierten Seitentest.</td></tr>
+          <tr><td>HostsPage</td><td>ja</td><td>nein</td><td>Doku vorhanden, Enrollment-Thema weiter offen.</td></tr>
+          <tr><td>HuntConsolePage</td><td>ja</td><td>nein</td><td>Doku da, Seitentest fehlt.</td></tr>
+          <tr><td>HuntingSettingsPage</td><td>nein</td><td>nein</td><td>Doku- und Testluecke.</td></tr>
+          <tr><td>HuntLibraryPage</td><td>ja</td><td>nein</td><td>Doku da, Seitentest offen.</td></tr>
+          <tr><td>IntegrationsConfigPage</td><td>nein</td><td>ja</td><td>Wichtig fuer Betrieb, testbar, aber dedizierte User-Doku fehlt.</td></tr>
+          <tr><td>KiAgentPage</td><td>ja</td><td>nein</td><td>Doku vorhanden, Seitentest offen.</td></tr>
+          <tr><td>LoginPage</td><td>ja</td><td>nein</td><td>Basisseite, testseitig eher indirekt ueber Flows.</td></tr>
+          <tr><td>MitrePage</td><td>ja</td><td>nein</td><td>Doku ja, Seitentest nein.</td></tr>
+          <tr><td>MlEvalPage</td><td>ja</td><td>ja</td><td>Gut belegter MLE-/Admin-Pfad.</td></tr>
+          <tr><td>Nis2ReadinessPage</td><td>ja</td><td>nein</td><td>Doku ja, direkte Seitentests offen.</td></tr>
+          <tr><td>ProfilePage</td><td>ja</td><td>nein</td><td>Dokumentiert, aber kein Seitentest.</td></tr>
+          <tr><td>ProvisioningPage</td><td>ja</td><td>ja</td><td>Starke Abdeckung fuer einen sensiblen Admin-Pfad.</td></tr>
+          <tr><td>QRadarAnalysisPage</td><td>ja</td><td>nein</td><td>Dokumentiert, Test eher indirekt.</td></tr>
+          <tr><td>ServicesPage</td><td>nein</td><td>nein</td><td>Klare Doku-/Testluecke.</td></tr>
+          <tr><td>SettingsPage</td><td>ja</td><td>ja</td><td>Wichtiger Admin-Bereich mit guter Absicherung.</td></tr>
+          <tr><td>SocMetricsDashboardPage</td><td>nein</td><td>ja</td><td>Technisch getestet, Doku fehlt.</td></tr>
+          <tr><td>SystemStatusPage</td><td>ja</td><td>ja</td><td>Gut fuer Ops und Pool-Sicht belegt.</td></tr>
+          <tr><td>ThreatHuntsPage</td><td>ja</td><td>nein</td><td>Doku ja, Seitentest offen.</td></tr>
+          <tr><td>TicketEditorPage</td><td>ja</td><td>nein</td><td>Doku vorhanden, Seitentest offen.</td></tr>
+          <tr><td>TicketsPage</td><td>ja</td><td>ja</td><td>Kernseite mit solider Abdeckung.</td></tr>
+          <tr><td>UseCaseDeveloperPage</td><td>ja</td><td>nein</td><td>Doku ja, Seitentest offen.</td></tr>
+          <tr><td>WazuhDashboardPage</td><td>ja</td><td>nein</td><td>Doku ja, Seitentest nein.</td></tr>
+          <tr><td>WikiPage</td><td>nein</td><td>ja</td><td>Neuere Seite, testbar, aber noch ohne dedizierte User-Guide-Seite.</td></tr>
+          <tr><td>YaraPage</td><td>ja</td><td>nein</td><td>Doku vorhanden, Seitentest offen.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Wichtigste offenen Punkte ab jetzt</h2>
+      <ol>
+        <li>Gezielter Produktionsnachweis fuer Postgres-Last, Pool-Saettigung, Query-Timeouts und Dataplane-Rueckstau unter bewusst erzeugtem Druck.</li>
+        <li>Optionaler Browser-/Console-Proof fuer CSP und Doku-Rendering als zusaetzlicher Go-Live-Beleg.</li>
+        <li>Signalqualitaet je Quelle weiter schaerfen: Wazuh im Hub aktuell ohne Emission, OPNsense nur mit geringer Aktivitaet, Cowrie/Suricata klar aktiv.</li>
+        <li>Doku- und Testluecken bei Seiten gezielt schliessen, statt nur Features weiter zu addieren.</li>
+        <li>Phase-2-Reportgenerator und verbleibende Enterprise-Security-Restarbeiten priorisieren.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Fazit</h2>
+      <p>
+        Nexora ist im aktuellen Repo-Stand klar mehr als ein Prototyp. Die Plattform hat eine
+        breite produktive Form mit starker Sicherheitsdisziplin im Code, fail-closed Gates,
+        sauberer Rollenlogik und einer echten SOC-Funktionsbreite.
+      </p>
+      <p>
+        Der Engpass liegt aktuell weniger bei fehlendem Feature-Code als bei drei Dingen:
+        ehrlicher Produktionsverifikation, verbleibenden Ops-Nachweisen und dem Schliessen der
+        letzten Doku-/Produktisierungsluecken. Genau dort sitzt der naechste Hebel.
+      </p>
+    </section>
+  </div>
+</body>
+</html>

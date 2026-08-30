@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QRadar Use-Case-Katalog — fertig zum Nachbauen</title>
+<style>
+  :root{
+    --bg-primary:#080c14;--bg-card:#141824;--bg-elev:#1b2130;--border:#283042;
+    --text:#e6ebf2;--text-dim:#9aa7bd;--accent-cyan:#00d4ff;--accent-green:#00ff88;
+    --accent-amber:#ffb020;--marker:#ff3b5c;--qr-link:#4ea3e0;
+    --c-crit:#ff4d6d;--c-high:#ff8c42;--c-med:#ffd23f;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg-primary);color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    line-height:1.6;font-size:15.5px;}
+  .layout{display:flex;max-width:1380px;margin:0 auto;}
+  nav.toc{position:sticky;top:0;align-self:flex-start;width:300px;min-width:300px;height:100vh;
+    overflow-y:auto;padding:28px 20px;border-right:1px solid var(--border);
+    background:linear-gradient(180deg,#0b1019,#0a0e16);}
+  nav.toc h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-cyan);margin:0 0 14px;}
+  nav.toc a{display:block;color:var(--text-dim);text-decoration:none;padding:8px 10px;border-radius:7px;
+    font-size:13.5px;margin-bottom:2px;border-left:2px solid transparent;}
+  nav.toc a:hover{background:var(--bg-elev);color:var(--text);border-left-color:var(--accent-cyan);}
+  nav.toc a .id{font-family:'JetBrains Mono',monospace;color:var(--accent-green);font-size:12px;}
+  nav.toc .sep{margin:14px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#5b6b82;padding-left:10px;}
+  main{flex:1;padding:40px 48px 120px;min-width:0;}
+  header.hero{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border);}
+  header.hero .kicker{color:var(--accent-green);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.1em;text-transform:uppercase;}
+  header.hero h1{font-size:32px;margin:8px 0 12px;line-height:1.2;}
+  header.hero p{color:var(--text-dim);max-width:820px;margin:0 0 8px;}
+  a.inline{color:var(--accent-cyan);}
+  .warn{border-left:3px solid var(--accent-amber);background:rgba(255,176,32,.07);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;}
+  .tip{border-left:3px solid var(--accent-green);background:rgba(0,255,136,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;}
+  .warn strong,.tip strong{color:var(--text);}
+
+  /* Use Case Card */
+  .uc{background:linear-gradient(160deg,var(--bg-card),#0f131c);border:1px solid var(--border);
+    border-radius:16px;padding:0;margin:34px 0;overflow:hidden;scroll-margin-top:20px;}
+  .uc-head{display:flex;align-items:center;gap:16px;padding:18px 24px;border-bottom:1px solid var(--border);
+    background:linear-gradient(90deg,rgba(0,212,255,.08),transparent);}
+  .uc-head .ucid{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent-green);
+    background:rgba(0,255,136,.08);padding:4px 10px;border-radius:6px;white-space:nowrap;}
+  .uc-head h3{font-size:20px;margin:0;flex:1;}
+  .conf{font-family:'JetBrains Mono',monospace;font-size:13px;padding:4px 10px;border-radius:6px;font-weight:700;white-space:nowrap;}
+  .conf.crit{background:rgba(255,77,109,.15);color:var(--c-crit);}
+  .conf.high{background:rgba(255,140,66,.15);color:var(--c-high);}
+  .conf.med{background:rgba(255,210,63,.15);color:var(--c-med);}
+  .uc-body{padding:8px 24px 24px;}
+  .uc-body h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-cyan);
+    margin:22px 0 8px;display:flex;align-items:center;gap:8px;}
+  .uc-body h4 .n{width:22px;height:22px;border-radius:6px;background:var(--bg-elev);color:var(--accent-cyan);
+    font-size:12px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13.5px;color:var(--text-dim);margin:4px 0;}
+  .meta b{color:var(--text);font-weight:600;}
+  ul.steps{list-style:none;padding:0;margin:6px 0;}
+  ul.steps li{padding:8px 12px 8px 14px;margin-bottom:6px;background:#0c1019;border:1px solid var(--border);
+    border-radius:8px;border-left:3px solid var(--qr-link);}
+  pre.rule{background:#0a0f17;border:1px solid var(--border);border-radius:10px;padding:14px 16px;
+    overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12.8px;color:#cdd8e7;line-height:1.7;margin:6px 0;}
+  pre.rule .kw{color:var(--accent-cyan);}
+  pre.rule .lnk{color:var(--qr-link);text-decoration:underline;}
+  pre.rule .cmt{color:#5b6b82;}
+  code{background:var(--bg-elev);padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12.8px;color:var(--accent-green);}
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13.5px;}
+  table th,table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table th{color:var(--accent-cyan);font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+  .refset{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:12.5px;background:rgba(255,176,32,.1);
+    color:var(--accent-amber);padding:2px 8px;border-radius:5px;margin:2px 4px 2px 0;}
+  .mitre{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:12.5px;background:rgba(120,90,200,.18);
+    color:#b9a6e8;padding:2px 8px;border-radius:5px;margin:2px 4px 2px 0;}
+  footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--border);color:var(--text-dim);font-size:13px;}
+  .legend-row{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--text-dim);margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <h2>Use Cases</h2>
+    <a href="#intro">So nutzt du den Katalog</a>
+    <div class="sep">Brute Force / Auth</div>
+    <a href="#uc-auth-001"><span class="id">UC-AUTH-001</span> · SSH Brute Force</a>
+    <a href="#uc-auth-002"><span class="id">UC-AUTH-002</span> · Password Spraying (Windows)</a>
+    <div class="sep">Credential Access</div>
+    <a href="#uc-cred-001"><span class="id">UC-CRED-001</span> · LSASS Memory Access</a>
+    <a href="#uc-cred-002"><span class="id">UC-CRED-002</span> · Kerberoasting</a>
+    <div class="sep">Lateral Movement</div>
+    <a href="#uc-lat-001"><span class="id">UC-LAT-001</span> · PsExec</a>
+    <a href="#uc-lat-002"><span class="id">UC-LAT-002</span> · RDP Pivoting</a>
+    <div class="sep">Referenz</div>
+    <a href="#refsets">Benötigte Reference Sets</a>
+    <a href="#props">Benötigte Custom Properties</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="kicker">SOC Detection Content · IBM QRadar</div>
+      <h1>QRadar Use-Case-Katalog</h1>
+      <p>Sechs fertig formulierte Use Cases zum direkten Nachbauen im Rule Wizard. Jeder Use Case ist in der GUI-Test-Sprache geschrieben, die in der <a class="inline" href="qradar-usecase-anlegen.html">Klick-Anleitung</a> Schritt&nbsp;3–4 beschrieben ist. <span class="lnk" style="color:var(--qr-link)">Blau unterstrichene</span> Werte sind die anklickbaren Parameter im Wizard.</p>
+      <p>Confidence-Scores und FP-Quellen stammen aus dem SOC-Hunt-Framework (Tier&nbsp;1–3). Status pro Use Case: <b>DRAFT → in Testumgebung validieren → ACTIVE</b> (erst wenn FP-Rate &lt; 5&nbsp;%).</p>
+      <div class="warn"><strong>Voraussetzung lesen.</strong> Mehrere Use Cases brauchen <a class="inline" href="#props">Custom Event Properties</a> (CommandLine, GrantedAccess, Service Name, Logon Type, Ticket Encryption Type) und <a class="inline" href="#refsets">Reference Sets</a>. Fehlen diese Felder, feuert die Regel nicht. Beides vor dem Bau anlegen.</div>
+      <div class="legend-row">
+        <span><span class="conf crit" style="padding:2px 8px">90–100</span> sofort eskalieren</span>
+        <span><span class="conf high" style="padding:2px 8px">70–89</span> an Analyst</span>
+        <span><span class="conf med" style="padding:2px 8px">50–69</span> Ticket + Analyse</span>
+      </div>
+    </header>
+
+    <section id="intro">
+      <p style="color:var(--text-dim)">Pro Use Case findest du: <b>Voraussetzungen</b> · <b>Rule Wizard-Auswahl</b> (Regeltyp + Group) · <b>Tests</b> (1:1 in den Wizard übernehmen) · <b>Rule Response</b> (Offense-Index, Limiter, Severity) · <b>FP-Whitelist</b> · <b>MITRE-Mapping</b> für die Use Case Manager App.</p>
+    </section>
+
+    <!-- ================= UC-AUTH-001 ================= -->
+    <article class="uc" id="uc-auth-001">
+      <div class="uc-head">
+        <span class="ucid">UC-AUTH-001</span>
+        <h3>SSH Brute Force</h3>
+        <span class="conf high">Conf 75–90</span>
+      </div>
+      <div class="uc-body">
+        <div class="meta">
+          <span><b>Taktik:</b> Credential Access</span>
+          <span><b>MITRE:</b> <span class="mitre">T1110.001</span></span>
+          <span><b>Quellen:</b> Linux/SSH-Auth (Cowrie, sshd, OPNsense)</span>
+        </div>
+
+        <h4><span class="n">1</span> Voraussetzungen</h4>
+        <ul class="steps">
+          <li>Log-Quelle liefert SSH-Login-Failures (QID-Kategorie <code>Authentication &gt; User Login Failure</code>).</li>
+          <li>Reference Set <span class="refset">RS:TrustedAuthSources</span> (Type IP) — Admin-/Scanner-IPs.</li>
+        </ul>
+
+        <h4><span class="n">2</span> Rule Wizard</h4>
+        <div class="meta"><span><b>Actions →</b> New Event Rule</span><span><b>Rule Group:</b> Authentication</span><span><b>Name:</b> <code>UC-AUTH-001 SSH Brute Force</code></span></div>
+
+        <h4><span class="n">3</span> Tests (in den Regel-Bereich übernehmen)</h4>
+<pre class="rule"><span class="kw">Apply</span> UC-AUTH-001 SSH Brute Force <span class="cmt">on events which are detected by the Local system</span>
+<span class="kw">and when</span> the event category for the event is one of the following <span class="lnk">Authentication &gt; User Login Failure</span>
+<span class="kw">and when</span> the destination port is one of the following <span class="lnk">22</span>
+<span class="kw">and when</span> at least <span class="lnk">8</span> events are seen with the same <span class="lnk">Source IP</span> in <span class="lnk">5 minutes</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:TrustedAuthSources</span></pre>
+
+        <h4><span class="n">4</span> Rule Response</h4>
+        <table>
+          <tr><th>Einstellung</th><th>Wert</th></tr>
+          <tr><td>Ensure event is part of an offense</td><td>✓ — <b>Index by:</b> Source IP</td></tr>
+          <tr><td>Severity / Magnitude</td><td>Severity 6</td></tr>
+          <tr><td>Response Limiter</td><td>1× pro 10 min pro Source IP</td></tr>
+          <tr><td>Enable Rule</td><td>✓</td></tr>
+        </table>
+
+        <h4><span class="n">5</span> False Positives / Whitelist</h4>
+        <table>
+          <tr><th>Quelle</th><th>Maßnahme</th></tr>
+          <tr><td>Vuln-Scanner / Monitoring</td><td>Scanner-IP in <span class="refset">RS:TrustedAuthSources</span></td></tr>
+          <tr><td>Fehlkonfigurierter Client (User tippt falsch)</td><td>Schwelle 8/5min; ggf. „same Username" ergänzen</td></tr>
+        </table>
+
+        <h4><span class="n">6</span> MITRE-Mapping (Use Case Manager)</h4>
+        <span class="mitre">Tactic: Credential Access</span> <span class="mitre">Technique: T1110.001 Password Guessing</span>
+      </div>
+    </article>
+
+    <!-- ================= UC-AUTH-002 ================= -->
+    <article class="uc" id="uc-auth-002">
+      <div class="uc-head">
+        <span class="ucid">UC-AUTH-002</span>
+        <h3>Password Spraying (Windows)</h3>
+        <span class="conf high">Conf 70–88</span>
+      </div>
+      <div class="uc-body">
+        <div class="meta">
+          <span><b>Taktik:</b> Credential Access</span>
+          <span><b>MITRE:</b> <span class="mitre">T1110.003</span></span>
+          <span><b>Quellen:</b> Windows Security (4625)</span>
+        </div>
+
+        <h4><span class="n">1</span> Voraussetzungen</h4>
+        <ul class="steps">
+          <li>Windows Security Event Log liefert <code>EventID 4625</code> (Login Failure).</li>
+          <li>Reference Set <span class="refset">RS:ServiceAccounts</span> (AlphaNumeric) — bekannte Dienstkonten.</li>
+        </ul>
+        <div class="tip"><strong>Unterschied zu Brute Force:</strong> Spraying = <em>viele verschiedene Benutzer</em>, wenige Versuche je User, von <em>einer</em> Quelle. Darum „same Source IP" + Zählung über <em>unterschiedliche Usernames</em>.</div>
+
+        <h4><span class="n">2</span> Rule Wizard</h4>
+        <div class="meta"><span><b>Actions →</b> New Event Rule</span><span><b>Rule Group:</b> Authentication</span><span><b>Name:</b> <code>UC-AUTH-002 Password Spraying</code></span></div>
+
+        <h4><span class="n">3</span> Tests</h4>
+<pre class="rule"><span class="kw">Apply</span> UC-AUTH-002 Password Spraying <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Windows Login Failure / 4625)</span>
+<span class="kw">and when</span> at least <span class="lnk">10</span> events are seen with the same <span class="lnk">Source IP</span>
+        and different <span class="lnk">Username</span> in <span class="lnk">15 minutes</span>
+<span class="kw">and when</span> the username is <span class="lnk">NOT</span> contained in <span class="lnk">RS:ServiceAccounts</span></pre>
+        <div class="meta" style="margin-top:6px"><span style="color:var(--text-dim)">Test-Name im Stack: <code>when at least N events are seen with the same X and different Y</code></span></div>
+
+        <h4><span class="n">4</span> Rule Response</h4>
+        <table>
+          <tr><th>Einstellung</th><th>Wert</th></tr>
+          <tr><td>Offense</td><td>✓ — <b>Index by:</b> Source IP</td></tr>
+          <tr><td>Severity</td><td>7</td></tr>
+          <tr><td>Response Limiter</td><td>1× pro 30 min pro Source IP</td></tr>
+        </table>
+
+        <h4><span class="n">5</span> False Positives / Whitelist</h4>
+        <table>
+          <tr><th>Quelle</th><th>Maßnahme</th></tr>
+          <tr><td>Abgelaufenes Passwort auf Multi-User-Terminal</td><td>Schwelle &amp; Zeitfenster; Terminal-IP prüfen</td></tr>
+          <tr><td>Dienstkonto mit altem Cached-Credential</td><td><span class="refset">RS:ServiceAccounts</span></td></tr>
+        </table>
+
+        <h4><span class="n">6</span> MITRE-Mapping</h4>
+        <span class="mitre">Tactic: Credential Access</span> <span class="mitre">Technique: T1110.003 Password Spraying</span>
+      </div>
+    </article>
+
+    <!-- ================= UC-CRED-001 ================= -->
+    <article class="uc" id="uc-cred-001">
+      <div class="uc-head">
+        <span class="ucid">UC-CRED-001</span>
+        <h3>LSASS Memory Access (Credential Dump)</h3>
+        <span class="conf crit">Conf 95–98</span>
+      </div>
+      <div class="uc-body">
+        <div class="meta">
+          <span><b>Taktik:</b> Credential Access</span>
+          <span><b>MITRE:</b> <span class="mitre">T1003.001</span></span>
+          <span><b>Quellen:</b> Sysmon EventID 10 (bevorzugt) / Windows 4656</span>
+        </div>
+
+        <h4><span class="n">1</span> Voraussetzungen</h4>
+        <ul class="steps">
+          <li><b>Sysmon</b> mit ProcessAccess-Logging (Event 10) ODER Windows Audit „Handle Manipulation" (4656).</li>
+          <li>Custom Properties: <code>TargetImage</code>, <code>GrantedAccess</code>, <code>SourceImage</code> (Sysmon) bzw. <code>ObjectName</code>, <code>AccessMask</code>, <code>ProcessName</code> (4656). Siehe <a class="inline" href="#props">Custom Properties</a>.</li>
+          <li>Reference Set <span class="refset">RS:EDR-Diagnostic-Hosts</span> (IP) für AV/EDR/Debugging-Ausnahmen.</li>
+        </ul>
+
+        <h4><span class="n">2</span> Rule Wizard</h4>
+        <div class="meta"><span><b>Actions →</b> New Event Rule</span><span><b>Rule Group:</b> Credential Access</span><span><b>Name:</b> <code>UC-CRED-001 LSASS Access</code></span></div>
+
+        <h4><span class="n">3</span> Tests (Sysmon-Variante)</h4>
+<pre class="rule"><span class="kw">Apply</span> UC-CRED-001 LSASS Access <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Sysmon Event 10 — ProcessAccess)</span>
+<span class="kw">and when</span> <span class="lnk">TargetImage</span> (custom) matches the following regex <span class="lnk">(?i)\\lsass\.exe$</span>
+<span class="kw">and when</span> <span class="lnk">GrantedAccess</span> (custom) is one of the following <span class="lnk">0x1010,0x1410,0x1438,0x143a,0x1fffff</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:EDR-Diagnostic-Hosts</span>
+<span class="kw">and when</span> <span class="lnk">SourceImage</span> (custom) is <span class="lnk">NOT</span> contained in <span class="lnk">BB:KnownLSASSReaders</span> <span class="cmt">(MsMpEng/werfault/EDR)</span></pre>
+
+        <h4><span class="n">4</span> Rule Response</h4>
+        <table>
+          <tr><th>Einstellung</th><th>Wert</th></tr>
+          <tr><td>Offense</td><td>✓ — <b>Index by:</b> Source IP (Host)</td></tr>
+          <tr><td>Severity / Magnitude</td><td>Severity 9 (kritisch)</td></tr>
+          <tr><td>Dispatch / Notify</td><td>Email an SOC + Custom Action „enrich host"</td></tr>
+          <tr><td>Response Limiter</td><td>1× pro 15 min pro Host</td></tr>
+        </table>
+
+        <h4><span class="n">5</span> False Positives / Whitelist</h4>
+        <table>
+          <tr><th>Quelle</th><th>Erkennung</th><th>Maßnahme</th></tr>
+          <tr><td>AV/EDR (MsMpEng, CrowdStrike, SentinelOne)</td><td>SourceImage = EDR-Binary</td><td><span class="refset">BB:KnownLSASSReaders</span></td></tr>
+          <tr><td>WER (werfault.exe) nach Absturz</td><td>SourceImage = werfault.exe</td><td>Building Block</td></tr>
+          <tr><td>Debugger auf Dev-Maschinen</td><td>VS / WinDbg</td><td><span class="refset">RS:EDR-Diagnostic-Hosts</span></td></tr>
+        </table>
+        <div class="warn"><strong>Nie blind isolieren.</strong> Confidence ist hoch, aber EDR-Whitelist muss sitzen — sonst feuert die Regel bei jedem Defender-Scan.</div>
+
+        <h4><span class="n">6</span> MITRE-Mapping</h4>
+        <span class="mitre">Tactic: Credential Access</span> <span class="mitre">Technique: T1003.001 LSASS Memory</span>
+      </div>
+    </article>
+
+    <!-- ================= UC-CRED-002 ================= -->
+    <article class="uc" id="uc-cred-002">
+      <div class="uc-head">
+        <span class="ucid">UC-CRED-002</span>
+        <h3>Kerberoasting</h3>
+        <span class="conf crit">Conf 85–90</span>
+      </div>
+      <div class="uc-body">
+        <div class="meta">
+          <span><b>Taktik:</b> Credential Access</span>
+          <span><b>MITRE:</b> <span class="mitre">T1558.003</span></span>
+          <span><b>Quellen:</b> Windows Security 4769 (DC)</span>
+        </div>
+
+        <h4><span class="n">1</span> Voraussetzungen</h4>
+        <ul class="steps">
+          <li>Domain Controller liefert <code>EventID 4769</code> (Kerberos Service Ticket).</li>
+          <li>Custom Properties: <code>Ticket Encryption Type</code>, <code>Service Name</code>, <code>Account Name</code>.</li>
+          <li>Reference Set <span class="refset">RS:Kerberos-Service-Hosts</span> (IP) — SQL/Exchange/legitime Ticket-Anforderer.</li>
+        </ul>
+        <div class="tip"><strong>Kern-Indikator:</strong> <code>Ticket Encryption Type = 0x17</code> (RC4-HMAC). Kerberoasting funktioniert nur mit RC4, nicht mit AES (0x12). Viele verschiedene SPNs in kurzer Zeit von <em>einer Workstation</em>.</div>
+
+        <h4><span class="n">2</span> Rule Wizard</h4>
+        <div class="meta"><span><b>Actions →</b> New Event Rule</span><span><b>Rule Group:</b> Credential Access</span><span><b>Name:</b> <code>UC-CRED-002 Kerberoasting</code></span></div>
+
+        <h4><span class="n">3</span> Tests</h4>
+<pre class="rule"><span class="kw">Apply</span> UC-CRED-002 Kerberoasting <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Kerberos Service Ticket / 4769)</span>
+<span class="kw">and when</span> <span class="lnk">Ticket Encryption Type</span> (custom) is one of the following <span class="lnk">0x17</span>
+<span class="kw">and when</span> <span class="lnk">Service Name</span> (custom) does <span class="lnk">NOT</span> match regex <span class="lnk">(krbtgt|\$$)</span>
+<span class="kw">and when</span> at least <span class="lnk">10</span> events are seen with the same <span class="lnk">Source IP</span>
+        and different <span class="lnk">Service Name</span> in <span class="lnk">1 hour</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Kerberos-Service-Hosts</span></pre>
+
+        <h4><span class="n">4</span> Rule Response</h4>
+        <table>
+          <tr><th>Einstellung</th><th>Wert</th></tr>
+          <tr><td>Offense</td><td>✓ — <b>Index by:</b> Source IP</td></tr>
+          <tr><td>Severity</td><td>8</td></tr>
+          <tr><td>Response Limiter</td><td>1× pro 1 h pro Source IP</td></tr>
+        </table>
+
+        <h4><span class="n">5</span> False Positives / Whitelist</h4>
+        <table>
+          <tr><th>Quelle</th><th>Maßnahme</th></tr>
+          <tr><td>SQL Server / Exchange fordert regelmäßig Tickets</td><td>Host in <span class="refset">RS:Kerberos-Service-Hosts</span></td></tr>
+          <tr><td>Monitoring-Skripte gegen Dienste</td><td>Quelle ist definierter Service-Host, keine Workstation</td></tr>
+        </table>
+
+        <h4><span class="n">6</span> MITRE-Mapping</h4>
+        <span class="mitre">Tactic: Credential Access</span> <span class="mitre">Technique: T1558.003 Kerberoasting</span>
+      </div>
+    </article>
+
+    <!-- ================= UC-LAT-001 ================= -->
+    <article class="uc" id="uc-lat-001">
+      <div class="uc-head">
+        <span class="ucid">UC-LAT-001</span>
+        <h3>PsExec Lateral Movement</h3>
+        <span class="conf crit">Conf 85–97</span>
+      </div>
+      <div class="uc-body">
+        <div class="meta">
+          <span><b>Taktik:</b> Lateral Movement</span>
+          <span><b>MITRE:</b> <span class="mitre">T1021.002</span></span>
+          <span><b>Quellen:</b> System 7045 + Security 4624 (Type 3)</span>
+        </div>
+
+        <h4><span class="n">1</span> Voraussetzungen</h4>
+        <ul class="steps">
+          <li>Windows liefert <code>EventID 7045</code> (Service Install) und <code>4624</code> (Logon) mit <code>Logon Type</code>.</li>
+          <li>Custom Property: <code>Service Name</code>.</li>
+          <li>Reference Sets: <span class="refset">RS:SCCM-Servers</span>, <span class="refset">RS:Jump-Hosts</span>, <span class="refset">RS:ServiceAccounts</span>.</li>
+        </ul>
+        <div class="tip"><strong>Zweistufige Logik.</strong> Stärkstes Signal: Service-Install <em>und</em> Type-3-Logon von derselben Quelle kurz hintereinander. In QRadar sauber über einen <b>Building Block</b> je Teil + eine korrelierende Regel, oder eine Regel mit „when these rules match in sequence".</div>
+
+        <h4><span class="n">2</span> Rule Wizard</h4>
+        <div class="meta"><span><b>Actions →</b> New Event Rule</span><span><b>Rule Group:</b> Lateral Movement</span><span><b>Name:</b> <code>UC-LAT-001 PsExec</code></span></div>
+
+        <h4><span class="n">3</span> Tests</h4>
+<pre class="rule"><span class="cmt">-- Building Block A: PsExec-Dienst</span>
+<span class="kw">Apply</span> BB:PsExecServiceInstall <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Service Installed / 7045)</span>
+<span class="kw">and when</span> <span class="lnk">Service Name</span> (custom) matches regex <span class="lnk">(?i)(psexesvc|paexec|remcom|execsvc)</span>
+
+<span class="cmt">-- Building Block B: Remote-Logon</span>
+<span class="kw">Apply</span> BB:RemoteType3Logon <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Successful Logon / 4624)</span>
+<span class="kw">and when</span> <span class="lnk">Logon Type</span> (custom) is one of the following <span class="lnk">3</span>
+<span class="kw">and when</span> the username is <span class="lnk">NOT</span> contained in <span class="lnk">RS:ServiceAccounts</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:SCCM-Servers</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Jump-Hosts</span>
+
+<span class="cmt">-- Korrelations-Regel (erzeugt Offense)</span>
+<span class="kw">Apply</span> UC-LAT-001 PsExec
+<span class="kw">and when</span> <span class="lnk">BB:PsExecServiceInstall</span> matches
+        and <span class="lnk">BB:RemoteType3Logon</span> matches
+        with the same <span class="lnk">Source IP</span> within <span class="lnk">2 minutes</span></pre>
+        <div class="meta" style="margin-top:6px"><span style="color:var(--text-dim)">Korrelations-Test im Stack: <code>when these rules, in any order, match …</code> bzw. <code>when an event matches all of the following BBs</code>.</span></div>
+
+        <h4><span class="n">4</span> Rule Response</h4>
+        <table>
+          <tr><th>Einstellung</th><th>Wert</th></tr>
+          <tr><td>Offense (nur auf der Korrelations-Regel!)</td><td>✓ — <b>Index by:</b> Source IP</td></tr>
+          <tr><td>Severity</td><td>9</td></tr>
+          <tr><td>Response Limiter</td><td>1× pro 10 min pro Source IP</td></tr>
+        </table>
+        <div class="warn"><strong>Building Blocks erzeugen keine Offense.</strong> Bei BB:* im Wizard <em>keine</em> „Ensure offense"-Response setzen — nur die finale Regel.</div>
+
+        <h4><span class="n">5</span> False Positives / Whitelist</h4>
+        <table>
+          <tr><th>Quelle</th><th>Maßnahme</th></tr>
+          <tr><td>SCCM / Intune-Deployment (nutzt PSEXESVC)</td><td><span class="refset">RS:SCCM-Servers</span> + sccm-Service-Account</td></tr>
+          <tr><td>Admin via Jump-Host</td><td><span class="refset">RS:Jump-Hosts</span></td></tr>
+          <tr><td>Machine-Account (endet auf $)</td><td>Username-Regex schließt <code>$</code> aus</td></tr>
+        </table>
+
+        <h4><span class="n">6</span> MITRE-Mapping</h4>
+        <span class="mitre">Tactic: Lateral Movement</span> <span class="mitre">Technique: T1021.002 SMB/Admin Shares</span>
+      </div>
+    </article>
+
+    <!-- ================= UC-LAT-002 ================= -->
+    <article class="uc" id="uc-lat-002">
+      <div class="uc-head">
+        <span class="ucid">UC-LAT-002</span>
+        <h3>RDP from Unusual Source / Pivoting</h3>
+        <span class="conf high">Conf 75–92</span>
+      </div>
+      <div class="uc-body">
+        <div class="meta">
+          <span><b>Taktik:</b> Lateral Movement</span>
+          <span><b>MITRE:</b> <span class="mitre">T1021.001</span></span>
+          <span><b>Quellen:</b> Windows Security 4624 (Type 10)</span>
+        </div>
+
+        <h4><span class="n">1</span> Voraussetzungen</h4>
+        <ul class="steps">
+          <li>Windows liefert <code>4624</code> mit <code>Logon Type</code>.</li>
+          <li>Reference Sets: <span class="refset">RS:Helpdesk-Workstations</span>, <span class="refset">RS:Jump-Hosts</span>, <span class="refset">RS:Citrix-Servers</span>.</li>
+        </ul>
+
+        <h4><span class="n">2</span> Rule Wizard</h4>
+        <div class="meta"><span><b>Actions →</b> New Event Rule</span><span><b>Rule Group:</b> Lateral Movement</span><span><b>Name:</b> <code>UC-LAT-002 RDP Unusual Source</code></span></div>
+
+        <h4><span class="n">3</span> Tests</h4>
+<pre class="rule"><span class="kw">Apply</span> UC-LAT-002 RDP Unusual Source <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Successful Logon / 4624)</span>
+<span class="kw">and when</span> <span class="lnk">Logon Type</span> (custom) is one of the following <span class="lnk">10</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Helpdesk-Workstations</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Jump-Hosts</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Citrix-Servers</span></pre>
+        <div class="tip"><strong>Pivoting-Verschärfung (höhere Confidence):</strong> zusätzlich „at least <span class="lnk" style="color:var(--qr-link)">3</span> events with the same <span class="lnk" style="color:var(--qr-link)">Source IP</span> and different <span class="lnk" style="color:var(--qr-link)">Destination IP</span> in <span class="lnk" style="color:var(--qr-link)">30 minutes</span>" → ein Host springt auf viele Ziele = PIVOTING (Conf ~90).</div>
+
+        <h4><span class="n">4</span> Rule Response</h4>
+        <table>
+          <tr><th>Einstellung</th><th>Wert</th></tr>
+          <tr><td>Offense</td><td>✓ — <b>Index by:</b> Source IP</td></tr>
+          <tr><td>Severity</td><td>7 (Single) / 9 (Pivoting)</td></tr>
+          <tr><td>Response Limiter</td><td>1× pro 30 min pro Source IP</td></tr>
+        </table>
+
+        <h4><span class="n">5</span> False Positives / Whitelist</h4>
+        <table>
+          <tr><th>Quelle</th><th>Maßnahme</th></tr>
+          <tr><td>Helpdesk-RDP (Geschäftszeiten)</td><td><span class="refset">RS:Helpdesk-Workstations</span></td></tr>
+          <tr><td>Admin über Jump-/Citrix-Server</td><td><span class="refset">RS:Jump-Hosts</span> / <span class="refset">RS:Citrix-Servers</span></td></tr>
+        </table>
+
+        <h4><span class="n">6</span> MITRE-Mapping</h4>
+        <span class="mitre">Tactic: Lateral Movement</span> <span class="mitre">Technique: T1021.001 Remote Desktop Protocol</span>
+      </div>
+    </article>
+
+    <!-- ============ Reference Sets ============ -->
+    <section id="refsets" style="scroll-margin-top:20px">
+      <h2 style="font-size:24px;border-bottom:1px solid var(--border);padding-bottom:8px">Benötigte Reference Sets</h2>
+      <p style="color:var(--text-dim)">Vor dem Bau anlegen (Klick-Anleitung Schritt 5): <span style="font-family:'JetBrains Mono',monospace;color:var(--accent-amber)">Admin → Reference Set Management → Add</span></p>
+      <table>
+        <tr><th>Name</th><th>Type</th><th>Inhalt</th><th>genutzt von</th></tr>
+        <tr><td><span class="refset">RS:TrustedAuthSources</span></td><td>IP</td><td>Scanner-/Admin-IPs für Auth</td><td>UC-AUTH-001</td></tr>
+        <tr><td><span class="refset">RS:ServiceAccounts</span></td><td>AlphaNumeric</td><td>Dienstkonten</td><td>UC-AUTH-002, UC-LAT-001</td></tr>
+        <tr><td><span class="refset">RS:EDR-Diagnostic-Hosts</span></td><td>IP</td><td>AV/EDR/Debug-Hosts</td><td>UC-CRED-001</td></tr>
+        <tr><td><span class="refset">RS:Kerberos-Service-Hosts</span></td><td>IP</td><td>SQL/Exchange etc.</td><td>UC-CRED-002</td></tr>
+        <tr><td><span class="refset">RS:SCCM-Servers</span></td><td>IP</td><td>Deployment-Server</td><td>UC-LAT-001</td></tr>
+        <tr><td><span class="refset">RS:Jump-Hosts</span></td><td>IP</td><td>Bastion/Jump</td><td>UC-LAT-001, UC-LAT-002</td></tr>
+        <tr><td><span class="refset">RS:Helpdesk-Workstations</span></td><td>IP</td><td>Helpdesk-Subnetz</td><td>UC-LAT-002</td></tr>
+        <tr><td><span class="refset">RS:Citrix-Servers</span></td><td>IP</td><td>Citrix/VDI</td><td>UC-LAT-002</td></tr>
+      </table>
+      <div class="tip"><strong>TTL setzen:</strong> für dynamische Listen (z. B. erkannte Angreifer) „7 days, since last seen"; statische Infra-Listen ohne TTL.</div>
+    </section>
+
+    <!-- ============ Custom Properties ============ -->
+    <section id="props" style="scroll-margin-top:20px;margin-top:40px">
+      <h2 style="font-size:24px;border-bottom:1px solid var(--border);padding-bottom:8px">Benötigte Custom Event Properties</h2>
+      <p style="color:var(--text-dim)">Diese Felder müssen aus den Roh-Events extrahiert sein (per DSM-Editor / Log Source Extension), sonst sind die Tests leer. Anlegen unter <span style="font-family:'JetBrains Mono',monospace;color:var(--accent-amber)">Admin → DSM Editor → Properties</span> oder direkt aus einem Event im Log-Activity-Tab (<em>Extract Property</em>).</p>
+      <table>
+        <tr><th>Property</th><th>Quelle / Event</th><th>genutzt von</th></tr>
+        <tr><td><code>GrantedAccess</code></td><td>Sysmon 10</td><td>UC-CRED-001</td></tr>
+        <tr><td><code>TargetImage</code> / <code>SourceImage</code></td><td>Sysmon 10</td><td>UC-CRED-001</td></tr>
+        <tr><td><code>Ticket Encryption Type</code></td><td>Windows 4769</td><td>UC-CRED-002</td></tr>
+        <tr><td><code>Service Name</code></td><td>Windows 4769 / 7045</td><td>UC-CRED-002, UC-LAT-001</td></tr>
+        <tr><td><code>Logon Type</code></td><td>Windows 4624</td><td>UC-LAT-001, UC-LAT-002</td></tr>
+      </table>
+      <div class="warn"><strong>Reihenfolge:</strong> erst Custom Property extrahieren und im Log-Activity-Tab prüfen, dass sie gefüllt ist → dann Reference Sets → dann Regel bauen → dann im Test feuern lassen.</div>
+    </section>
+
+    <footer>
+      <p>Begleitdokument zur <a class="inline" href="qradar-usecase-anlegen.html">QRadar Klick-Anleitung</a>. Detection-Logik &amp; Confidence aus dem SOC-Hunt-Framework (Tier 1–3). Erfolg jeder Regel vor „ACTIVE" in Testumgebung validieren (FP-Rate &lt; 5 %).</p>
+      <p>Nexora SOC · <code>docs/06-integrations/qradar-usecase-katalog.html</code> · erstellt 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Beispiel B — Sensor-Wunschprofil. desiredState (statische IP) ist ZIELZUSTAND,
+# wird NICHT beim Install angewendet. Sniffing nur 'requested' (Approval später).
+node:
+  name: nexora-sensor-01
+  role: network_sensor
+
+install:
+  mode: bootstrap_only
+  changeNetwork: false
+
+network:
+  discovery: read_only
+  desiredState:
+    mode: static
+    managementInterface: eth0
+    ip: 10.99.99.50
+    cidr: 24
+    gateway: 10.99.99.1
+    dns:
+      - 10.99.99.10
+  applyDuringInstall: false
+
+features:
+  syslogReceiver:
+    requested: true
+  flowCollector:
+    requested: true
+  sniffing:
+    requested: true
+    interface: eth1
+    mode: passive
+    applyDuringInstall: false
+    requiresApproval: true
+  nat:
+    requested: false
+    applyDuringInstall: false
+
+safety:
+  previewRequired: true
+  approvalRequired: true
+  rollbackRequiredForNetworkChanges: true
+
+nexora:
+  serverUrl: https://nexora.example
+  enrollmentProfile: lab-sensor

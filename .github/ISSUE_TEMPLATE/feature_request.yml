@@ -1,0 +1,44 @@
+name: ✨ Feature Request
+description: Eine Funktion oder Verbesserung vorschlagen / Suggest a feature
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Vorschläge willkommen. Bitte das **Problem** beschreiben, nicht nur die Lösung —
+        und prüfen, ob es schon in der [Roadmap](../../ROADMAP.md) steht.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem soll gelöst werden?
+      description: Welcher SOC-Workflow ist heute umständlich oder fehlt?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Lösungsidee
+      description: Wie könnte es aussehen? (UI, API, Verhalten)
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Bereich
+      options:
+        - Tickets / Analysis Deck
+        - Threat Hunting / Detection
+        - KI-Agent / Autonomie
+        - SIEM-Integration
+        - Reporting / Export
+        - Security / RBAC
+        - Plattform / Deployment
+        - Sonstiges
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativen / Kontext
+      description: Andere Ansätze, die du erwogen hast.

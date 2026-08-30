@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC-CRED-001 LSASS Memory Access — Nexora SOC / QRadar</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Nexora <span>SOC</span></div>
+    <div class="sub">UC-CRED-001 · LSASS Dump</div>
+    <h2>Auf dieser Seite</h2>
+    <a href="#szenario">1 · Szenario</a>
+    <a href="#ablauf">2 · Angriffsablauf</a>
+    <a href="#mitre">3 · MITRE-Einordnung</a>
+    <a href="#access">4 · GrantedAccess-Werte</a>
+    <a href="#voraussetzungen">5 · Voraussetzungen</a>
+    <a href="#logik">6 · Erkennungslogik</a>
+    <a href="#response">7 · Rule Response</a>
+    <a href="#fp">8 · False Positives</a>
+    <a href="#confidence">9 · Confidence Scoring</a>
+    <a href="#validierung">10 · Validierung</a>
+    <a href="#handlung">11 · Analyst-Handlung</a>
+    <h2>Bibliothek</h2>
+    <a href="../index.html">Übersicht</a>
+    <a href="../mitre-coverage-map.html">Coverage Map</a>
+    <a href="../../qradar-usecase-anlegen.html">Klick-Anleitung</a>
+  </nav>
+
+  <main>
+    <div class="breadcrumb"><a href="../index.html">Bibliothek</a> / <a href="../mitre-coverage-map.html">Credential Access</a> / UC-CRED-001</div>
+    <header class="hero">
+      <div class="kicker">Credential Access</div>
+      <h1>UC-CRED-001 — LSASS Memory Access</h1>
+      <p>Der LSASS-Prozess (<code>lsass.exe</code>) hält Klartext-Passwörter, NTLM-Hashes und Kerberos-Tickets angemeldeter Nutzer im Speicher. Wer ihn ausliest oder dumpt, erntet Credentials für Lateral Movement und Privilege Escalation. Klassische Tools: Mimikatz, ProcDump, comsvcs.dll MiniDump, Nanodump.</p>
+      <div class="meta">
+        <span><b>MITRE:</b> <span class="chip mitre">T1003.001</span></span>
+        <span><b>Taktik:</b> Credential Access</span>
+        <span><b>Confidence:</b> <span class="conf crit">95–98</span></span>
+        <span><b>Status:</b> DRAFT → zu validieren</span>
+        <span><b>Quelle:</b> <span class="chip src">Sysmon Event 10</span> <span class="chip src">Windows 4656</span></span>
+      </div>
+    </header>
+
+    <h2 class="section" id="szenario">1 · Szenario</h2>
+    <p>Nach erstem Zugriff mit lokalen Admin-Rechten greift der Angreifer auf den Speicher von <code>lsass.exe</code> zu. Entweder direkt (Mimikatz <code>sekurlsa::logonpasswords</code>) oder per Dump-zu-Datei (ProcDump, Task Manager, comsvcs.dll), den er offline auswertet. Das verschafft ihm Credentials weiterer — oft höher privilegierter — Konten, die auf dem Host angemeldet waren.</p>
+    <div class="callout crit"><strong>Hoch-kritisch:</strong> Ein erfolgreicher LSASS-Dump auf einem Server, an dem ein Domänen-Admin angemeldet war, kann die gesamte Domäne kompromittieren.</div>
+
+    <h2 class="section" id="ablauf">2 · Angriffsablauf</h2>
+    <ol class="killchain">
+      <li><b>Lokaler Admin / SYSTEM:</b> Angreifer hat erhöhte Rechte auf dem Host.</li>
+      <li><b>Zugriff auf LSASS:</b> Öffnen des lsass.exe-Handles mit Lese-/Dump-Rechten (<code>PROCESS_VM_READ</code>). Sysmon Event 10 protokolliert den Zugriff samt <code>GrantedAccess</code>.</li>
+      <li><b>Extraktion:</b> Direktauslesen (Mimikatz) oder Dump-Datei (<code>.dmp</code> in <code>%TEMP%</code>). Sysmon Event 11 protokolliert die Dump-Datei.</li>
+      <li><b>Verwertung:</b> Klartext-Passwörter / NTLM-Hashes / Tickets → Pass-the-Hash, Pass-the-Ticket, Lateral Movement.</li>
+    </ol>
+
+    <h2 class="section" id="mitre">3 · MITRE-Einordnung</h2>
+    <table style="max-width:720px">
+      <tr><th>Feld</th><th>Wert</th></tr>
+      <tr><td>Technik</td><td><span class="chip mitre">T1003.001</span> OS Credential Dumping: LSASS Memory</td></tr>
+      <tr><td>Taktik</td><td>Credential Access (TA0006)</td></tr>
+      <tr><td>Tools</td><td>Mimikatz, ProcDump, comsvcs.dll MiniDump, Nanodump, PPLdump, Task Manager</td></tr>
+    </table>
+
+    <h2 class="section" id="access">4 · GrantedAccess-Werte (Kern-Indikator)</h2>
+    <table style="max-width:720px">
+      <tr><th>AccessMask</th><th>Bedeutung</th><th>Risiko</th></tr>
+      <tr><td><code>0x1438 / 0x143a</code></td><td>Typische Mimikatz-Werte</td><td><b style="color:var(--c-crit)">Kritisch</b></td></tr>
+      <tr><td><code>0x1fffff</code></td><td>PROCESS_ALL_ACCESS</td><td><b style="color:var(--c-crit)">Kritisch</b></td></tr>
+      <tr><td><code>0x1410</code></td><td>VM_READ + DUP_HANDLE</td><td>Sehr hoch</td></tr>
+      <tr><td><code>0x1010</code></td><td>VM_READ + QUERY_INFORMATION</td><td>Hoch</td></tr>
+      <tr><td><code>0x0010</code></td><td>VM_READ (nur lesen)</td><td>Mittel</td></tr>
+    </table>
+
+    <h2 class="section" id="voraussetzungen">5 · Voraussetzungen</h2>
+    <ul class="steps">
+      <li><b>Sysmon</b> mit ProcessAccess-Logging (Event 10), Filter auf <code>TargetImage=lsass.exe</code>. Alternativ Windows-Audit „Handle Manipulation" (4656) — gröber.</li>
+      <li><b>Custom Properties:</b> <span class="chip src">TargetImage</span> <span class="chip src">GrantedAccess</span> <span class="chip src">SourceImage</span> <span class="chip src">CallTrace</span></li>
+      <li><b>Reference Set:</b> <span class="chip refset">RS:EDR-Diagnostic-Hosts</span> (IP).</li>
+      <li><b>Building Block:</b> <span class="chip refset">BB:KnownLSASSReaders</span> — legitime Zugreifer (MsMpEng, werfault, EDR-Binaries).</li>
+    </ul>
+
+    <h2 class="section" id="logik">6 · Erkennungslogik</h2>
+    <p class="lead">Actions → <b>New Event Rule</b> · Rule Group <b>Credential Access</b> · Name <code>UC-CRED-001 LSASS Access</code>.</p>
+<pre class="code"><span class="kw">Apply</span> UC-CRED-001 LSASS Access <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Sysmon Event 10 — ProcessAccess)</span>
+<span class="kw">and when</span> <span class="lnk">TargetImage</span> (custom) matches the regex <span class="lnk">(?i)\\lsass\.exe$</span>
+<span class="kw">and when</span> <span class="lnk">GrantedAccess</span> (custom) is one of the following <span class="lnk">0x1010,0x1410,0x1438,0x143a,0x1fffff</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:EDR-Diagnostic-Hosts</span>
+<span class="kw">and when</span> <span class="lnk">SourceImage</span> (custom) is <span class="lnk">NOT</span> contained in <span class="lnk">BB:KnownLSASSReaders</span></pre>
+    <div class="callout warn"><strong>EDR-Whitelist ist Pflicht.</strong> AV/EDR greift permanent auf LSASS zu. Ohne <code>BB:KnownLSASSReaders</code> feuert die Regel bei jedem Defender-Scan — unbrauchbar.</div>
+
+    <h2 class="section" id="response">7 · Rule Response</h2>
+    <table style="max-width:760px">
+      <tr><th>Einstellung</th><th>Wert</th></tr>
+      <tr><td>Offense</td><td>✓ — <b>Index by:</b> Source IP (Host)</td></tr>
+      <tr><td>Severity</td><td>9 (kritisch)</td></tr>
+      <tr><td>Dispatch / Custom Action</td><td>Email SOC + „enrich host" (laufende Prozesse / Sessions ziehen)</td></tr>
+      <tr><td>Response Limiter</td><td>1× pro 15 min pro Host</td></tr>
+    </table>
+
+    <h2 class="section" id="fp">8 · False Positives / Whitelist</h2>
+    <table>
+      <tr><th>FP-Quelle</th><th>Merkmal</th><th>Whitelist</th></tr>
+      <tr><td>AV/EDR (MsMpEng, CrowdStrike, SentinelOne)</td><td>SourceImage = EDR-Binary</td><td><span class="chip refset">BB:KnownLSASSReaders</span></td></tr>
+      <tr><td>WER (werfault.exe) nach Absturz</td><td>SourceImage = werfault.exe</td><td>Building Block</td></tr>
+      <tr><td>Debugger (VS, WinDbg)</td><td>Nur auf Dev-Maschinen</td><td><span class="chip refset">RS:EDR-Diagnostic-Hosts</span></td></tr>
+      <tr><td>Sysinternals Process Explorer</td><td>Legitime Diagnose</td><td>kontextabhängig prüfen</td></tr>
+    </table>
+
+    <h2 class="section" id="confidence">9 · Confidence Scoring</h2>
+    <table style="max-width:640px">
+      <tr><th>Indikator</th><th>Score</th></tr>
+      <tr><td>GrantedAccess 0x1438/0x143a + CallTrace mit UNKNOWN</td><td><span class="conf crit">98</span> (Mimikatz)</td></tr>
+      <tr><td>comsvcs.dll MiniDump in Commandline</td><td><span class="conf crit">97</span></td></tr>
+      <tr><td>ProcDump <code>-ma lsass</code></td><td><span class="conf crit">95</span></td></tr>
+      <tr><td>Task Manager-Dump (.dmp im Temp)</td><td><span class="conf high">75</span></td></tr>
+      <tr><td>EDR-Prozess</td><td>0 (ausschließen)</td></tr>
+    </table>
+
+    <h2 class="section" id="validierung">10 · Validierung</h2>
+    <table>
+      <tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th></tr>
+      <tr><td>TP-001</td><td>TP</td><td>Mimikatz direkt, GrantedAccess 0x1438</td><td>Offense, Conf 98</td></tr>
+      <tr><td>TP-002</td><td>TP</td><td>ProcDump -ma lsass.exe</td><td>Offense, Conf 95</td></tr>
+      <tr><td>TP-003</td><td>TP</td><td>rundll32 comsvcs.dll MiniDump</td><td>Offense, Conf 97</td></tr>
+      <tr><td>FP-001</td><td>FP</td><td>CrowdStrike LSASS-Zugriff</td><td>NICHT erkannt</td></tr>
+      <tr><td>FP-002</td><td>FP</td><td>werfault.exe nach Absturz</td><td>NICHT erkannt</td></tr>
+    </table>
+
+    <h2 class="section" id="handlung">11 · Analyst-Handlung &amp; Evidence</h2>
+    <ul class="steps">
+      <li>Quell-Prozess (SourceImage), PID, Parent, Commandline → welches Tool?</li>
+      <li>CallTrace prüfen (UNKNOWN/unbeschriebener Speicher = injizierter Code).</li>
+      <li>Folge-Events: <code>.dmp</code>-Datei (Sysmon 11)? Ausgehende Verbindung?</li>
+      <li>Welche Konten waren auf dem Host angemeldet (4624) → potenziell kompromittiert.</li>
+    </ul>
+    <p><b>Sofortmaßnahmen:</b> Host isolieren, betroffene Konten-Passwörter rotieren (inkl. ggf. Domänen-Admin / krbtgt zweimal), Persistenz suchen.</p>
+
+    <footer>
+      <p>UC-CRED-001 · SOC-Hunt-Framework (HUNT-002A) · <code>…/szenarien/uc-cred-001-lsass.html</code> · 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

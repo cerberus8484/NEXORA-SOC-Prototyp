@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Postgres- und Dataplane-Proof - 2026-07-06</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #11192b;
+      --panel2: #172238;
+      --line: #2a3650;
+      --text: #edf2ff;
+      --muted: #aeb9d3;
+      --ok: #7ddc95;
+      --warn: #ffd166;
+      --bad: #ff7b7b;
+      --info: #79c2ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, #09111d 0%, #0d1525 100%);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1380px; margin: 0 auto; padding: 28px; }
+    .hero, .panel {
+      background: linear-gradient(180deg, rgba(23,34,56,0.97), rgba(17,25,43,0.97));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    h1, h2, h3 { margin: 0 0 12px; }
+    p, li { color: var(--muted); }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      color: var(--text);
+      background: rgba(255,255,255,0.03);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .metric {
+      font-size: 30px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .ok { color: var(--ok); border: 1px solid rgba(125,220,149,0.35); background: rgba(125,220,149,0.12); }
+    .warn { color: var(--warn); border: 1px solid rgba(255,209,102,0.35); background: rgba(255,209,102,0.12); }
+    .bad { color: var(--bad); border: 1px solid rgba(255,123,123,0.35); background: rgba(255,123,123,0.12); }
+    .info { color: var(--info); border: 1px solid rgba(121,194,255,0.35); background: rgba(121,194,255,0.12); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+      padding: 2px 5px;
+      color: #d9e7ff;
+    }
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .note {
+      margin-top: 10px;
+      padding-left: 12px;
+      border-left: 3px solid var(--info);
+    }
+    @media (max-width: 1100px) {
+      .grid, .two { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Harter Postgres- und Dataplane-Nachweis</h1>
+      <p>
+        Dieser Nachweis wurde am 2026-07-06 gegen <strong>echte Postgres-Instanzen</strong> gefahren,
+        nicht gegen InMemory-Repositories. Er belegt Pool-Saettigung, Health-Verhalten unter Druck,
+        echten Statement-Timeout und Dataplane-Outbox-Rueckstau inklusive Recovery.
+      </p>
+      <div class="meta">
+        <span class="pill">Backend-Proof-DB: <code>127.0.0.1:55432</code></span>
+        <span class="pill">Dataplane-Proof-DB: <code>127.0.0.1:55433</code></span>
+        <span class="pill">Pool-Max: <code>2</code></span>
+        <span class="pill">Statement-Timeout: <code>750 ms</code></span>
+      </div>
+      <div class="note">
+        Ehrlichkeit: Das ist ein harter Verhaltensnachweis gegen reale Postgres-Pfade und echte Tabellen,
+        aber noch nicht der Produktionshost selbst. Fuer die letzte Freigabestufe fehlt weiterhin der Lauf
+        auf der echten Zielumgebung mit deren Ressourcenprofil.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Kurzfazit</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="label">Pool-Druck</div>
+          <div class="metric">20 waiting</div>
+          <span class="status ok">belegt</span>
+          <p>API-Pool wurde unter Last nachweisbar gesaettigt, ohne dass der Health-Pfad kollabiert ist.</p>
+        </div>
+        <div class="card">
+          <div class="label">Health unter Druck</div>
+          <div class="metric">200 / db=ok</div>
+          <span class="status ok">belegt</span>
+          <p>Der separate Health-Pool blieb funktionsfaehig, waehrend der API-Pool blockiert war.</p>
+        </div>
+        <div class="card">
+          <div class="label">Query-Timeout</div>
+          <div class="metric">500 in 822 ms</div>
+          <span class="status ok">belegt</span>
+          <p>Ein echter Statement-Timeout wurde provoziert und zaehlt jetzt sauber in die Metrics.</p>
+        </div>
+        <div class="card">
+          <div class="label">Dataplane-Rueckstau</div>
+          <div class="metric">24 pending -> 24 completed</div>
+          <span class="status ok">belegt</span>
+          <p>Outbox-Backlog und Drain-Verhalten sind gegen reale Dataplane-Tabellen belegt.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Backend-Postgres-Proof</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Pruefpunkt</th>
+            <th>Messwert</th>
+            <th>Bedeutung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Baseline Health</td>
+            <td><code>status=ok</code>, <code>db=ok</code></td>
+            <td>Sauberer Start gegen echte DB.</td>
+          </tr>
+          <tr>
+            <td>Pool-Snapshot vor Last</td>
+            <td><code>total=2</code>, <code>idle=2</code>, <code>waiting=0</code></td>
+            <td>Kein Vorstau im Leerlauf.</td>
+          </tr>
+          <tr>
+            <td>Geblockte Metrik</td>
+            <td><code>api waiting=20</code>, <code>api idle=0</code>, <code>health idle=1</code>, <code>in_flight=10</code></td>
+            <td>API-Pool voll, Health-Pool frei.</td>
+          </tr>
+          <tr>
+            <td>Saturation-Warnings</td>
+            <td><code>101 -> 151</code> (<code>delta=50</code>)</td>
+            <td>Warnzaehler reagiert unter echtem Pool-Druck.</td>
+          </tr>
+          <tr>
+            <td>Ticket-Reads unter Pool-Hold</td>
+            <td><code>10x HTTP 200</code>, <code>p50=1818 ms</code>, <code>p90=1822 ms</code>, <code>max=1822 ms</code></td>
+            <td>Anfragen warten sichtbar auf den Pool, brechen aber im gesetzten Fenster nicht ab.</td>
+          </tr>
+          <tr>
+            <td>Health unter Pool-Hold</td>
+            <td><code>5x HTTP 200</code>, <code>db=ok</code>, <code>status=ok</code></td>
+            <td>Health bleibt belastbar trotz Pool-Saettigung im API-Pfad.</td>
+          </tr>
+          <tr>
+            <td>Timeout-Proof</td>
+            <td><code>PUT /tickets/:id -> HTTP 500</code> nach <code>822 ms</code></td>
+            <td>Echter Statement-Timeout auf gesperrter Ticket-Zeile.</td>
+          </tr>
+          <tr>
+            <td>Timeout-Metric</td>
+            <td><code>soc_db_query_timeouts_total: 0 -> 1</code></td>
+            <td>Der transaktionale Blindspot wurde im Proof entdeckt und direkt geschlossen.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Dataplane-Outbox-Proof</h2>
+      <div class="two">
+        <div class="card">
+          <h3>Drain-Nachweis</h3>
+          <table>
+            <tbody>
+              <tr><td>Intake vor Drain</td><td><code>24 accepted</code></td></tr>
+              <tr><td>Outbox vor Drain</td><td><code>pending=24</code>, <code>completed=0</code></td></tr>
+              <tr><td>Worker-Lauf</td><td><code>claimed=24</code>, <code>completed=24</code>, <code>incidents=1</code></td></tr>
+              <tr><td>Outbox nach Drain</td><td><code>pending=0</code>, <code>completed=24</code>, <code>retrying=0</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Retry- und Recovery-Nachweis</h3>
+          <table>
+            <tbody>
+              <tr><td>Vor Fehlerlauf</td><td><code>pending=8</code></td></tr>
+              <tr><td>Fehlender Emit</td><td><code>retried=8</code>, <code>failed=0</code></td></tr>
+              <tr><td>Nach Fehlerlauf</td><td><code>retrying=8</code>, <code>oldestPendingAt=2026-07-06T12:10:01.000Z</code></td></tr>
+              <tr><td>Recovery-Lauf</td><td><code>claimed=8</code>, <code>completed=8</code>, <code>incidents=1</code></td></tr>
+              <tr><td>Nach Recovery</td><td><code>pending=0</code>, <code>retrying=0</code>, <code>completed=8</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Code-Fix aus dem Proof</h2>
+      <p>
+        Der Lauf hat einen echten Messluecken-Befund gezeigt: Timeout-Fehler innerhalb eines
+        transaktionalen <code>client.query</code>-Pfads wurden bisher nicht auf
+        <code>soc_db_query_timeouts_total</code> gezaehlt. Das wurde direkt behoben.
+      </p>
+      <ul>
+        <li><code>backend/src/correlation/CorrelationMutationService.js</code>: transaktionale Query-Funktion instrumentiert.</li>
+        <li><code>backend/tests/correlationMutationService.test.js</code>: Regressionstest fuer Timeout-Zaehler hinzugefuegt.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Reproduzierbarkeit</h2>
+      <ul>
+        <li><code>node backend/scripts/loadtest/postgresProductionProof.js</code></li>
+        <li><code>node dataplane/scripts/outboxBacklogProof.js</code></li>
+      </ul>
+      <p>
+        Beide Skripte laufen gegen echte Postgres-Instanzen. Fuer den finalen Go-Live-Block
+        sollten dieselben Laeufe zusaetzlich auf der echten Zielumgebung mit deren realen
+        CPU-/RAM-/Netzbedingungen gefahren und archiviert werden.
+      </p>
+    </section>
+  </div>
+</body>
+</html>

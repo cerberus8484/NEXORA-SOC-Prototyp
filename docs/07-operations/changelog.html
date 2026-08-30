@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC — Changelog</title>
+<style>
+  :root{--bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;--accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;--text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;--font-mono:'JetBrains Mono','Courier New',monospace;--font-ui:'Segoe UI',system-ui,sans-serif;--sw:260px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .sb-badge{display:inline-block;margin:10px 18px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.3);color:var(--accent2);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:14px 18px 5px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:6px 18px;font-size:12px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  #content{margin-left:var(--sw);flex:1;max-width:860px;padding:44px 52px 80px;}
+  .cover{margin-bottom:44px;padding-bottom:28px;border-bottom:1px solid var(--border);}
+  .cover h1{font-size:32px;font-weight:800;color:var(--accent2);letter-spacing:2px;text-transform:uppercase;}
+  .cover .sub{font-size:17px;color:var(--text);margin-top:8px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:5px;}
+  .release{margin-bottom:48px;scroll-margin-top:28px;}
+  .release-header{display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .version-badge{font-size:16px;font-weight:800;color:var(--accent);font-family:var(--font-mono);}
+  .release-date{font-size:12px;color:var(--text-dim);}
+  .release-focus{font-size:12px;color:var(--text);font-style:italic;flex-basis:100%;}
+  .release-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px;}
+  .tag-major{background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--accent);}
+  .tag-minor{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--accent2);}
+  .tag-patch{background:rgba(90,106,128,.15);border:1px solid rgba(90,106,128,.3);color:var(--text-dim);}
+  .tag-unreleased{background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.3);color:var(--warn);}
+  .change-group{margin-bottom:16px;}
+  .change-group h3{font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .change-group h4{font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;}
+  .change-group.added h3{color:var(--accent2);}
+  .change-group.changed h3{color:var(--accent);}
+  .change-group.fixed h3{color:var(--warn);}
+  .change-group.security h3{color:var(--crit);}
+  .change-group.removed h3{color:var(--crit);}
+  .change-group.verify h3{color:var(--text-dim);}
+  ul.changes{list-style:none;padding:0;margin:0;}
+  ul.changes li{padding:4px 0 4px 18px;position:relative;color:var(--text);font-size:13px;}
+  ul.changes li::before{position:absolute;left:0;font-weight:700;}
+  .added ul.changes li::before{content:'+ ';color:var(--accent2);}
+  .changed ul.changes li::before{content:'~ ';color:var(--accent);}
+  .fixed ul.changes li::before{content:'\2713 ';color:var(--warn);}
+  .security ul.changes li::before{content:'\1F512 ';color:var(--crit);}
+  .removed ul.changes li::before{content:'- ';color:var(--crit);}
+  .verify ul.changes li::before{content:'\2022 ';color:var(--text-dim);}
+  ul.changes ul{list-style:none;padding:6px 0 2px 16px;margin:0;}
+  ul.changes ul li{font-size:12.5px;color:var(--text-dim);}
+  ul.changes ul li::before{content:'\2192 ';color:var(--accent);}
+  code{font-family:var(--font-mono);font-size:12px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:28px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  .deploy-box{background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);border-left:3px solid var(--accent2);border-radius:6px;padding:12px 16px;margin-bottom:14px;font-size:12.5px;color:var(--text);}
+  .deploy-box strong{color:var(--accent2);}
+  .ops-box{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.18);border-left:3px solid var(--accent);border-radius:6px;padding:12px 16px;margin-bottom:14px;font-size:12.5px;color:var(--text);}
+  .ops-box strong{color:var(--accent);}
+  .note-box{background:rgba(255,107,53,.05);border:1px solid rgba(255,107,53,.2);border-left:3px solid var(--warn);border-radius:6px;padding:12px 16px;margin:6px 0 18px;font-size:12.5px;color:var(--text);}
+  .note-box strong{color:var(--warn);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>Nexora SOC</h1><p>Versionshistorie</p></div>
+  <span class="sb-badge">Changelog</span>
+  <div class="sb-section">Versionen</div>
+  <a class="sb-link" href="#unreleased">Unreleased</a>
+  <a class="sb-link" href="#v0-1-0">0.1.0 — Release</a>
+  <a class="sb-link" href="#v0-1-0-cleanup">0.1.0 — Repo-Cleanup</a>
+  <a class="sb-link" href="#v0-1-0-security">0.1.0 — Security &amp; Multi-LLM</a>
+  <div class="sb-section" style="margin-top:14px;">Weitere Docs</div>
+  <a class="sb-link" href="arc42.html">Arc42</a>
+  <a class="sb-link" href="developer-guide.html">Developer Guide</a>
+  <a class="sb-link" href="user-guide.html">User Guide</a>
+  <a class="sb-link" href="implementation-plan.html">Implementierungsplan</a>
+  <a class="sb-link" href="cost-analysis.html">Kostenanalyse</a>
+  <a class="sb-link" href="hunts/index.html">Hunt-Dokumentation</a>
+  <a class="sb-link" href="install-proxmox.html">Proxmox Installation</a>
+  <a class="sb-link" href="install-esxi.html">ESXi Installation</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="../index.html">← Zurück zur App</a>
+  <div class="cover">
+    <h1>Changelog</h1>
+    <div class="sub">Nexora SOC — Versionshistorie</div>
+    <div class="meta">Alle nennenswerten Änderungen an Nexora SOC. Format angelehnt an
+      <a href="https://keepachangelog.com" style="color:var(--accent);">Keep a Changelog</a> &nbsp;|&nbsp;
+      Semantic Versioning &nbsp;|&nbsp; Live-Stand: nexora.example (10.99.99.75) &nbsp;|&nbsp; Stand: 2026-06-20</div>
+  </div>
+
+  <!-- Unreleased -->
+  <section class="release" id="unreleased">
+    <div class="release-header">
+      <span class="version-badge">Unreleased</span>
+      <span class="release-tag tag-unreleased">Unreleased</span>
+    </div>
+
+    <div class="deploy-box">
+      <strong>Deployed &amp; live-verifiziert auf nexora 2026-06-20 (<code>41d8d92</code> via <code>deploy/release.sh</code>):</strong>
+      <strong>MFA (TOTP) + Personal Access Tokens aktiviert.</strong> Gefundene + behobene Falle: der Prod-Compose reichte
+      <code>MFA_ENABLED</code>/<code>API_TOKENS_ENABLED</code> <strong>nicht</strong> an den api-Container durch → Flags hätten ihn nie erreicht;
+      <code>41d8d92</code> ergänzt beide im <code>environment:</code>-Block (default false). Pre-Deploy-Gates: FF <code>c9ec072</code>→<code>41d8d92</code>,
+      verschlüsseltes DB-Backup <code>soc-20260620-045132.sql.gz.enc</code>, <strong>Migration 038 (<code>mfa_enrollments</code>) additiv + idempotent</strong>
+      (<code>CREATE TABLE IF NOT EXISTS</code>). Server-<code>.env.production</code>: <code>MFA_ENABLED=true</code> + <code>API_TOKENS_ENABLED=true</code>.
+      Post-Deploy grün: Container-ENV beide <code>true</code>, <code>pg_migrate_done count:38</code>, keine Boot-Fehler,
+      <strong>Gates offen</strong> (<code>/v1/mfa/status</code> + <code>/v1/tokens</code> = <strong>401 statt 503</strong> = Beweis).
+      MFA bleibt <strong>opt-in pro User</strong> (keine Bestandsnutzer ausgesperrt); <code>api_tokens</code>-Tabelle existiert seit Migration 030.
+      <strong>Mini-Ops:</strong> server-<code>.env.production</code> von <code>664</code>→<code>640</code> gehärtet (Secrets nicht mehr world-readable).
+    </div>
+
+    <div class="deploy-box">
+      <strong>Deployed &amp; live-verifiziert auf nexora 2026-06-19 abends (<code>c9ec072</code> via <code>deploy/release.sh</code>):</strong>
+      drei nutzersichtbare Fixes/Features als Batch live — <strong>KI-Cloud-Key-Save</strong> (war 500),
+      <strong>Cloud-LLM-Parser</strong> (Claude/GPT liefern jetzt nutzbare Analysen statt „Keine verwertbare Antwort") und
+      <strong>Audit-Export PDF</strong>. Pre-Deploy-Gates: Fast-Forward <code>f15bb19</code>→<code>c9ec072</code>, verschlüsseltes
+      DB-Backup <code>soc-20260619-182006.sql.gz.enc</code>, <strong>kein Migrations-Schritt</strong> (reiner Code → risikoarm).
+      Post-Deploy grün: <code>/health {status:ok,db:ok}</code>, HEAD=<code>c9ec072</code>. Verifikation rein über Health + Routen-Verhalten;
+      kein Prod-Admin-Passwort angefasst. (Der KI-Save-Fix war vorab separat als <code>f15bb19</code> deployt, Backup <code>soc-20260619-164407</code>.)
+      <strong>Hinweis:</strong> vor dem Parser-Fix erzeugte „pending"-Cloud-Vorschläge bleiben leer (so in der DB) — <strong>neue</strong> Analysen liefern strukturierte Karten.
+    </div>
+
+    <div class="deploy-box">
+      <strong>Deployed &amp; live-verifiziert auf nexora 2026-06-19 (<code>3370fcc</code> via SSH + <code>deploy/release.sh</code>):</strong>
+      <strong>P_PROVISION_SECURITY_1</strong> (Credential-Lifecycle: Admin-Revoke + Node-Retire + Rate-Limits) und
+      <strong>P_NIS2_2</strong> (Incident-Evidence-Verknüpfung + Management-Readiness-Report) sind jetzt <strong>live</strong>.
+      Pre-Deploy-Gates: FF <code>5e009c3</code>→<code>3370fcc</code>, verschlüsseltes DB-Backup <code>soc-20260619-152422.sql.gz.enc</code> vor der Migration,
+      <strong>Migration 037 additiv</strong> (FK <code>node_credentials.node_id → installed_nodes.id</code>, <code>NOT VALID</code> + <code>ON DELETE CASCADE</code>, idempotent).
+      Post-Deploy grün: <code>/health {status:ok,db:ok}</code>, die neuen Routen <code>nis2/report</code> + <code>provisioning/nodes/:id/retire</code> liefern jetzt
+      <strong>401</strong> (vorher 404 = Beweis), FK <code>fk_node_credentials_node</code> in der Prod-DB vorhanden (<code>\d node_credentials</code>), Logs ohne Fehler/Secrets (<code>ncr_</code>/<code>enr_</code> 0×).
+      Verifikation rein über <strong>unauthentifizierte Routen-Codes + DB-Constraint</strong> — kein Prod-Admin-Passwort angefasst.
+    </div>
+
+    <div class="deploy-box">
+      <strong>E2E-Harness (test-only, nicht deploy-relevant):</strong> die 2026-06-14 committete Playwright-Suite (<code>42c09b1</code>) war bit-rotted
+      (3/13 grün, App-Drift). Repariert (Auth-Modell ist jetzt httpOnly-Cookie statt sessionStorage-Bearer; KI-Agent-Seite/Selektoren nachgezogen)
+      und erweitert um <strong>NIS2 (Readiness + Management-Report + Incident-Link), Provisioning (admin-gated), Threat Hunts, Evidence</strong>
+      → <strong>8 Specs / 34 Tests grün</strong> (mocked-API, Chromium; ein Strict-Mode-Flake im Hunt-Test gefunden+gefixt). <code>origin/main = eb49407</code>.
+      Schritt 2 der „Basis"-Roadmap erledigt.
+    </div>
+
+    <div class="deploy-box">
+      <strong>Deployed &amp; live-verifiziert auf nexora 2026-06-19 (<code>5e009c3</code> via <code>deploy/release.sh</code>):</strong>
+      Die gesamte Control-Plane- + NIS2-Kette ist jetzt live. Pre-Deploy-Gates: Fast-Forward <code>f2705b3</code>→<code>5e009c3</code>,
+      frisches verschlüsseltes DB-Backup vor den Migrationen, Migrationen 033–036 additiv (<code>CREATE … IF NOT EXISTS</code>, abwärtskompatibel).
+      Post-Deploy grün: <code>/health {status:ok,db:ok}</code>, alle 8 neuen Tabellen in der Prod-DB,
+      <code>provisioning_repository_selected</code> + <code>nis2_repository_selected</code>=postgres, SPA 200, NIS2/Provisioning-Routen live + 401-auth-gated,
+      ehrlicher Disclaimer im ausgelieferten Bundle, Logs ohne Secrets/Fehler. <strong>Live-Smoke (echte Prod-Instanz, API):</strong>
+      read viewer+ (10 Controls, kein Compliance-Claim) · non-admin Schreibversuch → 403 · Admin: <code>PUT incident_handling</code>→in_progress+Owner+Due (200),
+      <code>POST evidence</code> „Incident Runbook" (201), Reload-Persistenz in Prod-Postgres, Audit
+      <code>NIS2_ASSESSMENT_CREATED/EVIDENCE_LINKED/STATUS_CHANGED</code> mit Redaction (Evidence-URL <strong>0×</strong> im Audit).
+      Visueller Screenshot über identischen Build (<code>5e009c3</code>). Kein Wazuh-/OPNsense-/Indexer-Write, kein Agent-/Host-Install, kein Enrollment-Token-Mint in Prod.
+    </div>
+
+    <div class="ops-box">
+      <strong>Ops (separat):</strong> <code>wazuh-indexer</code> (VM 177) war seit der Lab-Recovery <code>failed (timeout)</code> → Port 9200 tot → keine Dashboard-Telemetrie.
+      Per <code>systemctl restart wazuh-indexer</code> (RAM nun gesund) wieder <code>active</code>, <code>:9200</code> erreichbar (nexora→Indexer 000→401),
+      Dashboard-Charts + Agent-Buffer-KPI wieder live. Offen: optionales <code>TimeoutStartSec</code>-Härten gegen erneutes Start-Timeout beim Reboot.
+    </div>
+
+    <div class="change-group added">
+      <h3>Hinzugefügt</h3>
+      <ul class="changes">
+        <li><strong>MFA-Enrollment: echter QR-Code <em>(lokal)</em>:</strong> die TOTP-Einrichtungs-Card (<code>MfaSecurityCard</code>) rendert die <code>otpauth://</code>-URI jetzt als <strong>scanbaren QR-Code</strong> (<code>qrcode.react</code>, SVG, weißer Hintergrund + Quiet-Zone → zuverlässig scanbar trotz Dark-Theme) statt nur Schlüssel/URI zum manuellen Abtippen. Hinweistext ehrlich angepasst („Scanne den QR-Code … oder trage den Schlüssel manuell ein"). Schlüssel + URI bleiben als Fallback (manuelle Eingabe / App-Import). Befund aus dem Live-Test. tsc + 33 mfaView-Tests grün.</li>
+        <li><strong>NIS2-Readiness — Review-Kadenz / Stale-Evidence-Signal <code>reviewDue</code> (P_NIS2_3) <em>(lokal)</em>:</strong> vertieft die Nachweisführung um <strong>Aktualität</strong>: ein <code>addressed</code>-Control <strong>mit</strong> Evidence, dessen letzter Review älter als die Kadenz (Default 365 Tage, pro Service konfigurierbar) ist, gilt als <code>reviewDue</code> — der Nachweis ist auditrechtlich nicht mehr belastbar. Konservativ: nur bei <strong>gesetztem</strong> <code>lastReviewedAt</code> (kein Fehlalarm für „nie reviewed" — das deckt <code>needsReview</code> ab); <code>addressed</code> ohne Evidence bleibt <code>needsReview</code>, nicht <code>reviewDue</code>. In <code>computeFlags</code> (rückwärtskompatible optionale Params) + Readiness- und Management-Report-Summary (<code>reviewDue</code>-Aggregat). Frontend: <code>controlSignal</code>-Badge <strong>„Review fällig"</strong> (nach den dringenderen Signalen) + <code>reportControlTone</code> warning. 7 BE-Tests (computeFlags-Matrix + Summary) + 2 FE-View-Tests; NIS2 6 BE-Suiten/70 + FE-compliance 50 grün. <strong>+ Summary-KPI-Card „Review fällig"</strong> in beiden KPI-Sektionen (Readiness + Management-Report) der <code>Nis2ReadinessPage</code>.</li>
+        <li><strong>WebAuthn/Passkey — Wiring + Routen + Frontend (Slice 2c/2d) <em>(lokal, ENV-gated inert)</em>:</strong> Passkeys end-to-end nutzbar (sobald <code>WEBAUTHN_ENABLED=true</code>). <strong>2c (Backend):</strong> <code>@simplewebauthn/server@13</code> (lazy require wie jose) verifiziert Attestation/Assertion; <code>webAuthnInstance.js</code> adaptiert die Lib (Uint8Array↔base64url) auf die schlanke Service-Shape + verdrahtet geteilte Credential-/User-Repo-Instanzen. Routen-Factory <code>/auth/webauthn/{status,register/options,register/verify,login/options,login/verify,credentials}</code> (DI-testbar): Ceremony-Zustand im kurzlebigen signierten httpOnly-Cookie <code>purpose:webauthn_flow</code> (sameSite=strict, one-time-use), register-Routen <code>requireAuth</code> + Flow-Bindung <code>flow.userId===req.user.sub</code>, login pre-session, einheitlicher 401. <code>app.js</code>-Mount <code>/auth/webauthn</code> (vor <code>/auth</code>), <code>verifyToken</code> lehnt <code>webauthn_flow</code> ab, Migration <code>040</code> läuft beim Boot. Compose-Passthrough <code>WEBAUTHN_*</code> (+ nachgeholt <code>NOTIFY_SMTP_*</code>/<code>NOTIFY_EMAIL_*</code>/<code>OIDC_*</code>). <strong>2d (Frontend):</strong> <code>@simplewebauthn/browser</code>, <code>webauthnLogin.ts</code> (status/login/register/list/delete), Passkey-Button in der LoginPage (nur wenn <code>/status</code> enabled + Browser-Support), self-gating <code>WebAuthnCard</code> in der ProfilePage (Enroll/Liste/Löschen). <strong>Korrektheits-Fix:</strong> <code>buildRegistrationOptions</code> kodiert <code>user.id</code> als base64url (WebAuthn-JSON-Vertrag). 50 neue Tests (BE 44 inkl. Route + FE 6); BE-Voll-Suite + FE tsc/Vitest grün. <strong>Offen:</strong> Live-Smoke gegen echten Authenticator (nicht headless verifizierbar) nach Aktivierung; SettingsPage:801-Toggle bleibt vorerst Platzhalter (echte UI ist die ProfilePage-Card).</li>
+        <li><strong>WebAuthn/Passkey — Ceremony-Service (Slice 2b) <em>(lokal, noch nicht verdrahtet/deployt)</em>:</strong> <code>webAuthnService.js</code> orchestriert Registrierung + Anmeldung <strong>netz-/krypto-frei</strong> — die kryptografische Verifikation (<code>verifyRegistration</code>/<code>verifyAuthentication</code>) ist <strong>injiziert</strong> (Prod-Wiring = <code>@simplewebauthn/server</code>), die Options/Challenge baut der reine <code>webauthnClient</code> (Slice 1). Gleicher Split wie OIDC (Client + jose). <code>beginRegistration</code> (excludeCredentials aus Bestand) → <code>finishRegistration</code> (speichert nur bei <code>verified</code>) · <code>beginAuthentication</code> (usernamelos) → <code>finishAuthentication</code> (Credential auflösen → Assertion-Verify → <strong>Counter-Clone-Check</strong> [Zähler muss steigen] → updateCounter → <code>authService._issueSession</code>). <strong>Härtung:</strong> einheitlicher, nicht-diskriminierender Fehler für alle Auth-Fehlerpfade (Grund nur serverseitig geloggt), inaktive User abgewiesen. 11 Tests (Register-/Auth-Flow + Clone-/Unknown-/Inactive-/Gate-Pfade + Generic-Error-Leak-Guard). Routen <code>/auth/webauthn/*</code> + <code>@simplewebauthn</code>-Wiring + Frontend = Slice 2c/2d.</li>
+        <li><strong>WebAuthn/Passkey — Credential-Storage (Slice 2a) <em>(lokal, noch nicht verdrahtet/deployt)</em>:</strong> <code>WebAuthnCredential</code>-Domain (ein User → mehrere Authenticatoren; <code>credentialId</code>/<code>publicKey</code> sind per WebAuthn-Design öffentlich, <code>toPublicJSON</code> lässt sie für die Listing-Sicht trotzdem weg) + InMemory/Postgres-Repo (Vertrag: <code>create</code> [unique credentialId], <code>findByUserId</code>, <code>findByCredentialId</code>, <code>updateCounter</code> [Clone-Erkennung-Zähler + lastUsedAt], <code>deleteById</code> <strong>ownership-scoped</strong>) + Factory (<code>DB_ENABLED</code>→Postgres) + Migration <code>040_webauthn_credentials.sql</code> (additiv/idempotent, FK→users CASCADE, <code>credential_id</code> UNIQUE). 11 Tests (Domain + InMemory-Vertrag + Postgres-Row-Mapping). Ceremony-Service (<code>@simplewebauthn/server</code>) + Routen + Frontend folgen als Slice 2b/2c.</li>
+        <li><strong>WebAuthn/Passkey-Fundament (FIDO2) — Security-Welle 3, Slice 1 <em>(lokal, noch nicht verdrahtet/deployt)</em>:</strong> <code>backend/src/auth/webauthn/webauthnClient.js</code> — reine, netz-freie Kern-Logik der Ceremony-„Request-Seite": <strong>Challenge</strong> (base64url, Replay-Schutz) · <code>buildRegistrationOptions</code> (PublicKeyCredentialCreationOptions: ES256/-7 + RS256/-257, <code>attestation:none</code>, excludeCredentials-Mapping, <code>authenticatorSelection</code>) · <code>buildAuthenticationOptions</code> (allowCredentials-Mapping, usernamelos-fähig) · <strong>clientData-Prüfung</strong> (<code>type</code>/<code>challenge</code>/<code>origin</code> — Replay-/Phishing-Schutz). ENV-gated <code>config.webauthn</code> (<code>WEBAUTHN_ENABLED</code> default aus; <code>rpId</code>/<code>origin</code>/<code>rpName</code>/<code>timeoutMs</code>). <strong>Bewusst kein Route-/User-/Migration-/UI-Touch</strong> — die kryptografische Attestation-/Assertion-Prüfung (COSE/Counter/RP-ID-Hash) folgt im Wiring-Slice über <code>@simplewebauthn/server</code> (injiziert, analog zu jose bei OIDC); ergänzt das vorhandene TOTP-MFA, ersetzt es nicht. 14 Tests. <code>validateClientDataExpectations</code> ist bewusst NUR die clientData-Ebene — Signatur zuerst (Wiring-Slice).</li>
+        <li><strong>SSO/OIDC-Fundament (Authorization Code + PKCE) — Security-Welle 3, Slice 1 <em>(lokal, noch nicht verdrahtet/deployt)</em>:</strong> <code>backend/src/auth/oidc/oidcClient.js</code> — reine, netz-freie Kern-Logik der Login-„Request-Seite": <strong>PKCE</strong> (RFC 7636, Methode S256, base64url) · <code>state</code>/<code>nonce</code> (CSRF-/Replay-Schutz) · Authorization-URL-Bau (Leerzeichen als <code>%20</code> normalisiert für strikte IdPs wie Entra) · <strong>Discovery-Parsing</strong> (erzwingt https-Endpoints — kein TLS-Downgrade) · <strong>ID-Token-Claim-Prüfung</strong> (iss/aud/exp/iat/nonce/sub, Uhren-Drift-Toleranz). ENV-gated <code>config.oidc</code> (<code>OIDC_ENABLED</code> default aus; Client-Secret strikt backend-only; Default-Rolle <code>viewer</code> = PoLA; <code>allowSignup</code> default aus → nur Linking bestehender Accounts). <strong>Bewusst kein Route-/User-/Migration-/UI-Touch</strong> — Signatur-Prüfung gegen JWKS (jose) + Token-Tausch + Callback-Routen + Account-Linking folgen als Slice 2, der Passwort-Login bleibt parallel. 20 Tests (PKCE gegen Recompute verifiziert, https-Zwang, Claim-Mismatches). <code>validateIdTokenClaims</code> ist bewusst NUR die Claim-Ebene — Signatur zuerst (Slice 2).</li>
+        <li><strong>E-Mail/SMTP-Benachrichtigungskanal:</strong> E-Mail als vierter Outbound-Kanal — baut auf demselben <code>notificationOutbound</code>-Dispatcher auf wie Slack/Webhook/Teams. Reiner <code>buildEmailPayload</code> (Subject <code>[SEVERITY] Titel</code> + Text-Body mit Quelle/Zeit, kein Secret). SMTP-Versand per <code>nodemailer</code> (<strong>lazy geladen</strong> → Modul bleibt ohne konfigurierten E-Mail-Kanal inert), 5-s-Timeout, injizierbarer <code>sendMail</code> (DI für Tests, kein echter SMTP im Test). <code>deliverOutbound</code> auf Versand-Thunks umgebaut, damit Webhook-POST und SMTP denselben best-effort-Loop teilen (ein Kanal-Fehler bricht die anderen nicht; <strong>Creds/URLs nie in Logs oder Rückgabe</strong>). Kanal aktiv nur bei <code>NOTIFICATIONS_OUTBOUND_ENABLED=true</code> <strong>und</strong> gesetztem <code>NOTIFY_SMTP_HOST</code>+<code>NOTIFY_EMAIL_TO</code> (optional <code>NOTIFY_SMTP_PORT</code>/<code>SECURE</code>/<code>USER</code>/<code>PASS</code>, <code>NOTIFY_EMAIL_FROM</code>). <code>GET /notifications/channels</code> meldet <code>email.configured</code> (nur Boolean, SMTP bleibt backend-only); Frontend: echte <code>EmailChannelCard</code> (aktiv/konfiguriert/nicht-konfiguriert) ersetzt den „geplant"-Platzhalter. 13 BE-Tests (buildEmailPayload + Kanal + Secret-Leak-Guards) + Channels-Route-Test, FE tsc/Vitest grün.</li>
+        <li><strong>Reports-MVP — Incident- + Kunden-Report-Generator mit PDF <em>(<code>057f167</code>)</em>:</strong> zwei Report-Perspektiven aus denselben Ticket-Daten. <strong>Incident-Report</strong> technisch (Übersicht, Analyst-Zusammenfassung, Entities, Timeline, MITRE, Decision/Empfehlung); <strong>Kunden-Report</strong> nicht-technisch in Kunden-Sprache (Schweregrad/Status), <strong>bewusst OHNE IP/MITRE/IOC/Raw-Leak</strong> (per Test erzwungen). Reine, getestete Modelle (<code>reportModel.ts</code>) + A4-PDF-Renderer (<code>reportPdf.ts</code>, jsPDF dynamisch geladen → Bundle-Split). Zwei Buttons im Report-Tab. 8 Tests.</li>
+        <li><strong>Microsoft-Teams-Benachrichtigungskanal <em>(<code>2291d7d</code>)</em>:</strong> Teams als dritter Outbound-Kanal (Legacy MessageCard, Severity→themeColor, Fakten Schweregrad/Quelle/Zeit); <code>GET /notifications/channels</code> meldet <code>teams.configured</code> (nur Boolean, URL bleibt backend-only). Frontend: echte <code>TeamsChannelCard</code> (aktiv/konfiguriert/nicht-konfiguriert) statt „geplant". <strong>Bonus-Fix:</strong> der Prod-Compose reichte die <code>NOTIFY_*</code>-Variablen + <code>NOTIFICATIONS_OUTBOUND_ENABLED</code> gar nicht durch → Slack/Webhook waren ebenfalls un-deploybar; jetzt alle ergänzt. 11 Tests.</li>
+        <li><strong>Outbound-Status-Sync ServiceNow/OTRS <code>updateTicketStatus</code> <em>(<code>2b32f0c</code>)</em>:</strong> Status eines bereits exportierten Tickets ins externe System spiegeln (ServiceNow PATCH <code>/table/{sys_id}</code>, OTRS <code>TicketUpdate</code>); Service-Methode <code>syncStatus</code> (findet gespeicherten ExternalLink, auditiert Erfolg/Fehler gekapselt) + Route <code>POST /tickets/:id/export/sync-status</code>. War zuvor Stub („nicht implementiert P12.4"). 9 Tests.</li>
+        <li><strong>Persistenter ThreatIntel-Postgres-Cache <em>(<code>516831c</code>)</em>:</strong> <code>PostgresThreatIntelCache</code> (lazy <code>threat_intel_cache</code>-Tabelle, Upsert + Ablauf-Prüfung) + Factory (<code>DB_ENABLED</code> → Postgres, sonst InMemory). TI-Reputation überlebt jetzt Neustarts statt bei jedem Boot neu von den Providern geholt zu werden (Quota/Latenz). War zuvor Stub. 6 Tests.</li>
+        <li><strong>E2E gegen echtes Backend + CI-Ausbau <em>(<code>394b22d</code>)</em>:</strong> neue Playwright-Konfig (<code>playwright.real.config.ts</code>) fährt das Express-Backend im InMemory-Modus (ENV-geseedeter Admin, kein Postgres) + Vite-Proxy und testet die <strong>echten</strong> Auth-/RBAC-Flows (RequireAuth-Redirect, echter Login→Session, echte 401, Cookie-Session über Reload), 4 Tests. CI (<code>ci.yml</code>) um <code>lint</code> + Job <strong>e2e</strong> (Playwright mocked) + Job <strong>e2e-real</strong> erweitert.</li>
+        <li><strong>Org-weite MFA-Pflicht <em>(BE <code>a144e53</code> · FE <code>3c6e413</code>)</em>:</strong> Admin-Setting <code>mfaRequired</code> (Settings → Sicherheit, persistiert) erzwingt org-weit MFA. Wer keine aktive MFA hat, bekommt beim Login <strong>keinen</strong> Session-Token, sondern einen kurzlebigen <strong>Setup-Token</strong> (<code>purpose:'mfa_setup'</code>, 15 min) — <code>verifyToken</code> lehnt ihn (wie die MFA-Challenge) für geschützte Routen ab. Neue Endpoints <code>POST /auth/mfa-setup/begin</code> (Secret/QR) + <code>/complete</code> (Code → MFA aktiv → <strong>volle Session</strong> + einmalige Recovery-Codes); LoginPage führt den Enrollment-Schritt direkt durch. Greift <strong>nur wenn <code>MFA_ENABLED</code></strong> (sonst inert), bleibt nach Enrollment der normale 2-Faktor-Challenge-Flow. Einheitliche, nicht-diskriminierende Fehler bei Token-Problemen (kein Leak). 7 Enforcement-Tests + 70 Regression, FE 984 vitest + 42 E2E grün. <strong>Offen:</strong> Aktivierung (Toggle einschalten) + Deploy.</li>
+        <li><strong>Outbound-Ticket-Export-Route <em>(<code>3a1738e</code>)</em>:</strong> <code>POST /api/v1/tickets/:id/export</code> (analyst/admin) verdrahtet den schon gebauten <code>ExternalTicketService</code> (ServiceNow/OTRS) end-to-end — vorher gab es Service+Adapter, aber <strong>keine Route</strong> (toter Pfad). Gate <code>EXTERNAL_TICKET_EXPORT_ENABLED</code> (default aus), Joi-validiertes <code>system</code>, Wiring-Instanz mit Adapter-ENV-Credentials. Härtung: <code>exportTicket</code> auditiert mit <strong>Actor-Kontext</strong> und auch <strong>jeden Fehlversuch</strong>, der Audit-Write ist gekapselt (ein Audit-Fehler überlagert nie den Export-Ausgang), externe Fehlertexte werden gekürzt. 35 + 15 (Service/imapPoller) Tests grün.</li>
+        <li><strong>Wiederverwendbarer <code>ConfirmDialog</code> + <code>useConfirm</code>-Hook <em>(<code>26a4abb</code>)</em>:</strong> ersetzt <code>window.confirm()</code> durch ein konsistentes, barrierearmes Modal (<code>role=alertdialog</code>, Fokus-Trap + ESC + Fokus-Rückgabe, <code>useId</code>-ARIA). Verschachtelbar (Trap-Stack: nur das oberste Modal reagiert auf ESC). Verdrahtet an Ticket-Löschen (AnalysisPage), Wazuh-FP-Restart/Revert, Passwort-Reset, sowie YARA-Regel-Löschen (Custom-Modal entfernt). 6 Hook-Tests.</li>
+        <li><strong>MFA/PAT-Selbstverwaltung auf der ProfilePage (alle Rollen) <em>(<code>8a3da63</code>)</em>:</strong> behebt eine echte Zugriffslücke — <code>MfaSecurityCard</code> + <code>ApiTokensCard</code> lagen nur in den <strong>admin-only</strong> Settings-Tabs, sodass Nicht-Admins ihre <strong>eigene</strong> MFA/PAT nicht einrichten konnten. <code>GET /v1/profile</code> liefert jetzt per-User-Feature-Flags <code>{ mfaEnabled, apiTokensEnabled }</code> (requireAuth), die ProfilePage gatet damit die echten Karten.</li>
+        <li><strong>CrowdSec WAN-Integration (Slice 1–3a) <em>(lokal <code>f86abc7</code>/<code>d11ce37</code>/<code>1181400</code>)</em>:</strong> zieht die externe Angriffsfläche (HTTP-Bruteforce, Scanner, CVE-Probes, Bad Bots) vom <strong>Webserver-CrowdSec</strong> in Nexora — die Fläche, die das interne Wazuh nicht sieht. <strong>Slice 1</strong> <code>CrowdsecAdapter</code> (Adapter-Pflicht: Joi-validate → normalize → <code>toTicketDraft</code>; Szenario→MITRE/Kategorie/Schwere). <strong>Slice 2</strong> <code>CrowdsecLapiClient</code> (LAPI: Machine-JWT via <code>/v1/watchers/login</code> → <code>/v1/alerts</code> mit Bearer, Token-Reuse + Skew-Refresh, 1×-Re-Login bei 401; injizierter HttpClient, TDD ohne Netz). <strong>Slice 3a</strong> <code>CrowdsecPoller</code> (mirror <code>imapPoller</code>, ENV-gated default aus, <code>pollOnce</code> → je Alert <code>integrationService.ingest('crowdsec', …)</code>, per-Alert-Fehler gefangen) + CrowdSec als Quelle in der Integration-Pipeline registriert (erbt Dedup/Normalize/Queue). <strong>48 Tests grün</strong> (Adapter 16 · Client 8 · Poller 7 + Integration-Suite 336 ohne Regression; <code>ingest('crowdsec')</code> → accepted verifiziert). Credentials nur aus <code>.env</code>, nie im Repo. <strong>Offen (Slice 3b):</strong> <code>CrowdsecProcessor</code> (Ticket-Materialisierung) + ENV-Live-Anbindung an den Webserver (Machine-Creds + LAPI-URL).</li>
+        <li><strong>Audit-Export (CSV + PDF):</strong> das Audit-Log lässt sich gefiltert exportieren (Server-Filter + aktuelle Suche, Limit gedeckelt). <strong>CSV</strong> (RFC-4180, <strong>CSV-Injection-Schutz</strong> nach OWASP: führende <code>= + - @</code>/Tab/CR werden mit <code>'</code> neutralisiert, UTF-8-BOM für Excel) und <strong>PDF</strong> (jsPDF <strong>dynamisch</strong> im Handler geladen → Heavy-Lib bleibt aus dem Haupt-Bundle; paginiertes A4-Quer-Layout mit Kopf + Generiert-Zeitstempel). Reine, getestete Logik-Module (<code>frontend/src/features/audit/auditExport.ts</code> + <code>auditPdf.ts</code>), gemeinsamer <code>fetchExportRows</code> (DRY). Button-Paar „CSV-Export"/„PDF-Export" im Audit-Log. 31 Vitest-Tests (inkl. RFC-4180-Escaping + Mehrseiten-Pagination). <strong>Live</strong> seit <code>c9ec072</code>.</li>
+        <li><strong>MFA-Fundament (TOTP, RFC 6238) — Security-Welle 3, Phase 1 <em>(lokal <code>bddf051</code>, noch nicht verdrahtet/deployt)</em>:</strong> <code>backend/src/mfa/totp.js</code> — reine Krypto-Primitive (<code>generateSecret</code> · <code>totpToken</code> · <code>verifyToken</code> mit ±Drift-Toleranz + Konstantzeit-Vergleich · Base32 Encode/Decode · <code>otpauthUri</code> für QR) mit Node <code>crypto</code>, <strong>keine externe Lib</strong> (supply-chain-arm, konsistent zu <code>secretsCrypto</code>/<code>ApiToken</code>). <strong>Gegen die offiziellen RFC-6238-Testvektoren verifiziert</strong> (interoperabel mit Google Authenticator/Authy) + bekannter RFC-4648-Base32-Wert. 16 Tests grün. <strong>Bewusst kein DB-/Login-/Route-/UI-Touch</strong> — Enrollment-Domäne, Repos, Login-Challenge + Frontend folgen als eigene Phasen (Auth-kritisch → frische Session).</li>
+        <li><strong>Correlation Engine (CE-1…CE-5):</strong> zentrale Korrelation pro Incident — Quellen-Normalizer-Registry (alle Quellen, nicht nur Wazuh), Host-Case aggregiert Child-Evidence, entitätszentrierte Korrelation <strong>mit Provenance</strong> (Quelle ×N), Windows-EventChannel-Events (<code>win.system</code>) sichtbar. Spec: <code>docs/01-architecture/correlation-data-model.md</code> (Datenquellen Q1–Q10, <code>CorrelationResult</code>, Bau-Reihenfolge CE-1…CE-7).</li>
+        <li><strong>CE-5.2 FqdnResolver (pure):</strong> <code>resolveFqdn({ ip, candidateName })</code> forward-confirm (Name → A-Record(s) → enthält die Flow-IP? nur dann FQDN, Confidence high; kein Raten aus nackter IP). Injizierter DNS-Lookup (testbar); <code>createNodeResolve4</code> read-only A-Lookup gegen konfigurierbaren DNS-Server. Ehrliche <code>missingReason</code>: disabled/no_ip/no_candidate/dns_no_record/dns_unconfirmed/dns_error. Kein Fake.</li>
+        <li><strong>CE-5.1 FQDN-Source-Discovery (read-only):</strong> Quellenmatrix im Lab — Wazuh liefert nur Kurznamen (kein FQDN); AD-DNS-<strong>Forward</strong> ok für AD-gejointe Hosts (DC01/WEC01, IP-verifizierbar), <strong>Reverse PTR fehlt</strong> (keine Zone); LDAP erreichbar (389/636/3268), braucht read-only Bind-Account. Entscheidung: DNS-forward-confirm als erste Live-Quelle, LDAP optional später, Reverse geparkt. Spec: <code>docs/01-architecture/ce5-fqdn-source-discovery.md</code>.</li>
+        <li><strong>CE-5.3 DNS-FQDN-Anreicherung (LIVE, Phase 2 aktiv):</strong> neue async Schicht <code>flowFqdnEnrichment.js</code> läuft NACH der Inventory-Anreicherung in der Timeline-Route; füllt nur leere <code>sourceFqdn</code>/<code>destinationFqdn</code> (Event-Computer/Inventory gewinnen, <code>setIfEmpty</code>). Kandidatenname = Host-Kurzname + <code>FQDN_DOMAIN</code>, <strong>forward-confirm</strong> gegen Flow-IP (Hostname-Validierung gegen Injection). ENV: <code>FQDN_RESOLVER_ENABLED</code> (default false), <code>FQDN_DNS_SERVER</code>, <code>FQDN_DOMAIN</code> — read-only A-Lookup, keine Secrets. <code>network.gaps</code> neu berechnet; Miss-Grund auch in <code>provenance</code> (gap-sichtbar). Soft-fail. <strong>Zweistufiger Rollout 2026-06-17:</strong> Phase 1 App-only default-aus (<code>af89847</code>, kein Regress bewiesen), Phase 2 Resolver aktiviert (<code>d8d698a</code>, App/API-Restart). <strong>Live-Smoke:</strong> WEC01 (10.99.99.11) → <code>WEC01.nexora.example</code> gesetzt (Provenance <code>dns_forward_confirm</code>, resolvedIps <code>[10.99.99.11]</code>, nur weil A == Flow-IP); falsche IP → <code>dns_unconfirmed</code> (kein Fake); INC000283 behält <code>DC01.nexora.example</code> (Event-Computer gewinnt, Provenance <code>wazuh_indexer</code>); <code>opensourcebackup</code>/<code>CERBERUS</code> (nicht AD-gejoint) → <code>dns_no_record</code>, ehrlich leer; INC000357 unverändert. Tests-first (Hybrid-Agent-Run, 87 BE-correlation grün). <strong>Deploy-Lektion:</strong> der prod-Compose reicht ENV über einen <strong>expliziten <code>environment:</code>-Block</strong> durch (kein <code>env_file</code>) → neue prod-ENV muss dort deklariert werden, sonst erreicht sie den Container nicht (<code>d8d698a</code>).</li>
+        <li><strong>CE-3 Network/NAT-Flow-Modell:</strong> einheitliches Flow-Modell (Firewall <strong>und</strong> Sysmon Event 3) mit <strong><code>provenance</code> + <code>missingReason</code> pro Feld</strong> (<code>source_provides_none</code> / <code>field_missing</code> / <code>inventory_not_loaded</code> / <code>threat_intel_pending</code>) — keine erfundenen Werte. UI: „Korrelierte Flows"-Tabelle (Network-Tab), Top-Conversations (Overview), NetworkConnect (Timeline), Flow-Entities (Entities). Firewall/OPNsense-Flows live sichtbar.</li>
+        <li><strong>Sysmon Event 3 → <code>wazuh-alerts</code> (Regel 100951, live validiert):</strong> scoped Wazuh-Local-Rule (<code>if_sid 92101</code>, powershell/tcp Proof-of-Chain) hebt Sysmon NetworkConnect auf Level 3 → erscheint als <code>sourceType: sysmon_event3</code> im Analyse-Deck. Kontrolliert appliziert (Backup/Restart/Live-Test, rollback-fähig), end-to-end bewiesen an DC01. Artefakte + Apply/Rollback-Plan: <code>deploy/wazuh/</code>.</li>
+        <li><strong>CE-4.2 Flow-Inventory-Anreicherung (pure):</strong> <code>buildInventoryLookup</code> (IP → Agent/MAC/Interface/Host aus Wazuh-Syscollector) + <code>enrichFlowWithInventory</code>/<code>enrichFlowsWithInventory</code> reichern normalisierte Flows mit Host/MAC/Host-Interface an — immutabel, ADR-009 (kein Wert erfunden: fehlt etwas → <code>null</code> + <code>missingReason</code> <code>not_in_inventory</code>/<code>inventory_not_loaded</code>/<code>field_missing</code>), bestehende Werte werden nie überschrieben (<code>setIfEmpty</code>).</li>
+        <li><strong>CE-4.3 Inventory-Wiring + Host-/Firewall-Interface-Semantik getrennt (LIVE):</strong> Flow-Modell trennt <strong>Host-NIC</strong> (<code>sourceHostInterface</code>/<code>destinationHostInterface</code>, aus Wazuh-Inventar, Provenance <code>syscollector.netiface.name</code>) von <strong>Firewall-Interface</strong> (<code>firewallInterface</code>/<code>firewallIngressInterface</code>/<code>firewallEgressInterface</code>, aus <code>data.srcintf</code>/<code>dstintf</code>) — <code>data.srcintf</code> landet <strong>nicht mehr</strong> in der Host-NIC. <code>buildNetworkCorrelation({ inventoryLookup })</code> reichert Flows an, wenn ein Lookup da ist; neuer <code>inventoryLookupCache</code> (TTL 5 min, soft-fail → <code>null</code>) über die Wazuh-API in der Timeline-Route. UI <code>NetworkFlowsTable</code> zeigt Source/Destination (IP:Port · Host · MAC · Host-IF) und Firewall (FW-IF · Action · Rule) <strong>getrennt</strong>; fehlende Felder als „—" + Missing-Reason. <strong>Live-Smoke 2026-06-17:</strong> INC000283 (DC01) <code>10.99.99.10 → DC01 · bc:24:11:7b:45:69 · Ethernet</code>, <code>10.99.99.72 → opensourcebackup · bc:24:11:ed:96:ff · eth0</code>; INC000357 (OPNsense) <code>192.168.241.102 → CERBERUS · 9c:6b:00:76:e6:fe · Host-IF Ethernet 2</code> (firewallInterface getrennt, <strong>nicht</strong> überschrieben). Hinweis: <code>firewallInterface</code>/<code>rule</code> bleiben live <code>null</code>, weil die realen OPNsense-Events im Indexer kein <code>srcintf</code>/<code>rulenum</code> führen (korrektes „no-fake", Quell-/Decoder-Thema — kein App-Bug). 54 Backend- + 62 Frontend-Tests grün.</li>
+        <li><strong>CE-4.4 FQDN-Enrichment (LIVE):</strong> zwei belegte Quellen, keine Fakes. (1) <strong>Event-Computer</strong> — Sysmon Event 3 setzt <code>sourceFqdn</code> aus <code>data.win.system.computer</code> nur bei source-seitigem (<code>initiated=true</code>) Flow und nur bei echtem FQDN (<code>isRealFqdn</code>: Punkt, kein Kurzname/localhost/IP); <code>destinationFqdn</code> wird daraus nie abgeleitet. (2) <strong>Inventory</strong> — FQDN nur, wenn <code>os.hostname</code> ein echter FQDN ist. Reihenfolge der Wahrheit via <code>setIfEmpty</code>: Event-Computer &gt; Inventory &gt; (später DNS/AD); vorhandener FQDN wird nie überschrieben. UI: <code>FQDN</code>-Zeile getrennt unter Host (Source + Destination), fehlt er → „—" + Missing-Reason.</li>
+        <li><strong>CE-4.4.1 ticketFlows-Projektion (LIVE, FQDN-Kette geschlossen):</strong> <code>WazuhIndexerClient.ticketFlows</code> fordert <code>data.win.system.computer</code> + <code>data.win.eventdata.initiated</code> in der <code>_source</code>-Projektion an — vorher wurden die Felder von der eigenen Indexer-Query gestrippt, sodass der Event-Computer den Normalizer nie erreichte. <strong>Live-Smoke 2026-06-17 (deployt <code>6c013fa</code>):</strong> INC000283 zeigt <code>sourceFqdn = DC01.nexora.example</code> (Provenance <code>data.win.system.computer</code>), dazu MAC <code>bc:24:11:7b:45:69</code>/Host-IF <code>Ethernet</code> + Ziel <code>opensourcebackup</code>/<code>bc:24:11:ed:96:ff</code>/<code>eth0</code>; INC000357 unverändert (CERBERUS/<code>9c:6b:00:76:e6:fe</code>/<code>Ethernet 2</code>, Ziel <code>not_in_inventory</code>, 50 Flows). <strong>Damit ist die FQDN-Kette für Sysmon Event 3 vollständig:</strong> Sysmon E3 → Wazuh-Alert → ticketFlows-Projektion → flowNormalizer → <code>CorrelationResult.network.flows</code> → Network-Tab. Kein Decoder/Wazuh-/Rule-Change.</li>
+      </ul>
+
+      <h4>Control-Plane / Provisioning (Backend-administrierbare Plattform, kein Deploy)</h4>
+      <div class="note-box">
+        Durchgehende Kette gebaut: <strong>GitOps-Profile/Plan → Provisioning-Domain → PostgreSQL → Enrollment+Heartbeat → Admin-Read-API → Registry-UI → Linux-Installer.</strong>
+        Alles read-only-first; Writes nur mit Capability+RBAC+Audit. Kein Apply-/Remote-/Netz-Kanal in der gesamten Kette (per Test erzwungen).
+      </div>
+      <ul class="changes">
+        <li><strong>P_PROVISION_1 — Provisioning-Domain-Model (<code>9693669</code>):</strong> 6 Domänen-Entities (<code>ProvisioningProfile</code> draft→validated→approved→retired · <code>EnrollmentProfile</code> · <code>InstalledNode</code> pending→enrolled→active→stale→retired · <code>NodeCapability</code> read-only allow-list · <code>NodeHeartbeat</code> healthy/degraded/offline · <code>ProvisioningAuditEvent</code> append-only/redacted) + <code>InMemoryProvisioningRepository</code>. Guards: Transition-Blocking, Rollen-/Capability-Validierung, rekursiver Secret-Scan, No-Apply-Safety-Test. 64 Tests.</li>
+        <li><strong>P_PROVISION_2 — Postgres-Persistenz + Repo-Factory (<code>544161f</code>):</strong> Migration <code>033_provisioning.sql</code> (6 Tabellen, JSONB, <strong>append-only Audit-Trigger</strong> blockt UPDATE/DELETE) + <code>PostgresProvisioningRepository</code> (gleicher öffentlicher Vertrag wie InMemory, <code>_to*</code>-Mapping snake→camel + jsonb + Date→ISO) + <code>provisioningRepositoryFactory</code> (<code>DB_ENABLED</code>). Tests ohne DB: Mapping + Methoden-Vertrag(=InMemory) + No-Apply-Safety + Factory-Toggle.</li>
+        <li><strong>P_AGENT_1 — Enrollment-Token + Heartbeat-Backend (<code>fffbe1c</code>):</strong> <code>EnrollmentToken</code>-Domain (<code>mint()</code> gibt Klartext <code>enr_</code>+64 hex <strong>genau einmal</strong> zurück, speichert nur SHA-256-Hash; <code>toJSON()</code> nie der Hash) + Migration <code>034_enrollment_tokens.sql</code> (<code>token_hash UNIQUE</code>, nie Klartext) + <code>EnrollmentTokenService</code> (mint/authenticate/revoke; Token nie in Audit/Log/Response) + <code>NodeEnrollmentService</code> (enroll: Token→Node create/update→enrolled→Caps→Audit; heartbeat: Node muss existieren→record→lastSeen/active→Caps→Audit, Antwort <strong>nur</strong> <code>accepted/serverTime/desiredProfileId</code> — keine Commands/Apply) + Routes <code>/api/v1/provisioning</code> (admin+JWT: enrollment-profiles + token; node+Token: <code>/enroll</code> [Token im Body], <code>/nodes/:id/heartbeat</code> [Bearer]). Guards getestet: revoked/expired/falscher Token blockt, Hash-only, Heartbeat unbekannte Node 404 / ohne Token 401, keine apply/exec/ssh/nat/route/firewall/dhcp/sniff-Methode/Route.</li>
+        <li><strong>P_ADMIN_1a — read-only Registry-API (<code>d2f1aaa</code>):</strong> <code>GET /provisioning/nodes</code> · <code>/nodes/:id</code> (node + capabilities + heartbeats + latestHeartbeat) · <code>/audit</code> — admin+JWT, rein lesend, Query-Schemas.</li>
+        <li><strong>P_ADMIN_1b — Provisioning-Registry-UI (<code>c83fb13</code>):</strong> React-Seite <code>/provisioning</code> (admin-gated, Sidebar+Breadcrumb): Enrollment-Profile-Liste + anlegen + <strong>Token-Mint-Modal (Klartext einmalig, Copy)</strong>, Node-Tabelle mit Status/Heartbeat-Frische + Detail-Modal (Capabilities/Heartbeats). <code>provisioningApi</code> (Client) + <code>provisioningView</code> (reine Status-/Zeit-Logik). <strong>Visual-Smoke 2026-06-18 grün:</strong> Login→Registry→Profil→Token einmalig→Node enroll→Heartbeat→Detail; Token nie in Tabelle/Audit/nach Schließen/nach Reload.</li>
+        <li><strong>P_INSTALL_1 Slice 1 — Linux Bootstrap Installer (<code>3434632</code>, bootstrap-only):</strong> <code>deploy/install/</code> — <code>bootstrap.sh</code> (POSIX sh: Preflight read-only → <code>/enroll</code> Token im Body → nodeId → Agent-Setup via systemd/nohup), <code>nexora-agent.sh</code> (Heartbeat-Loop, read-only Inventar, <strong>kein Command-/Apply-Kanal</strong>), gehärtete <code>nexora-agent.service</code>, README. <strong>Safety-Gate</strong> <code>backend/tests/install/installerSafety.test.js</code> scannt jede ausführbare Zeile gegen Forbidden-Regex (ip/dhcp/dns/nat/route/firewall/wazuh/opnsense/sniffing…) → CI rot bei Verstoß. <code>.gitattributes</code> erzwingt LF für <code>*.sh</code>/<code>*.service</code> (<code>3cd7bed</code>). <strong>Offenes Gate vor E2E:</strong> der Enrollment-Token wird im Heartbeat noch als Bearer genutzt — <strong>Slice 2</strong> trennt das (eigenes Node-Credential, Enrollment-Token nur einmalig).</li>
+        <li><strong>P_INSTALL_1 Slice 2 — Node-Credential-Handoff (Bootstrap vs. Betrieb getrennt):</strong> neues Domänenobjekt <code>NodeCredential</code> (Präfix <code>ncr_</code>, 256-bit, SHA-256, <code>toJSON</code>/Mapping nie Hash) + Migration <code>035_node_credentials.sql</code> (Hash + Präfix + Status/issued/lastUsed/revoked, <code>UNIQUE</code> token_hash) + Repo-Methoden in InMemory <strong>und</strong> Postgres (Vertrag identisch) + <code>NodeCredentialService</code> (mint beim Enroll · authenticate · revoke). <strong>Enrollment-Token ist jetzt Single-Use:</strong> der Enroll mintet das Node-Credential, verbraucht dann den Token <strong>atomar</strong> (Compare-and-Set <code>revoke … WHERE revoked=false</code>, consume <strong>vor</strong> mint → kein zweites Credential bei Parallel-Enroll). Enroll-Antwort liefert <code>{ nodeId, nodeCredential }</code> (Klartext genau einmal). <strong>Heartbeat authentifiziert nur noch mit dem Node-Credential</strong> (Enrollment-Token → 401) und prüft die Node-Bindung (<code>nodeId == :id</code>, sonst 403). Installer: <code>bootstrap.sh</code> persistiert in <code>agent.env</code> <strong>nur</strong> Server/NodeId/Node-Credential (nie den Token); Secrets gehen bei <code>curl</code> über stdin (<code>--data-binary @-</code> / <code>-K -</code>) statt argv (ps-/<code>/proc</code>-sicher); <code>nexora-agent.sh</code> nutzt ausschließlich das Node-Credential. <strong>Tests:</strong> Domain/Repo/Service-Guards + API-Flow (Token einmalig, Heartbeat-Credential, Token-Ablehnung, Bindung) + lokaler E2E gegen das echte InMemory-Backend (<code>credentialHandoffE2E.test.js</code>) + Shell-E2E-Harness <code>deploy/install/test/e2e_local.sh</code> (fährt <code>bootstrap.sh</code> real gegen einen Mock-Server, <code>systemctl</code> gestubbt, räumt alles auf). Security-Review (0 CRITICAL/HIGH offen nach Fix der Enroll-Race), <code>sh -n</code> grün, Installer-Safety-Scan grün. Kein Deploy, kein echter Host, kein Wazuh-/OPNsense-Touch.</li>
+        <li><strong>P_PROVISION_SECURITY_1 — Credential-Lifecycle, Node-Retirement, Rate-Limits, Admin-Revoke-UI <em>(live auf nexora seit <code>3370fcc</code>, 2026-06-19)</em>:</strong> schließt den Betriebs-Lifecycle nach dem Node-Credential-Handoff. <strong>Backend:</strong> <code>NodeCredentialService.revoke</code> jetzt route-gebunden; <code>revokeNodeCredential</code> als <strong>Compare-and-Set</strong> (<code>… WHERE status='active'</code>) in InMemory <strong>und</strong> Postgres → idempotent, kein Doppel-Audit; neue read-Methode <code>listNodeCredentials</code> (Parität InMemory=Postgres, NIE Hash/Klartext); <code>NodeEnrollmentService.retireNode</code> (<strong>revoke-on-retire</strong>: erst alle aktiven Credentials widerrufen, dann terminaler Statuswechsel <code>retired</code>, je Credential <code>NODE_CREDENTIAL_REVOKED</code>, dazu neue Audit-Action <code>NODE_RETIRED</code>); <code>recordHeartbeat</code> lehnt einen <code>retired</code> Node ab (Defense-in-Depth, 403). <strong>Routen</strong> (alle admin+JWT): <code>GET /provisioning/nodes/:id/credentials</code> (nur sichere Felder), <code>POST …/credentials/:credId/revoke</code> (Cross-Node-Bindung → 404 bei fremder Node, idempotent), <code>POST /provisioning/nodes/:id/retire</code>. <strong>Rate-Limits</strong> gezielt nur auf <code>/enroll</code> (pro-Quell-IP, nur fehlgeschlagene Versuche zählen) und <code>/heartbeat</code> (Flood <strong>pro nodeId</strong> — NAT-transparent, mehrere Agents hinter einer NAT-IP blockieren sich nicht; Auth-Fehler pro-Quell-IP) — 429 + <code>RateLimit-Reset</code>, <strong>kein Token/Credential in der 429-Response</strong>; in Prod immer aktiv (Fail-Secure), im Test nur bei gesetzten <code>PROV_*</code>-ENV. <strong>Migration <code>037_node_credentials_fk.sql</code>:</strong> additive FK <code>node_credentials.node_id → installed_nodes.id</code> (<code>NOT VALID</code> → kein Boot-Abbruch bei Altbestand, <code>ON DELETE CASCADE</code>, idempotent). <strong>Frontend <code>/provisioning</code>:</strong> Node-Detail-Modal zeigt den Credential-Lifecycle (Status-Badges, <strong>nur Präfix</strong>, nie das Credential), Admin-Aktionen „Credential widerrufen" je Credential + „Node stilllegen" mit destruktivem Bestätigungsdialog und klarer Folgenwarnung; Viewer/Nicht-Admin sehen den Status, aber keine Schreibaktion. <strong>Tests-first:</strong> 3 neue Backend-Suiten (Lifecycle Service+API, Rate-Limits) + FE-API/View-Tests; Backend <strong>2701</strong> + Frontend <strong>880</strong> grün, <code>tsc -b</code> sauber. <strong>Security-Review:</strong> 0 CRITICAL/0 HIGH; MEDIUM-1 (Rate-Limit-Skip Prod-gehärtet) gefixt; MEDIUM-2 (transaktionaler Retire) als mitigierter Follow-up dokumentiert (Heartbeat-Reject schließt den Pfad). <strong>Lokaler Browser-Smoke:</strong> Revoke→Heartbeat 401, Retire→Node retired+Credential revoked, kein Voll-Credential im DOM/Audit. <strong>Offene Follow-ups:</strong> transaktionaler Retire (Postgres), Credential-Rotation (bewusst nicht in diesem Block), Rate-Limit-Persistenz (Redis) für Multi-Instanz.</li>
+      </ul>
+
+      <h4>Compliance — NIS2 Readiness &amp; Evidence (P_NIS2_1)</h4>
+      <div class="note-box">
+        <strong>Ehrliche Positionierung:</strong> Arbeits-/Nachweis-Unterstützung — <strong>kein</strong> Konformitätsnachweis, keine Zertifizierung, kein Rechtsgutachten.
+        „NIS2 compliant/zertifiziert/rechtssicher" wird nirgends behauptet (per Test erzwungen).
+      </div>
+      <ul class="changes">
+        <li><strong>NIS2 Control Registry + Assessment + Evidence (P_NIS2_1):</strong> statischer, versionierter Control-Katalog (<code>backend/src/compliance/nis2/nis2ControlCatalog.js</code>) mit den <strong>10</strong> Risikomanagement-Maßnahmenbereichen (stabile Keys, deutsche Titel) + Domain <code>Nis2Assessment</code> (Status <code>not_started…addressed/not_applicable</code>; <code>not_applicable</code> braucht Begründung) und <code>Nis2EvidenceLink</code> (8 Evidence-Typen). Persistenz InMemory <strong>und</strong> Postgres (Migration <code>036_nis2.sql</code>, Assessment eindeutig je Control, Evidence-FK <code>ON DELETE CASCADE</code>) über <code>nis2RepositoryFactory</code>. <code>Nis2ReadinessService</code> führt Katalog ⨝ Assessments ⨝ Evidence zusammen und berechnet ehrliche Signale (<code>overdue</code>, <code>missingEvidence</code>, <code>needsReview</code>) — <strong><code>addressed</code> ohne Evidence ⇒ needsReview</strong> (kein Voll-Nachweis). Routes <code>/v1/nis2</code> (Lesen viewer+, Schreiben admin). <strong>Sicherheit:</strong> Evidence-<code>ref</code> hart validiert (nur http/https, kein <code>user:password@</code>, keine Secret-artigen Query-<strong>oder Fragment</strong>-Keys, kein <code>javascript:/data:/file:</code>, keine Steuerzeichen), keine HTML-Injection, <strong>Audit nur sichere Metadaten</strong> (nie notes/URL/Inhalt). Frontend <code>/compliance/nis2</code> (neue Sidebar-Gruppe „Compliance"): KPIs (Controls/Coverage/Review/Überfällig) + Control-Registry + Detail-Panel mit Evidence und Admin-Edit (Viewer read-only). Tests-first: 44 Backend + 16 Frontend grün; Security-Review 0 CRITICAL/0 HIGH (2 Funde gefixt: Fragment-Secret-Bypass, Steuerzeichen-in-URL). Lokaler Visual-Smoke grün (Admin-Flow Assessment→Evidence→Secret-URL abgelehnt). Kein Deploy, kein Lab-/Netzwerk-/Wazuh-/OPNsense-Touch, keine regulatorische Meldung. <strong>Live auf nexora seit <code>5e009c3</code> (2026-06-19).</strong></li>
+        <li><strong>P_NIS2_2 — Incident-Evidence &amp; Management-Reporting <em>(live auf nexora seit <code>3370fcc</code>, 2026-06-19)</em>:</strong> verbindet Incident-Tickets, Evidence, Audit, Control-Zuordnung und ein Management-Readiness-Reporting — weiterhin ehrlich, <strong>kein</strong> Konformitätsnachweis, <strong>keine</strong> automatische Meldung, <strong>kein</strong> Infrastruktur-Touch.
+          <ul>
+            <li><strong>Incident-Verknüpfung:</strong> <code>POST /v1/nis2/controls/:controlKey/incident-evidence</code> (admin) validiert über den geteilten <code>ticketService</code>, dass das Ticket existiert (sonst 404), und legt einen <code>ticket</code>-Evidence-Link an. <strong>Snapshot nur sichere Felder</strong> (INC-Nummer als Ref, sanitisierter Titel [kein <code>&lt;&gt;</code>/Steuerzeichen], Priorität, State) — <strong>NIE PII</strong> (email/user/dept/srcIp/notes/logs). Audit <code>NIS2_EVIDENCE_LINKED</code> trägt nur <code>{controlKey, evidenceType:'ticket', ticketRef}</code> (ticketRef = INC-Nummer, kein PII/Secret).</li>
+            <li><strong>Management-Readiness-Report:</strong> <code>GET /v1/nis2/report</code> (viewer+, rein lesend) — Aggregat über alle Controls: Status-Verteilung (<code>byStatus</code>), Evidence-Coverage, <strong>Incident-Nachweis-Zähler</strong>, <code>addressedWithEvidence</code>, <code>needsReview</code>/<code>overdue</code>/<code>missingEvidence</code>, plus <code>meta.generatedAt</code>/<code>catalogVersion</code>/<strong>Disclaimer</strong> („kein Konformitätsnachweis …"). <code>addressed</code> ohne Evidence ⇒ weiterhin <code>needsReview</code> (ehrlich).</li>
+            <li><strong>Frontend <code>/compliance/nis2</code>:</strong> neuer Tab <strong>„Management-Report"</strong> (KPIs + Status-Verteilung + Incident-Coverage + Per-Control-Tabelle mit Evidence-/Incident-Zählern + Disclaimer + Stand-Datum) und Admin-Aktion <strong>„Incident verknüpfen"</strong> im Control-Detail (Ticket-Picker → verknüpft als Nachweis). Viewer read-only.</li>
+            <li>Tests-first: <strong>19 Backend</strong> (Service + API, inkl. PII-Leak-Asserts für email/user/srcIp und Ehrlichkeits-Check) + <strong>30 Frontend</strong> (nis2Api/nis2View) grün. Backend 2720 + Frontend 912 grün, <code>tsc -b</code> sauber.</li>
+            <li><strong>Security-Review:</strong> 0 CRITICAL / 0 HIGH; gefixt: AbortController-No-op + PII-Hinweis im Incident-Picker. <strong>Offener Follow-up (vorbestehend aus P_NIS2_1, MEDIUM/PoLA):</strong> <code>actorFrom</code> schreibt die Admin-E-Mail in <code>createdBy</code>/<code>updatedBy</code>, die <code>GET /assessments</code>(/<code>:key</code>) (viewer+) ausliefern → Datenminimierung. Sauberer Fix braucht einen <code>displayName</code>-JWT-Claim oder rollenabhängiges Response-Stripping (modulweit) → eigener Härtungsblock. Der neue Management-Report exponiert <code>createdBy</code> <strong>nicht</strong>.</li>
+          </ul>
+        </li>
+        <li><strong>Nächster NIS2-Folgeblock: P_NIS2_3</strong> (geplant): vertiefte Nachweisführung (z. B. Hunt-Sessions/Audit-Events als typisierte Evidence, periodischer Readiness-Snapshot). Weiterhin ehrlich, <strong>kein</strong> Konformitätsnachweis.</li>
+      </ul>
+    </div>
+
+    <div class="change-group fixed">
+      <h3>Behoben</h3>
+      <ul class="changes">
+        <li><strong>Dependency-Sicherheit + Security-CI <em>(<code>052015d</code>)</em>:</strong> zwei Produktions-High-Vulns gepatcht (<code>nodemailer</code> — raw-Option-SSRF/Arbitrary-File-Read via <code>imapflow</code>; transitive <code>form-data</code>), beide Prod-Audits jetzt 0 high/critical. Neuer <code>security.yml</code>-Workflow: <code>npm audit --omit=dev --audit-level=high</code> (harte Schranke auf Prod-Deps) + voller Audit-Bericht + <strong>CycloneDX-SBOM</strong> (Artefakt) für backend+frontend, auf push/PR + wöchentlichem Cron. (Verbleibende Lücken = Dev-Tooling vitest/vite, Major-Upgrade als eigener Block.)</li>
+        <li><strong><code>useConfirm</code> Async-Action-Modus + ProvisioningPage-Vereinheitlichung <em>(<code>34291c9</code>)</em>:</strong> <code>useConfirm</code> kann jetzt eine <code>action()</code> ausführen, während der Dialog offen+busy bleibt und Fehler inline zeigt (<code>ConfirmDialog</code> bekam <code>error</code>-Prop) — der einfache Modus ist unverändert. ProvisioningPage-Lösch-/Retire-Dialoge laufen nun über das zentrale <code>useConfirm</code> statt eines lokalen Dialogs (DRY + konsistente a11y).</li>
+        <li><strong>Review-Härtung (ECC-Multi-Agent-Review) <em>(<code>9307b09</code>)</em>:</strong> <code>RealHttpClient</code> folgt 3xx-Redirects nicht mehr automatisch (<code>redirect:'error'</code>) — node-fetch reichte sonst den <code>Authorization</code>-Header an ein servergewähltes Redirect-Ziel weiter (SSRF-/Credential-Vektor). <code>useReturnFocus</code> gibt den Fokus jetzt auch bei Unmount zurück (Modals via <code>{open &amp;&amp; &lt;Modal/&gt;}</code> schalten <code>isOpen</code> nie auf false; WCAG 2.4.3). <code>EXTERNAL_TICKET_EXPORT_*</code>-Audit-Actions zentral in <code>AuditService.AUDIT_ACTIONS</code> registriert (totes <code>EXPORT_PREPARED</code> entfernt). ProvisioningPage-Lösch-Dialog umbenannt (Kollision mit dem neuen <code>ConfirmDialog</code>) + Fokus-Trap nachgerüstet; TicketsPage-Lösch-Modal Fokus-Trap. BE 2836 + FE 984 Tests grün.</li>
+        <li><strong>KI-Cloud-API-Key-Save (500 → behoben, LIVE <code>f15bb19</code>):</strong> <code>PUT /settings/ki</code> schrieb unbelegte Modell-Felder (<code>anthropicModel</code>/<code>openaiModel</code>/<code>googleModel</code>) als <code>undefined</code> in die <code>NOT NULL</code>-Spalte <code>platform_settings.value</code> → 500 → <strong>jeder</strong> Cloud-API-Key-Save schlug fehl (das InMemory-Repo tolerierte <code>undefined</code>, daher nur die echte Postgres-Prod betroffen und in Tests unentdeckt). Fix in <code>backend/src/routes/settings.js</code>: <code>str()</code>-Fallback liefert nie <code>undefined</code> (→ <code>''</code>) + defensive Coercion in der Set-Schleife. Regressionstest (Cloud-Provider ohne Modell → 200 statt 500). <strong>Forensik-Lektion:</strong> Prod-Logs nur via <code>docker logs soc_api_prod</code> lesen (nicht <code>docker compose logs</code> ohne <code>--env-file</code> → kaputter TLS-Volume-Spec killt den Befehl).</li>
+        <li><strong>Cloud-LLM-JSON-Parser (Claude/GPT „Keine verwertbare Antwort" → behoben, LIVE <code>c9ec072</code>):</strong> <code>OllamaLlmProvider._parse</code> machte striktes <code>JSON.parse(raw)</code> — Cloud-Modelle verpacken ihr JSON aber oft in Markdown-Fences (```json …```) oder schreiben Prosa davor → Antwort wurde verworfen, Fallback „kein strukturiertes JSON" (Ollama lieferte dank <code>format:json</code> reines JSON, daher nur cloud-seitig sichtbar). Fix: robuste Kandidaten-Extraktion (raw → Fence-Inhalt → erstes <code>{…letztes }</code>), <strong>rein additiv</strong> (valider Roh-JSON parst weiter als Kandidat 1; echtes Nicht-JSON fällt wie bisher in den Rohtext-Fallback). 2 Regressionstests (Fence + Prosa-Vorspann), 294 Agent/Provider/Analysis-Tests grün.</li>
+        <li><strong>Host-Case <code>ticketFlows</code> flow-only Query (LIVE <code>f2705b3</code>):</strong> Host-Case-Query (<code>offense wazuh:host:&lt;id&gt;</code>, kein <code>ruleId</code>) holte die <strong>50 neuesten</strong> Agent-Events → busy Hosts (DC01: ~50 Events/45 min) verdrängten ältere <strong>Sysmon-E3-Flows</strong> aus dem <code>size</code>-Fenster (INC000283 zeigte <code>flows=0</code>, Host-Case wurde „blind"). Neuer <code>flowOnly</code>-Pfad: <code>ticketFlows</code> ergänzt einen <strong>Flow-Relevanz-Filter</strong> (Firewall <code>src</code>/<code>dst</code>-IP <strong>oder</strong> Sysmon <code>eventID 3</code>) <strong>nur für Host-Cases</strong>; rule-scoped Query (z. B. INC000357 rule 87702) unverändert, <code>size</code> begrenzt. <strong>Live-Smoke:</strong> INC000283 zeigt wieder den Sysmon-Flow (<code>DC01.nexora.example</code> · <code>bc:24:11:7b:45:69</code> · Host-IF <code>Ethernet</code> · <code>powershell.exe</code>). Reine bessere Suchlogik gegen vorhandene Alerts — kein Wazuh-Change.</li>
+        <li><strong>MAC-1 <code>getNetInterfaces</code>-<code>select</code> (Wazuh, LIVE <code>76ad485</code>):</strong> <code>WazuhApiClient.getNetInterfaces</code> fragte <code>/syscollector/{id}/netiface?select=name,mac,ipv4</code> — <code>ipv4</code> ist <strong>kein</strong> netiface-Feld (IPs liegen in <code>netaddr</code>) → Wazuh <strong>HTTP 400</strong> → <code>_resolveAgentMac</code> soft-fail → <code>ticket.mac</code> blieb leer (Source-Panel MAC „—" bei Host-Cases). Fix: <code>select=name,mac</code>. Alte Test-Stubs trugen fälschlich <code>ipv4</code>, darum unentdeckt → jetzt Regressionstest auf den <code>select</code> + realitätsnaher Processor-Test (netiface ohne <code>ipv4</code>). Host-Cases ohne MAC heilen beim nächsten Alert (<code>_findOrCreateCase</code>).</li>
+        <li><strong>MAC-Anreicherung (Wazuh):</strong> <code>WazuhProcessor</code> reichert die Host-MAC aus dem Syscollector-Interface ans Ticket an (Source-Panel zeigte MAC zuvor leer); Host-Case Self-Healing.</li>
+        <li><strong>Windows-EventChannel-Events:</strong> Evidence-Normalizer liest jetzt auch <code>win.system</code> (z. B. WMI-Activity) — Deck wirkte für solche Events leer, obwohl das Roh-Event vorlag.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 0.1.0 — Erstes versioniertes Release -->
+  <section class="release" id="v0-1-0">
+    <div class="release-header">
+      <span class="version-badge">0.1.0</span>
+      <span class="release-date">2026-06-16</span>
+      <span class="release-tag tag-minor">Erstes versioniertes Release</span>
+      <span class="release-focus">Erster getaggter Stand (<code>v0.1.0</code>). Versionierungs-Policy ab jetzt: SemVer <code>vMAJOR.MINOR.PATCH</code>, Git-Tag je Release, <code>/health</code> meldet die laufende Version (Deploy-Verifikation).</span>
+    </div>
+
+    <div class="change-group added">
+      <h3>Hinzugefügt</h3>
+      <ul class="changes">
+        <li><strong>Mehr Entitäten aus Sysmon:</strong> DNS (DnsQuery Event 22) als neue Entity-Karte; Network (NetworkConnect Event 3) mit Source-/Destination-Hostname, verbindendem Prozess und Richtung; Host-Inventar mit getrenntem <strong>OS / OS-Version</strong> + <strong>FQDN</strong>, echte IP aus <code>/netaddr</code>.</li>
+        <li><strong>Diagnose-Logging</strong> der Wazuh-Inventar-Anreicherung (<code>agent_inventory_empty|sparse|enrich_failed</code>) — kein still verschluckter Fehler mehr (Hard-Rule).</li>
+        <li><strong>KI-Settings Welle 2:</strong> read-only Transparenz der Safety-Guardrails (Evidence-/Benign-Floor, Anti-Halluzination) + Confidence-Schwellen + Human-in-the-Loop-Status; Nutzungs-/Latenz-Metrik-Sidebar (<code>GET /v1/agent/guardrails</code> + <code>/metrics</code>).</li>
+        <li><strong>Welle 1:</strong> Ticket-Delete-UI (admin), echter PDF-Export (jsPDF), Dashboard „Top Erkennungsquellen" (echte Top-Rules), Profil Sprache/Datumsformat persistent (Migration 032).</li>
+        <li><strong><code>/health</code> meldet <code>version</code></strong>.</li>
+      </ul>
+    </div>
+
+    <div class="change-group fixed">
+      <h3>Behoben</h3>
+      <ul class="changes">
+        <li><strong>Security/Funktion:</strong> <code>requireAuth</code> fehlte vor <code>requireRole</code> in <code>POST /hosts/:id/collect</code> — Route lieferte jedem 401. + Regressionstest.</li>
+        <li><strong>Unbounded <code>findAll()</code></strong> in 6 Repos paginiert (abwärtskompatibel).</li>
+      </ul>
+    </div>
+
+    <div class="note-box">
+      Ebenfalls Teil von 0.1.0 (Detail in den folgenden Blöcken): Repo-Cleanup &amp; Audit-Fixes,
+      Enterprise-Security-Härtung, Multi-LLM-Provider &amp; KI-Settings-Redesign W1.
+    </div>
+  </section>
+
+  <!-- 0.1.0 — Repo-Cleanup & Audit-Fixes -->
+  <section class="release" id="v0-1-0-cleanup">
+    <div class="release-header">
+      <span class="version-badge">0.1.0</span>
+      <span class="release-date">2026-06-16</span>
+      <span class="release-tag tag-minor">Repo-Cleanup &amp; Audit-Fixes</span>
+      <span class="release-focus">Schwerpunkt: Repo produktreif/übersichtlich machen (W1–W3) + echte Backend-Audit-Fixes.</span>
+    </div>
+
+    <div class="change-group added">
+      <h3>Hinzugefügt</h3>
+      <ul class="changes">
+        <li><code>.github/</code>: Issue-Forms (Bug/Feature), PR-Template (mit Hardrules-Checkliste), <strong>CI-Workflow</strong> (Jest + Vitest + tsc + Build auf push/PR).</li>
+        <li><code>docs/</code> in <strong>nummerierte Struktur</strong> (<code>00-overview … 08-roadmap</code> + <code>adr/</code>) mit Ordner-Index-READMEs; <code>docs/assets/screenshots/</code> mit Anleitung.</li>
+        <li><strong>Pagination</strong> (<code>{ limit, offset }</code>, Default-Cap) für alle bisher unbegrenzten <code>findAll()</code> — 6 Repos (User/UseCase/AnalysisTemplate/WazuhFpException/AgentSuggestion/Yara) + Test.</li>
+      </ul>
+    </div>
+
+    <div class="change-group changed">
+      <h3>Geändert</h3>
+      <ul class="changes">
+        <li><strong>README zur Produktseite</strong> (Tech-Badges, Inhaltsverzeichnis, Screenshots-Ablage); <strong>Mission + „Warum" auf vorsichtigen Human-in-the-loop-Ton</strong> — „reduziert … ohne Kontrolle aus der Hand zu geben" statt „übernimmt/Autopilot".</li>
+        <li><strong>ROADMAP</strong> gekürzt (216→112 Z.) + Zielbild auf HITL-Ton.</li>
+        <li>Frontend: <code>components/analysis/</code> → <code>features/analysis/components/</code> (Backend bleibt bewusst layered).</li>
+        <li><strong><code>.gitignore</code> gehärtet</strong>; <code>.claude/</code>, Design-Mockups (<code>toolDesign/</code>/<code>SettingsDesign/</code>/<code>qradar-analyst-deck/</code>), Legacy <code>index.html</code> und große ZIPs aus dem Tracking genommen.</li>
+      </ul>
+    </div>
+
+    <div class="change-group fixed">
+      <h3>Behoben</h3>
+      <ul class="changes">
+        <li><strong>Security/Funktion:</strong> <code>requireAuth</code> fehlte vor <code>requireRole</code> in <code>POST /hosts/:id/collect</code> → <code>req.user</code> nie gesetzt → Route lieferte <strong>jedem</strong> 401 (faktisch tot). + Regressionstest. (<code>e83a253</code>)</li>
+        <li><strong>Unbounded <code>findAll()</code></strong> (Audit HIGH) in 6 Repos paginiert — abwärtskompatibel, Array-Vertrag bleibt.</li>
+        <li>Doku-Links nach docs-Reorg durchgängig repariert (<strong>0 tote Links</strong>); Lab-Doku-Generator (<code>70-docs.sh</code>) auf neuen Pfad nachgezogen.</li>
+        <li>Verifiziert als <strong>Nicht-Probleme</strong>: Settings-Tabelle (lazy <code>CREATE TABLE IF NOT EXISTS</code>), notifications/apiTokens (bereits 7/4 Test-Suiten) — Audit-Funde waren überholt.</li>
+      </ul>
+    </div>
+
+    <div class="change-group removed">
+      <h3>Entfernt</h3>
+      <ul class="changes">
+        <li><strong>Git-History bereinigt</strong> (<code>git filter-repo</code>): alte Design-Blobs aus der gesamten History → <strong><code>.git</code> 64 MB → 3 MB</strong> (force-push; alte Klone müssen neu klonen).</li>
+      </ul>
+    </div>
+
+    <div class="change-group verify">
+      <h3>Verifikation</h3>
+      <ul class="changes">
+        <li>Backend <strong>146 Suiten / 2279 Tests</strong> grün · Frontend <strong>70 Suiten / 766 Tests</strong> grün · <code>tsc</code> 0. Regressionstest rot→grün bestätigt.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 0.1.0 — Security-Härtung & Multi-LLM -->
+  <section class="release" id="v0-1-0-security">
+    <div class="release-header">
+      <span class="version-badge">0.1.0</span>
+      <span class="release-date">2026-06-16</span>
+      <span class="release-tag tag-minor">Security-Härtung &amp; Multi-LLM</span>
+      <span class="release-focus">Schwerpunkt: Enterprise-Security-Härtung (Roadmap Phase 4) + Multi-LLM-Provider &amp; KI-Settings-Redesign (Phase 1). Alle neuen Security-/Cloud-Kontrollen sind default-AUS → sicher deploybar, kein Verhaltenswechsel ohne Admin-Aktivierung.</span>
+    </div>
+
+    <div class="change-group added">
+      <h3>Hinzugefügt</h3>
+      <ul class="changes">
+        <li><strong>Cloud-LLM-Provider</strong> Anthropic (Claude), OpenAI (GPT), Google AI (Gemini) neben Ollama/Stub. Erben Prompt/Parse/Evidence-Floors, überschreiben nur den API-Call. (ADR-018)</li>
+        <li><strong>API-Keys im Backend/UI</strong> einstellbar (statt nur ENV), <strong>AES-256-GCM-verschlüsselt at-rest</strong>; nie im Klartext im GET. <code>POST /settings/ki/test</code> (Verbindungstest), <code>GET /settings/ki/providers</code> (Status). (ADR-018)</li>
+        <li><strong>Primär + Fallback-Kette</strong> für LLM-Provider (<code>FallbackLlmProvider</code>) — Auto-Failover bei Ausfall/Timeout/Auth-Fehler.</li>
+        <li><strong>Modell-Parameter</strong> (Temperatur/TopP/MaxTokens) UI-konfigurierbar, in alle Provider durchgereicht.</li>
+        <li><strong>Account-Lockout</strong> (Postgres-persistent), <strong>Passwort-History</strong> (Wiederverwendungssperre, Migration 031), <strong>Passwort-Ablauf</strong> (+ Zwangswechsel-Gate), <strong>Mehrfach-Sitzungen-Limit</strong>, <strong>Inaktivitäts-Timeout</strong>, <strong>TLS-erzwingen</strong>, <strong>IP-Allowlist</strong> — alle serverseitig erzwungen, default aus. (ADR-019)</li>
+        <li><strong>CSRF Double-Submit</strong> (<code>csrfGuard</code>) für Cookie-Sessions. (ADR-017)</li>
+        <li>Settings: echte <strong>Lizenz/Nutzungs-Zahlen</strong> aus <code>/system/stats</code>.</li>
+      </ul>
+    </div>
+
+    <div class="change-group changed">
+      <h3>Geändert</h3>
+      <ul class="changes">
+        <li><strong>Auth auf Cookie-only</strong> umgestellt: kein JWT mehr im <code>sessionStorage</code> (XSS-Härtung); httpOnly-Cookie + CSRF. Bearer bleibt für API-Clients/PAT. (ADR-017)</li>
+        <li><strong>KI-Einstellungen-Seite</strong> redesignt (W1): Provider-Kacheln mit Status, Key-Eingabe (maskiert) + Test, Modell-Konfig, Fallback-Selects, Datenschutz-Warnung.</li>
+        <li>Doku auf echten Stand: ROADMAP/feature-status/arc42 (Testzahlen real ~2273 BE / 766 FE).</li>
+      </ul>
+    </div>
+
+    <div class="change-group fixed">
+      <h3>Behoben</h3>
+      <ul class="changes">
+        <li><code>GET /settings/ki</code> gab via <code>getAll()</code> den gesamten KV-Store zurück → KI-Whitelist (CRITICAL).</li>
+        <li>Guard-<code>/health</code>-Ausnahme: exakter Segment-Match statt <code>includes</code> (z.B. <code>/tickets/health-check</code> nicht mehr befreit).</li>
+        <li><code>ipAllowlistCidrs</code> Joi-validiert (IPv4/CIDR).</li>
+        <li><code>coverage/</code> aus Git entfernt + <code>.gitignore</code> ergänzt.</li>
+      </ul>
+    </div>
+
+    <div class="change-group removed">
+      <h3>Entfernt</h3>
+      <ul class="changes">
+        <li><strong>P20 (Monitoring/Ops)</strong> als geplante Phase gestrichen (Funktion teils schon vorhanden) — ersetzt durch die neue Phasen-Roadmap.</li>
+      </ul>
+    </div>
+
+    <div class="change-group security">
+      <h3>Security / Datenschutz</h3>
+      <ul class="changes">
+        <li>⚠ <strong>Cloud-Provider opt-in:</strong> bei Aktivierung verlassen Ticket-/Alert-Daten (ggf. PII) das interne Netz → vorher DSGVO/AVV absichern.</li>
+        <li>Mehrperspektiven-Audit durchgeführt (🟢→🟡); offene Funde dokumentiert (s. unten / Memory).</li>
+      </ul>
+    </div>
+
+    <div class="change-group verify">
+      <h3>Verifikation</h3>
+      <ul class="changes">
+        <li>Backend 145 Suiten / 2273 Tests grün · Frontend 766 Vitest grün · tsc 0 · eslint 0 Errors. Jeder Schritt live deployed + Smoke-getestet.</li>
+      </ul>
+    </div>
+
+    <div class="change-group verify">
+      <h3>Bekannt offen (nächste Session)</h3>
+      <ul class="changes">
+        <li>KI-Settings <strong>Welle 2</strong> (Prompt-Templates, Confidence-Thresholds, Human-in-the-loop-Regeln, Logging/Audit-Toggles, Guardrails, Datenquellen, Metrik-Sidebar Usage/Kosten/Latenz).</li>
+        <li>Audit-Reste: <code>schema_migrations</code>-Tracking, ~91 a11y-Warnings. (unbounded <code>findAll()</code> + hosts.js-Auth inzwischen erledigt — s. oberer Block.)</li>
+        <li>MFA/TOTP, SSO/OIDC, PAT live; Phase 0 (KI-FP-Preview-Bug, Wazuh-Rauschen).</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script>
+  const links = document.querySelectorAll('.sb-link[href^="#"]');
+  const sections = document.querySelectorAll('.release');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const a = document.querySelector(`.sb-link[href="#${e.target.id}"]`);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

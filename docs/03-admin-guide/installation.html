@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC — Installation &amp; Deployment</title>
+<style>
+  :root {
+    --bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;
+    --accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;
+    --text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;
+    --font-mono:'JetBrains Mono','Courier New',monospace;
+    --font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}
+  #sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:13px;font-weight:700;color:var(--accent2);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .sb-badge{display:inline-block;margin:10px 18px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--accent2);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:14px 18px 5px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:6px 18px;font-size:12px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,255,136,.05);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent2);background:rgba(0,255,136,.07);color:var(--accent2);font-weight:600;}
+  .sb-link .num{font-size:10px;color:var(--text-dim);font-family:var(--font-mono);min-width:24px;}
+  #content{margin-left:var(--sw);flex:1;max-width:920px;padding:44px 52px 80px;}
+  .cover{margin-bottom:40px;padding-bottom:26px;border-bottom:1px solid var(--border);}
+  .cover h1{font-size:32px;font-weight:800;color:var(--accent2);letter-spacing:2px;text-transform:uppercase;}
+  .cover .sub{font-size:17px;color:var(--text);margin-top:8px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:5px;}
+  .doc-section{margin-bottom:50px;scroll-margin-top:28px;}
+  h2{font-size:20px;font-weight:700;color:var(--accent2);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+  h2 .num{font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);color:var(--accent2);font-family:var(--font-mono);}
+  h3{font-size:14px;font-weight:700;color:var(--text-head);margin:24px 0 10px;}
+  p{margin-bottom:12px;color:var(--text);}
+  a.inline{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent);}
+  .info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-left:3px solid var(--accent);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .info-box strong{color:var(--accent);}
+  .warn-box{background:rgba(255,107,53,.07);border:1px solid rgba(255,107,53,.25);border-left:3px solid var(--warn);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .warn-box strong{color:var(--warn);}
+  .ok-box{background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);border-left:3px solid var(--accent2);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .ok-box strong{color:var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:14px 0 22px;font-size:13px;}
+  .doc-table th{background:rgba(0,255,136,.07);color:var(--accent2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table tr:hover td{background:rgba(255,255,255,.02);}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:12px;font-family:var(--font-mono);}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:5px;padding:14px 18px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:10px 0 18px;}
+  code{font-family:var(--font-mono);font-size:12px;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.15);border-radius:3px;padding:1px 5px;color:var(--accent2);}
+  pre code{background:none;border:none;padding:0;color:inherit;}
+  ul.doc-list{list-style:none;margin:10px 0 16px;padding:0;}
+  ul.doc-list li{padding:4px 0 4px 18px;position:relative;color:var(--text);font-size:13px;}
+  ul.doc-list li::before{content:'\203A';position:absolute;left:4px;color:var(--accent2);font-weight:700;}
+  ol.doc-steps{margin:10px 0 16px;padding-left:22px;}
+  ol.doc-steps li{padding:4px 0;color:var(--text);font-size:13px;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:28px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent2);border-color:var(--accent2);}
+  .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;text-transform:uppercase;margin-right:4px;}
+  .badge-req{background:rgba(255,45,85,.1);border:1px solid rgba(255,45,85,.3);color:var(--crit);}
+  .badge-opt{background:rgba(90,106,128,.15);border:1px solid rgba(90,106,128,.3);color:var(--text-dim);}
+  .badge-todo{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.3);color:var(--warn);}
+  .ascii{background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:16px 18px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-dim);line-height:1.6;margin:14px 0;overflow-x:auto;white-space:pre;}
+  .ascii .hi{color:var(--accent2);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>Nexora SOC</h1><p>Installation &amp; Deployment</p></div>
+  <span class="sb-badge">Install Guide</span>
+  <div class="sb-section">Kapitel</div>
+  <a class="sb-link" href="#s1"><span class="num">01</span> Überblick &amp; Architektur</a>
+  <a class="sb-link" href="#s2"><span class="num">02</span> Voraussetzungen</a>
+  <a class="sb-link" href="#s3"><span class="num">03</span> Lokale Installation (Dev)</a>
+  <a class="sb-link" href="#s4"><span class="num">04</span> Konfiguration (ENV)</a>
+  <a class="sb-link" href="#s5"><span class="num">05</span> Datenbank &amp; Migrationen</a>
+  <a class="sb-link" href="#s6"><span class="num">06</span> Produktions-Deployment</a>
+  <a class="sb-link" href="#s7"><span class="num">07</span> Externe Dienste</a>
+  <a class="sb-link" href="#s8"><span class="num">08</span> Erster Start / Verifikation</a>
+  <a class="sb-link" href="#s9"><span class="num">09</span> Betrieb</a>
+  <a class="sb-link" href="#s10"><span class="num">10</span> Troubleshooting</a>
+  <div class="sb-section" style="margin-top:14px;">Weitere Docs</div>
+  <a class="sb-link" href="developer-guide.html"><span class="num">&rarr;</span> Developer Guide</a>
+  <a class="sb-link" href="arc42.html"><span class="num">&rarr;</span> Arc42 Architektur</a>
+  <a class="sb-link" href="user-guide.html"><span class="num">&rarr;</span> User Guide</a>
+</nav>
+
+<main id="content">
+  <a class="back-link" href="../index.html">&larr; Zurück zur App</a>
+  <div class="cover">
+    <h1>Nexora SOC</h1>
+    <div class="sub">Installations- &amp; Deployment-Dokumentation</div>
+    <div class="meta">Stand der Ableitung: 2026-06-20 &nbsp;|&nbsp; Version: v0.1.0 (SemVer) &nbsp;|&nbsp; Zielgruppe: Operator / Entwickler &nbsp;|&nbsp; Lokal (Dev) + Produktiv</div>
+  </div>
+
+  <div class="info-box">
+    <strong>Quellen-Hinweis:</strong> Diese Anleitung ist vollständig aus dem Repository abgeleitet
+    (<code>docker-compose.dev.yml</code>, <code>deploy/</code>, <code>backend/src</code>). Stellen ohne
+    Repo-Beleg sind ehrlich als <span class="badge badge-todo">TODO/offen</span> markiert — nichts ist erfunden.
+    Secrets stehen nie in dieser Doku, nur Variablennamen + Platzhalter.
+  </div>
+
+  <div class="ok-box">
+    <strong>Deployter Stand:</strong> <code>41d8d92</code> (MFA + PAT aktiv). Commits danach
+    (E-Mail/SMTP-Kanal, OIDC, WebAuthn, NIS2-Review-Kadenz) sind <strong>lokal/unreleased</strong> und
+    unten als <span class="badge badge-opt">lokal, noch nicht deployt</span> gekennzeichnet. Alle neuen
+    Feature-Schalter sind <strong>default AUS</strong> und werden serverseitig erzwungen — der Passwort-Login
+    bleibt parallel bestehen. <code>/health</code> meldet die laufende <code>version</code> (SemVer).
+  </div>
+
+  <!-- 01 -->
+  <section class="doc-section" id="s1">
+    <h2><span class="num">01</span> Überblick &amp; Architektur</h2>
+    <p>Nexora SOC ist eine selbst-gehostete SOC-Plattform (Incident-Tickets, Threat Hunting, KI-Triage-Agent,
+    Live-Telemetrie). Sie besteht aus drei Kern-Containern und mehreren <strong>optionalen externen Diensten</strong>.</p>
+
+    <div class="ascii">                 &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9484;
+   Browser &#9472;&#9658; 443 <span class="hi">web (nginx + TLS)</span>
+                 &#9474;   &#9500;&#9472; serviert React-SPA (frontend/dist)
+                 &#9474;   &#9492;&#9472; /api  &#9472;&#9658; proxy &#9472;&#9472;&#9658; <span class="hi">api:3000</span>
+                 &#9474;                         &#9474;
+                 &#9474;            api (Node/Express) &#9472;&#9658; <span class="hi">postgres</span>
+                 &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+                                 &#9474; (optional, nach außen)
+           Ollama (LLM)   &#9679;   Qdrant (RAG)   &#9679;   Wazuh (API :55000 + Indexer :9200)</div>
+
+    <table class="doc-table">
+      <thead><tr><th>Baustein</th><th>Technik</th><th>Pflicht?</th></tr></thead>
+      <tbody>
+        <tr><td>web</td><td>nginx, serviert React-SPA, TLS, Reverse-Proxy <code>/api</code></td><td><span class="badge badge-req">Pflicht (Prod)</span></td></tr>
+        <tr><td>api</td><td>Node.js + Express, Repository-Pattern, Migrationen auto bei Boot</td><td><span class="badge badge-req">Pflicht</span></td></tr>
+        <tr><td>postgres</td><td>PostgreSQL 16 (Tickets, User, Audit, Hunts)</td><td><span class="badge badge-req">Pflicht f. Persistenz</span></td></tr>
+        <tr><td>Ollama</td><td>Lokales LLM für KI-Agent (eigene LXC)</td><td><span class="badge badge-opt">Optional</span></td></tr>
+        <tr><td>Qdrant</td><td>Vektor-DB für RAG-Wissensbasis</td><td><span class="badge badge-opt">Optional</span></td></tr>
+        <tr><td>Wazuh</td><td>SIEM — Alerts (Webhook) + Indexer-Daten (Dashboard)</td><td><span class="badge badge-opt">Optional</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="warn-box"><strong>Ohne Postgres</strong> läuft das Backend auf <strong>InMemory-Repositories</strong> — nichts überlebt
+    einen Neustart (nur Tests/Dev). Schalter: <code>DB_ENABLED</code>. <strong>Ohne Ollama</strong> bleibt der KI-Agent auf dem
+    <code>stub</code>-Provider (deterministisch, kein LLM). Schalter: <code>AGENT_LLM_PROVIDER</code>.</div>
+
+    <h3>Architektur-Prinzipien (aus <code>ROADMAP.md</code>)</h3>
+    <ul class="doc-list">
+      <li><strong>Repository-Pattern:</strong> InMemory für Tests/Dev, Postgres bei <code>DB_ENABLED=true</code> (per-Domain-Factory).</li>
+      <li><strong>Migrationen automatisch bei Boot:</strong> <code>server.js</code> &rarr; <code>bootstrap()</code> ruft <code>migrate()</code> vor <code>app.listen()</code>. Idempotent (<code>IF NOT EXISTS</code>).</li>
+      <li><strong>Fail-Fast:</strong> In Produktion bricht der Start ab, wenn Pflicht-Secrets fehlen (<code>config/validateEnv.js</code>).</li>
+      <li><strong>Keine Integration ohne Adapter, kein externer Input ohne Validierung.</strong></li>
+    </ul>
+  </section>
+
+  <!-- 02 -->
+  <section class="doc-section" id="s2">
+    <h2><span class="num">02</span> Voraussetzungen</h2>
+    <table class="doc-table">
+      <thead><tr><th>Werkzeug</th><th>Version</th><th>Quelle / Begründung</th></tr></thead>
+      <tbody>
+        <tr><td>Node.js</td><td>20.x</td><td>Images <code>node:20-bookworm-slim</code>; README: „Node.js 20+"</td></tr>
+        <tr><td>Docker + Compose</td><td>aktuell (Compose v2)</td><td><code>docker-compose.dev.yml</code>, <code>deploy/docker-compose.prod.yml</code></td></tr>
+        <tr><td>Git</td><td>aktuell</td><td><code>release.sh</code> zieht den aktuell ausgecheckten Branch per <code>git pull --ff-only origin &lt;branch&gt;</code></td></tr>
+      </tbody>
+    </table>
+    <h3>Zusätzlich für Produktion (aus <code>deploy/README.md</code> + ROADMAP P15)</h3>
+    <ul class="doc-list">
+      <li><strong>Linux / Ubuntu 22.04 LTS</strong> empfohlen, im Lab als Proxmox-VM (P15: VM 177, <code>192.168.240.77</code>).</li>
+      <li><strong>TLS-Zertifikat</strong> (interne CA oder Let's Encrypt) &mdash; <code>server.crt</code> / <code>server.key</code>.</li>
+      <li><strong>DNS-Eintrag</strong> auf die VM-IP (Beispiel <code>soc.example.com</code>).</li>
+      <li><strong>Firewall:</strong> Port 3000 (api) &amp; 5432 (postgres) <strong>nicht</strong> nach außen — nur <code>web</code> (80/443) öffentlich.</li>
+    </ul>
+  </section>
+
+  <!-- 03 -->
+  <section class="doc-section" id="s3">
+    <h2><span class="num">03</span> Lokale Installation (Dev)</h2>
+    <h3>Variante A — Full-Stack in Docker (empfohlen, Hot-Reload)</h3>
+    <p>Postgres + API + Frontend in Containern. Quelle: <code>docker-compose.dev.yml</code>.</p>
+<pre>docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml logs -f api web
+docker compose -f docker-compose.dev.yml down</pre>
+    <table class="doc-table">
+      <thead><tr><th>Dienst</th><th>URL</th><th>Hinweis</th></tr></thead>
+      <tbody>
+        <tr><td>Frontend</td><td>http://localhost:5173</td><td>Vite HMR, Proxy <code>/api</code> &rarr; <code>api:3000</code></td></tr>
+        <tr><td>API</td><td>http://localhost:3000</td><td>Health: <code>/api/v1/health</code></td></tr>
+        <tr><td>Postgres (Dev)</td><td>localhost:5432</td><td>DB <code>soc_tickets_dev</code></td></tr>
+        <tr><td>Postgres (Test)</td><td>localhost:5433</td><td>DB <code>soc_tickets_test</code> (Jest)</td></tr>
+      </tbody>
+    </table>
+    <div class="info-box"><strong>Erster Start ist langsam</strong> (<code>npm install</code> in beiden Containern). Danach liegen die
+    <code>node_modules</code> in Named Volumes — Start ist schnell.</div>
+    <div class="ok-box"><strong>Dev-Seed-Login</strong> (automatisch idempotent angelegt):
+    <code>admin@nexora.example</code> / <code>DevAdmin123!</code></div>
+    <div class="warn-box">Alle Dev-Secrets in <code>docker-compose.dev.yml</code> (<code>JWT_SECRET=dev-only-…</code>, <code>DB_PASSWORD=devpassword</code>)
+    sind <strong>nur für lokale Entwicklung</strong> — niemals in Prod.</div>
+
+    <h3>Variante B — Nativ ohne Docker (aus <code>README.md</code>)</h3>
+<pre># Backend
+cd backend &amp;&amp; npm install
+npm run dev            # http://localhost:3000  (InMemory, ohne DB)
+npm test
+
+# Frontend (zweites Terminal)
+cd frontend &amp;&amp; npm install
+npm run dev            # http://localhost:5173
+npm test
+
+# Admin im Dev-Modus via ENV bootstrappen
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=ChangeMe123 npm --prefix backend run dev</pre>
+    <p>Mit Persistenz nativ: <code>DB_ENABLED=true</code> + DB-Verbindungsdaten setzen.</p>
+  </section>
+
+  <!-- 04 -->
+  <section class="doc-section" id="s4">
+    <h2><span class="num">04</span> Konfiguration (ENV)</h2>
+    <table class="doc-table">
+      <thead><tr><th>Umgebung</th><th>Datei</th><th>In Git?</th></tr></thead>
+      <tbody>
+        <tr><td>Dev (Docker)</td><td>inline in <code>docker-compose.dev.yml</code></td><td>ja (nur Dev-Secrets)</td></tr>
+        <tr><td>Dev (nativ)</td><td><code>backend/.env</code> (via <code>dotenv</code>)</td><td><strong>nein</strong></td></tr>
+        <tr><td>Produktion</td><td><code>deploy/.env.production</code></td><td><strong>NIEMALS</strong></td></tr>
+      </tbody>
+    </table>
+<pre>cp deploy/.env.production.example deploy/.env.production
+nano deploy/.env.production    # alle CHANGE_ME ersetzen</pre>
+    <div class="warn-box"><strong>Secrets gehören nie in Git und nie in diese Doku.</strong> Generatoren:
+    <code>openssl rand -hex 64</code> (JWT), <code>openssl rand -hex 32</code> (Webhook), <code>openssl rand -hex 20</code> (DB-Passwort).</div>
+    <p>Abgeleitet aus <code>config/index.js</code>, <code>validateEnv.js</code>, <code>db/pool.js</code>, <code>server.js</code>, allen Adaptern
+    und <code>.env.production.example</code>. <strong>Pflicht</strong> = Server startet in Prod nicht ohne korrekten Wert (durch <code>validateEnv</code>).</p>
+
+    <h3>Server / Core</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Pflicht</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>NODE_ENV</td><td>empfohlen</td><td>development</td><td><code>production</code> aktiviert Fail-Fast + JWT-Guard</td></tr>
+        <tr><td>PORT</td><td>nein</td><td>3000</td><td>API-Port (intern)</td></tr>
+        <tr><td>LOG_LEVEL</td><td>nein</td><td>info</td><td>Winston-Loglevel</td></tr>
+        <tr><td>CORS_ORIGINS</td><td><span class="badge badge-req">Prod</span></td><td>http://localhost:5500</td><td>Erlaubte Origins; in Prod kein <code>*</code>/<code>localhost</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Datenbank (PostgreSQL)</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Pflicht</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>DB_ENABLED</td><td><span class="badge badge-req">Prod</span></td><td>false</td><td><code>true</code> = Postgres-Persistenz; sonst InMemory</td></tr>
+        <tr><td>DB_HOST</td><td><span class="badge badge-req">Prod</span></td><td>localhost</td><td>DB-Host (Compose: <code>postgres</code>)</td></tr>
+        <tr><td>DB_PORT</td><td>nein</td><td>5432</td><td>DB-Port</td></tr>
+        <tr><td>DB_NAME</td><td><span class="badge badge-req">Prod</span></td><td>soc_tickets_dev</td><td>Datenbankname</td></tr>
+        <tr><td>DB_USER</td><td><span class="badge badge-req">Prod</span></td><td>soc_api</td><td>DB-Benutzer</td></tr>
+        <tr><td>DB_PASSWORD</td><td><span class="badge badge-req">Prod</span></td><td>devpassword</td><td>Default in Prod verboten</td></tr>
+        <tr><td>DB_SSL</td><td>nein</td><td>false</td><td><code>true</code> = TLS zur DB</td></tr>
+        <tr><td>DB_POOL_MAX</td><td>nein</td><td>10</td><td>Max. Pool-Verbindungen</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Auth (JWT)</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Pflicht</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>JWT_SECRET</td><td><span class="badge badge-req">Prod</span></td><td>Dev-Fallback</td><td>In Prod min. 32 Zeichen, kein Dev-Fallback. <code>openssl rand -hex 64</code></td></tr>
+        <tr><td>JWT_EXPIRES_IN</td><td>nein</td><td>8h</td><td>Token-Gültigkeit</td></tr>
+        <tr><td>AUTH_RETURN_TOKEN_JSON</td><td>nein</td><td>prod: false, dev/test: true</td><td>Kompatibilitaetsmodus fuer alte Bearer-Header-Clients. Browser-Login nutzt httpOnly-Cookie <code>soc_token</code>; in Produktion den JSON-Session-Token nur explizit mit <code>true</code> ausliefern.</td></tr>
+        <tr><td>ADMIN_EMAIL</td><td>optional</td><td>&mdash;</td><td>Bootstrap-Admin (idempotent)</td></tr>
+        <tr><td>ADMIN_PASSWORD</td><td>optional</td><td>&mdash;</td><td>Bootstrap-Passwort (nie geloggt); nach 1. Login entfernen</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Webhooks (Integrationen, HMAC)</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Pflicht</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>WEBHOOK_SECRET_GENERIC</td><td><span class="badge badge-req">Prod</span></td><td>&mdash;</td><td>HMAC generischer Webhook. <code>openssl rand -hex 32</code></td></tr>
+        <tr><td>WEBHOOK_SECRET_WAZUH</td><td>wenn Wazuh aktiv</td><td>&mdash;</td><td>Muss mit Wazuh-VM-Script übereinstimmen</td></tr>
+        <tr><td>WEBHOOK_SECRET_QRADAR</td><td>optional</td><td>&mdash;</td><td>Nur wenn QRadar genutzt</td></tr>
+        <tr><td>WEBHOOK_SECRET_SPLUNK</td><td>optional</td><td>&mdash;</td><td>Nur wenn Splunk genutzt</td></tr>
+        <tr><td>WEBHOOK_SECRET_SERVICENOW</td><td>optional</td><td>&mdash;</td><td>Nur wenn ServiceNow genutzt</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Rate Limiting</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>RATE_LIMIT_WINDOW_MS</td><td>60000</td><td>Zeitfenster (ms) pro Client-IP</td></tr>
+        <tr><td>RATE_LIMIT_MAX</td><td>200</td><td>Max. Requests/Fenster (UI/API)</td></tr>
+        <tr><td>RATE_LIMIT_WEBHOOK_MAX</td><td>1000</td><td>Separater Topf für SIEM-Webhook-Bursts</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Wazuh — Push-Tuning + API-Pull</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>WAZUH_MIN_LEVEL</td><td>5</td><td>Tickets erst ab diesem Rule-Level (Rausch-Filter)</td></tr>
+        <tr><td>WAZUH_CORRELATION_WINDOW_H</td><td>24</td><td>Offense aktualisiert offenes Ticket nur in diesem Fenster (h); 0 = nie</td></tr>
+        <tr><td>WAZUH_API_URL / _USER / _PASSWORD</td><td>&mdash;</td><td>Manager-API (z.B. <code>https://…:55000</code>). Leer = Enrichment aus</td></tr>
+        <tr><td>WAZUH_INDEXER_URL / _USER / _PASSWORD</td><td>&mdash;</td><td>OpenSearch/Indexer für Dashboard (z.B. <code>https://…:9200</code>)</td></tr>
+        <tr><td>WAZUH_INDEXER_INDEX</td><td>wazuh-alerts-*</td><td>Alert-Index-Pattern</td></tr>
+        <tr><td>WAZUH_INDEXER_VULN_INDEX</td><td>wazuh-states-vulnerabilities-*</td><td>Vuln-Index-Pattern</td></tr>
+        <tr><td>WAZUH_TLS_REJECT_UNAUTHORIZED</td><td>false</td><td><code>true</code> = TLS-Validierung (Prod-Warnung wenn nicht true)</td></tr>
+        <tr><td>WAZUH_FP_APPLY_ENABLED</td><td>false</td><td>Safety-Gate (Stage 4): FP-Schreibpfad. false = apply/restart/revert &rarr; 403</td></tr>
+      </tbody>
+    </table>
+
+    <h3>KI-Agent / LLM (Ollama)</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>AGENT_LLM_PROVIDER</td><td>stub</td><td><code>stub</code> (kein LLM) oder <code>ollama</code></td></tr>
+        <tr><td>OLLAMA_BASE_URL</td><td>http://192.168.240.78:11434</td><td>Ollama-Endpunkt</td></tr>
+        <tr><td>OLLAMA_MODEL</td><td>llama3.1:8b / llama3.2:3b*</td><td>CPU-only: <code>llama3.2:3b</code> empfohlen</td></tr>
+        <tr><td>OLLAMA_TIMEOUT_MS</td><td>60000 / 120000</td><td>Timeout für Ollama-Calls (ms)</td></tr>
+        <tr><td>OLLAMA_NUM_PREDICT</td><td>&mdash;</td><td>Max. Tokens (optional)</td></tr>
+        <tr><td>OLLAMA_TLS_REJECT_UNAUTHORIZED</td><td>&mdash;</td><td>TLS-Validierung (optional)</td></tr>
+      </tbody>
+    </table>
+    <div class="warn-box">*Default differiert je Quelle: Compose/<code>ollama-setup.sh</code> = <code>llama3.1:8b</code>,
+    <code>.env.production.example</code> empfiehlt <code>llama3.2:3b</code>. <strong>Empfehlung: <code>OLLAMA_MODEL</code> explizit setzen.</strong></div>
+
+    <h3>RAG-Wissensbasis (Qdrant)</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>RAG_ENABLED</td><td>false</td><td>RAG-Retrieval aktivieren</td></tr>
+        <tr><td>QDRANT_URL</td><td>http://10.99.99.79:6333</td><td>Qdrant-Endpunkt</td></tr>
+        <tr><td>QDRANT_API_KEY</td><td>&mdash;</td><td>API-Key (falls gesichert)</td></tr>
+        <tr><td>QDRANT_TLS_REJECT_UNAUTHORIZED</td><td>&mdash;</td><td>TLS-Validierung Qdrant</td></tr>
+        <tr><td>RAG_EMBED_MODEL</td><td>nomic-embed-text</td><td>Embedding-Modell (über Ollama)</td></tr>
+        <tr><td>RAG_TOP_K</td><td>3</td><td>Anzahl Retrieval-Treffer</td></tr>
+        <tr><td>RAG_INGEST_BATCH_SIZE</td><td>&mdash;</td><td>Batch-Größe beim Einlesen (optional)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Threat Intel (nur Backend, nie ins Frontend/Git)</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>VIRUSTOTAL_API_KEY</td><td>&mdash;</td><td>VT-Lookup. Leer = <code>not_configured</code>, Mock-Fallback</td></tr>
+        <tr><td>ABUSEIPDB_API_KEY</td><td>&mdash;</td><td>AbuseIPDB-Lookup. Leer = Mock-Fallback</td></tr>
+        <tr><td>ABUSEIPDB_MAX_AGE_DAYS</td><td>90</td><td>Max. Alter der Reports</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Auth-Erweiterungen (Security-Welle 3 &mdash; alle default AUS, serverseitig erzwungen)</h3>
+    <div class="info-box">Alle Schalter sind nach Deploy <strong>inert</strong> &mdash; erst <code>*_ENABLED=true</code>
+    schaltet die jeweiligen Routen/Challenges frei. Der Passwort-Login bleibt parallel bestehen.
+    Secrets (<code>OIDC_CLIENT_SECRET</code> u. a.) bleiben strikt backend-only, nie ins Frontend.</div>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>MFA_ENABLED</td><td>false</td><td><strong>MFA/TOTP</strong> (RFC 6238, ohne externe Lib): nur <code>true</code> schaltet Enrollment + Login-Challenge frei. Org-Pflicht via Setting <code>mfaRequired</code>. Migration <code>038</code>. Routen <code>/v1/mfa/*</code>, <code>/v1/auth/mfa</code>. <span class="badge badge-req">LIVE</span></td></tr>
+        <tr><td>API_TOKENS_ENABLED</td><td>false</td><td><strong>Personal Access Tokens:</strong> nur <code>true</code> aktiviert PAT-Auth + <code>/v1/tokens</code>. Migration <code>030</code>. <span class="badge badge-req">LIVE</span></td></tr>
+        <tr><td>OIDC_ENABLED</td><td>false</td><td><strong>SSO/OIDC</strong> (Auth-Code + PKCE/S256): Routen <code>/v1/auth/oidc/*</code>. Migration <code>039</code>. <span class="badge badge-opt">lokal, noch nicht deployt</span></td></tr>
+        <tr><td>OIDC_ISSUER</td><td>&mdash;</td><td>Issuer-URL des IdP, z. B. <code>https://idp.example.com/realms/soc</code></td></tr>
+        <tr><td>OIDC_CLIENT_ID</td><td>&mdash;</td><td>OIDC-Client-ID</td></tr>
+        <tr><td>OIDC_CLIENT_SECRET</td><td>&mdash;</td><td>Client-Secret &mdash; <strong>strikt backend-only</strong></td></tr>
+        <tr><td>OIDC_REDIRECT_URI</td><td>&mdash;</td><td>Callback, z. B. <code>.../api/v1/auth/oidc/callback</code></td></tr>
+        <tr><td>OIDC_SCOPE</td><td>openid profile email</td><td>Angeforderte Scopes</td></tr>
+        <tr><td>OIDC_DEFAULT_ROLE</td><td>viewer</td><td>Default-Rolle neuer Verknüpfungen (PoLA &mdash; kein Auto-Admin)</td></tr>
+        <tr><td>OIDC_ALLOW_SIGNUP</td><td>false</td><td><code>false</code> = nur Linking bestehender Accounts, kein Auto-Anlegen</td></tr>
+        <tr><td>WEBAUTHN_ENABLED</td><td>false</td><td><strong>WebAuthn/Passkey (FIDO2):</strong> Routen <code>/v1/auth/webauthn/*</code>. Ergänzt TOTP-MFA. Migration <code>040</code>. <span class="badge badge-opt">lokal, noch nicht deployt</span></td></tr>
+        <tr><td>WEBAUTHN_RP_ID</td><td>&mdash;</td><td>Registrierbare Domain <strong>ohne</strong> Schema/Port, z. B. <code>nexora.example</code></td></tr>
+        <tr><td>WEBAUTHN_ORIGIN</td><td>&mdash;</td><td>Erwartete Herkunft <strong>mit</strong> Schema, z. B. <code>https://nexora.example</code></td></tr>
+        <tr><td>WEBAUTHN_RP_NAME</td><td>Nexora SOC</td><td>Anzeigename der Relying Party</td></tr>
+        <tr><td>WEBAUTHN_TIMEOUT_MS</td><td>60000</td><td>Ceremony-Timeout (ms)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Outbound-Benachrichtigungen (default AUS)</h3>
+    <div class="warn-box">Sicherheits-Invariante: Kein Outbound ohne <code>NOTIFICATIONS_OUTBOUND_ENABLED=true</code>
+    <strong>und</strong> konfigurierte Ziel-URL. URLs/Secrets verlassen nie das Backend &mdash;
+    <code>GET /v1/notifications/channels</code> meldet nur <code>.configured</code>-Booleans.</div>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>NOTIFICATIONS_OUTBOUND_ENABLED</td><td>false</td><td>Master-Schalter; ohne <code>true</code> bleibt jeder Kanal inert</td></tr>
+        <tr><td>NOTIFY_SLACK_WEBHOOK_URL</td><td>&mdash;</td><td>Slack-Incoming-Webhook</td></tr>
+        <tr><td>NOTIFY_WEBHOOK_URL</td><td>&mdash;</td><td>Generischer Webhook</td></tr>
+        <tr><td>NOTIFY_TEAMS_WEBHOOK_URL</td><td>&mdash;</td><td>Microsoft-Teams-Incoming-Webhook</td></tr>
+        <tr><td>NOTIFY_SMTP_HOST</td><td>&mdash;</td><td>E-Mail/SMTP-Host (nodemailer, lazy). Leer = Kanal inert. <span class="badge badge-opt">E-Mail-Kanal lokal</span></td></tr>
+        <tr><td>NOTIFY_SMTP_PORT</td><td>587</td><td>SMTP-Port (587 STARTTLS / 465 TLS)</td></tr>
+        <tr><td>NOTIFY_SMTP_SECURE</td><td>false</td><td><code>true</code> = 465/TLS, <code>false</code> = STARTTLS</td></tr>
+        <tr><td>NOTIFY_SMTP_USER</td><td>&mdash;</td><td>SMTP-Auth-User (backend-only)</td></tr>
+        <tr><td>NOTIFY_SMTP_PASS</td><td>&mdash;</td><td>SMTP-Auth-Passwort (backend-only)</td></tr>
+        <tr><td>NOTIFY_EMAIL_FROM</td><td>&mdash;</td><td>Absenderadresse</td></tr>
+        <tr><td>NOTIFY_EMAIL_TO</td><td>&mdash;</td><td>Empfängerliste (kommagetrennt); leer = Kanal inert</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Outbound-Ticket-Export &amp; CrowdSec WAN-Integration</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>EXTERNAL_TICKET_EXPORT_ENABLED</td><td>false</td><td>Nur <code>true</code> schaltet <code>POST /v1/tickets/:id/export</code> + <code>.../export/sync-status</code> frei. Pro Ziel zusätzlich dessen <code>*_BASE_URL</code> + Credentials nötig (backend-only)</td></tr>
+        <tr><td>CROWDSEC_LAPI_URL</td><td>&mdash;</td><td>LAPI-Basis-URL; gesetzt = CrowdSec-Processor + Poller registriert (WAN-Alerts &rarr; Ticket)</td></tr>
+        <tr><td>CROWDSEC_MACHINE_ID</td><td>&mdash;</td><td>LAPI-Machine-ID (Machine-JWT &rarr; <code>/v1/alerts</code>)</td></tr>
+        <tr><td>CROWDSEC_PASSWORD</td><td>&mdash;</td><td>LAPI-Machine-Passwort (backend-only)</td></tr>
+        <tr><td>CROWDSEC_TLS_INSECURE</td><td>false</td><td><code>true</code> = self-signed LAPI-Zertifikat akzeptieren (Lab)</td></tr>
+        <tr><td>CROWDSEC_POLL_INTERVAL_MS</td><td>60000</td><td>Poll-Intervall (ms)</td></tr>
+        <tr><td>CROWDSEC_SINCE</td><td>15m</td><td>Zeitfenster je Poll</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Correlation Engine &mdash; FQDN-Resolver (read-only)</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>FQDN_RESOLVER_ENABLED</td><td>false</td><td>Nur <code>true</code> aktiviert DNS-Forward-Confirm (füllt nur leere FQDN; A-Record muss == Flow-IP, kein Fake). <span class="badge badge-req">LIVE</span></td></tr>
+        <tr><td>FQDN_DNS_SERVER</td><td>&mdash;</td><td>DNS-Server für Forward-Lookup, z. B. <code>10.99.99.10</code></td></tr>
+        <tr><td>FQDN_DOMAIN</td><td>&mdash;</td><td>Suffix für Kandidatennamen, z. B. <code>nexora.example</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Provisioning-Rate-Limits (default inaktiv)</h3>
+    <div class="info-box">Greifen nur, wenn die jeweiligen <code>PROV_*</code> gesetzt sind. <code>/enroll</code> zählt
+    nur <strong>fehlgeschlagene</strong> Versuche pro Quell-IP; <code>/heartbeat</code> begrenzt Flood pro
+    <code>nodeId</code> (NAT-transparent) + Auth-Fehler pro Quell-IP.</div>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>PROV_ENROLL_WINDOW_MS</td><td>900000</td><td>Fenster für <code>/enroll</code>-Limit (15 min)</td></tr>
+        <tr><td>PROV_ENROLL_MAX</td><td>5</td><td>Max. fehlgeschlagene <code>/enroll</code>-Versuche pro IP/Fenster</td></tr>
+        <tr><td>PROV_ENROLL_SKIP_SUCCESSFUL</td><td>true</td><td>Erfolgreiche Enrolls zählen nicht gegen das Limit</td></tr>
+        <tr><td>PROV_HEARTBEAT_WINDOW_MS</td><td>60000</td><td>Flood-Fenster pro <code>nodeId</code> (1 min)</td></tr>
+        <tr><td>PROV_HEARTBEAT_MAX_PER_NODE</td><td>60</td><td>Max. Heartbeats pro <code>nodeId</code>/Fenster (~1/s)</td></tr>
+        <tr><td>PROV_HEARTBEAT_FAIL_WINDOW_MS</td><td>900000</td><td>Fenster für Heartbeat-Auth-Fehler (15 min)</td></tr>
+        <tr><td>PROV_HEARTBEAT_FAIL_MAX_PER_IP</td><td>20</td><td>Max. Heartbeat-Auth-Fehler pro Quell-IP/Fenster</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Autonomie + TLS</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Default</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>AUTONOMY_ENABLED</td><td>false</td><td>Kill-Switch (ADR-016): nur <code>true</code> aktiviert Autonomie-Evaluator</td></tr>
+        <tr><td>TLS_CERT_PATH</td><td>/etc/ssl/soc/server.crt</td><td><span class="badge badge-req">Prod</span> Host-Pfad Zertifikat</td></tr>
+        <tr><td>TLS_KEY_PATH</td><td>/etc/ssl/soc/server.key</td><td><span class="badge badge-req">Prod</span> Host-Pfad Private Key (<code>chmod 600</code>)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Optionale Adapter <span class="badge badge-todo">TODO: kein Beispiel im Repo</span></h3>
+    <p>Diese Variablen sind im Code referenziert, fehlen aber in <code>.env.production.example</code> — bei Bedarf ergänzen:</p>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Zweck</th></tr></thead>
+      <tbody>
+        <tr><td>QRADAR_HOST / _BASE_URL / _TOKEN / _TLS_REJECT_UNAUTHORIZED</td><td>QRadar-Adapter/Dashboard + Processor (nur wenn <code>QRADAR_HOST</code> gesetzt)</td></tr>
+        <tr><td>SPLUNK_HOST / SPLUNK_BASE_URL</td><td>Splunk-Adapter + Processor (nur wenn <code>SPLUNK_HOST</code>)</td></tr>
+        <tr><td>SERVICENOW_BASE_URL / _USERNAME / _PASSWORD</td><td>ServiceNow-Outbound</td></tr>
+        <tr><td>OTRS_BASE_URL / _USERNAME / _PASSWORD / _WEB_SERVICE / _OPERATION</td><td>OTRS-Outbound</td></tr>
+        <tr><td>IMAP_HOST / IMAP_* / WEBHOOK_SECRET_EMAIL</td><td>E-Mail-Intake (Poller nur wenn <code>IMAP_HOST</code>)</td></tr>
+        <tr><td>AUDIT_IP_SALT</td><td>Salt für IP-Hashing im Audit-Log (DSGVO)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 05 -->
+  <section class="doc-section" id="s5">
+    <h2><span class="num">05</span> Datenbank &amp; Migrationen</h2>
+    <h3>Mechanismus (<code>db/pool.js</code> + <code>server.js</code>)</h3>
+    <ul class="doc-list">
+      <li><code>bootstrap()</code> ruft — nur bei <code>DB_ENABLED=true</code> — zuerst <code>migrate()</code>, dann <code>ping()</code>, <strong>vor</strong> <code>app.listen()</code>.</li>
+      <li><code>migrate()</code> liest alle <code>*.sql</code> aus <code>backend/src/db/migrations/</code>, <strong>sortiert alphabetisch</strong> (<code>readdirSync().sort()</code>), führt der Reihe nach aus.</li>
+      <li>Alle Migrationen sind <strong>idempotent</strong> (<code>IF NOT EXISTS</code>) — kein separates Framework, keine Versions-Tabelle.</li>
+    </ul>
+    <div class="ok-box"><strong>Aktueller Stand: 28 Migrationen</strong> (<code>001</code> … <code>028</code>) — von <code>001_create_tickets</code>
+    über <code>017_ticket_number_seq</code>, <code>021_agent_suggestion_analysis</code>, <code>027_autonomy_policies</code> bis <code>028_user_profile_fields</code>.</div>
+    <h3>Manuell migrieren (neue Migration ohne Neustart)</h3>
+<pre>docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production \
+  exec api node -e "require('./src/db/pool').migrate().then(() =&gt; process.exit(0))"</pre>
+    <div class="warn-box"><strong>Wichtig:</strong> Neue Migrationsdateien so benennen, dass die alphabetische Sortierung
+    der gewünschten Reihenfolge entspricht (führende Nullen, z.B. <code>029_…</code>).</div>
+  </section>
+
+  <!-- 06 -->
+  <section class="doc-section" id="s6">
+    <h2><span class="num">06</span> Produktions-Deployment</h2>
+    <p>Kontext: Linux/Ubuntu-VM, im Lab Proxmox (ROADMAP P15). Die aktuelle Produktiv-Referenz liegt unter <code>/opt/SOC-Orchestrator</code>. Falls eine Umgebung historisch abweicht, vor jedem Eingriff zuerst <code>pwd</code> und <code>git branch --show-current</code> pr&uuml;fen statt alte Pfade blind zu &uuml;bernehmen.</p>
+    <h3>6.1 Ersteinrichtung (<code>deploy/README.md</code>)</h3>
+<pre># 1) Secrets erzeugen
+openssl rand -hex 64    # JWT_SECRET (min. 64)
+openssl rand -hex 20    # DB_PASSWORD (min. 20)
+openssl rand -hex 32    # WEBHOOK_SECRET_* (min. 32 je Quelle)
+
+# 2) ENV-Datei anlegen und ausfüllen
+cp deploy/.env.production.example deploy/.env.production
+nano deploy/.env.production       # alle CHANGE_ME ersetzen
+
+# 3) TLS-Zertifikat ablegen
+mkdir -p /etc/ssl/soc
+cp server.crt /etc/ssl/soc/server.crt
+cp server.key /etc/ssl/soc/server.key
+chmod 600 /etc/ssl/soc/server.key
+
+# 4) Starten (baut api + web mit)
+docker-compose -f deploy/docker-compose.prod.yml \
+  --env-file deploy/.env.production up -d --build</pre>
+    <p>Drei Container: <code>soc_postgres_prod</code>, <code>soc_api_prod</code>, <code>soc_web_prod</code>. Nur <code>web</code> ist von außen
+    erreichbar (80/443).</p>
+
+    <h3>6.2 Container-Topologie</h3>
+    <table class="doc-table">
+      <thead><tr><th>Service</th><th>Image / Build</th><th>Ports</th><th>Besonderheit</th></tr></thead>
+      <tbody>
+        <tr><td>postgres</td><td><code>postgres:16-alpine</code></td><td>nur intern</td><td>Volume <code>pgdata_prod</code>, <code>pg_isready</code></td></tr>
+        <tr><td>api</td><td>Build <code>backend/Dockerfile</code> (production)</td><td>nur intern</td><td><code>DB_ENABLED=true</code> fix; Health <code>/api/v1/health</code></td></tr>
+        <tr><td>web</td><td>Build <code>frontend/Dockerfile</code> (web), Context = Repo-Root</td><td>80, 443</td><td>nginx.conf ins Image gebacken; TLS-Certs vom Host</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.3 nginx / TLS (<code>deploy/nginx/nginx.conf</code>)</h3>
+    <ul class="doc-list">
+      <li>HTTP &rarr; HTTPS-Redirect (301); TLS 1.2/1.3; HSTS + Security-Header.</li>
+      <li><code>/api/</code> &rarr; <code>api:3000</code> (30s); <code>/api/v1/integrations/</code> 60s; <code>/api/v1/agent/</code> &amp; <code>/api/v1/use-case-drafts/</code> <strong>600s</strong> (lokales LLM).</li>
+      <li><code>/</code> &rarr; React-SPA (<code>try_files … /index.html</code>); <code>/health</code> &rarr; API-Health.</li>
+      <li><code>/metrics</code> (Prometheus) &rarr; nur interne IPs (<code>10.99.99.0/24</code>, <code>127.0.0.1</code>).</li>
+    </ul>
+    <div class="warn-box">nginx steht für den KI-Agent auf 600s, App-Default ist niedriger (60s/120s). Bei langsamem
+    CPU-Ollama <code>OLLAMA_TIMEOUT_MS</code> erhöhen, damit App- und nginx-Timeout zusammenpassen.</div>
+
+    <h3>6.4 Release-Workflow (<code>release.sh</code> + <code>soc.sh</code>)</h3>
+    <ol class="doc-steps">
+      <li>HEAD merken, aktiven Branch ermitteln und <code>git pull --ff-only origin &lt;aktueller-branch&gt;</code>.</li>
+      <li>Neue Commits anzeigen.</li>
+      <li><code>soc.sh build api web</code> (postgres braucht kein Build).</li>
+      <li><code>soc.sh up</code> (= <code>up -d</code>).</li>
+      <li>10s warten, <code>soc.sh health</code> (curl auf <code>https://localhost/health</code>).</li>
+      <li>„RELEASE OK" oder Fehler + Exit-Code.</li>
+    </ol>
+<pre>./deploy/release.sh
+
+# soc.sh — Wrapper (setzt -f + --env-file automatisch)
+./deploy/soc.sh ps
+./deploy/soc.sh logs api
+./deploy/soc.sh up
+./deploy/soc.sh restart api
+./deploy/soc.sh exec api npm run seed:admin
+./deploy/soc.sh health</pre>
+    <div class="warn-box">Veraltete Einzeiler wie <code>ssh root@...</code>, <code>cd /apps</code> oder <code>git pull origin main</code> sind absichtlich nicht mehr die Referenz. Wenn <code>./deploy/soc.sh</code> nicht gefunden wird, befindest du dich nicht im geklonten Repo.</div>
+
+    <h3>6.5 Frontend nach Änderungen neu bauen</h3>
+<pre>docker-compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.production \
+  up -d --build web</pre>
+  </section>
+
+  <!-- 07 -->
+  <section class="doc-section" id="s7">
+    <h2><span class="num">07</span> Externe Dienste anbinden</h2>
+
+    <h3>7.1 Ollama (lokales LLM)</h3>
+    <p>Läuft als eigene LXC (<code>192.168.240.78:11434</code>). Modell wird <strong>dort</strong> geladen, nicht im SOC-Container.</p>
+<pre>ssh root@192.168.240.78 'ollama pull llama3.2:3b'
+
+# deploy/.env.production:
+AGENT_LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://192.168.240.78:11434
+OLLAMA_MODEL=llama3.2:3b
+
+./deploy/soc.sh up
+./deploy/ollama-setup.sh                          # Erreichbarkeit + Modell + Smoke
+./deploy/soc.sh logs api | grep llm_provider_selected</pre>
+    <div class="info-box"><strong>Ohne Ollama:</strong> <code>AGENT_LLM_PROVIDER=stub</code> (Default) &rarr; deterministische
+    Stub-Antworten, kein LLM-Call. Der Agent funktioniert, ohne echte Modell-Analyse.</div>
+
+    <h3>7.2 Qdrant / RAG</h3>
+<pre>RAG_ENABLED=true
+QDRANT_URL=http://10.99.99.79:6333
+RAG_EMBED_MODEL=nomic-embed-text
+RAG_TOP_K=3</pre>
+    <p>Verifizieren: Settings &rarr; RAG-Karte bzw. <code>/api/v1/rag/status</code> (Reindex <code>/api/v1/rag/reindex</code>).</p>
+    <div class="info-box"><strong>Ohne Qdrant:</strong> <code>RAG_ENABLED=false</code> &rarr; KI-Agent ohne Wissens-Retrieval. Keine Fehler.</div>
+    <div class="warn-box"><span class="badge badge-todo">TODO/offen</span> Wissensbasis-Ingest (MITRE/Hunts/Incidents) ist
+    Phase P19b/P19d (teils offen). Kein dediziertes Deploy-Skript im Repo — Anbindung über die <code>/rag</code>-Routes.</div>
+
+    <h3>7.3 Wazuh (SIEM)</h3>
+    <p><strong>a) Inbound (Alert &rarr; Ticket):</strong></p>
+<pre>WEBHOOK_SECRET_WAZUH=&lt;openssl rand -hex 32&gt;   # muss mit Wazuh-VM-Script übereinstimmen
+WAZUH_MIN_LEVEL=5</pre>
+    <p>Webhook-Endpunkt <code>/api/v1/integrations/wazuh/webhook</code> (HMAC). Wazuh-Processor ist <strong>immer</strong> registriert.</p>
+    <p><strong>b) API-Pull + Indexer (optional):</strong></p>
+<pre>WAZUH_API_URL=https://192.168.240.77:55000
+WAZUH_API_USER=wazuh
+WAZUH_API_PASSWORD=&lt;…&gt;
+WAZUH_INDEXER_URL=https://192.168.240.77:9200
+WAZUH_INDEXER_USER=&lt;…&gt;
+WAZUH_INDEXER_PASSWORD=&lt;…&gt;
+WAZUH_TLS_REJECT_UNAUTHORIZED=true</pre>
+    <p>Verifizieren: Boot-Log <code>wazuh_api_enrichment {enabled:true}</code>; <code>/wazuh</code>-Dashboard zeigt echte Daten.</p>
+    <div class="info-box"><strong>Ohne Wazuh-API/Indexer:</strong> Variablen leer &rarr; Enrichment aus, Dashboard zeigt
+    ehrliche Leerzustände (ADR-009). Keine Fehler.</div>
+
+    <h3>7.4 Threat-Intel (VirusTotal / AbuseIPDB)</h3>
+<pre>VIRUSTOTAL_API_KEY=&lt;…&gt;
+ABUSEIPDB_API_KEY=&lt;…&gt;</pre>
+    <div class="info-box"><strong>Ohne Keys:</strong> Provider <code>not_configured</code>, Mock-Fallback. Nur öffentliche IPs werden
+    extern abgefragt, 24h gecacht.</div>
+
+    <h3>7.5 QRadar / Splunk / ServiceNow / OTRS / E-Mail</h3>
+    <p>Processor-Registrierung <strong>conditional</strong> beim Boot: QRadar nur bei <code>QRADAR_HOST</code>, Splunk nur bei
+    <code>SPLUNK_HOST</code>, E-Mail-Poller nur bei <code>IMAP_HOST</code>.</p>
+    <div class="warn-box"><span class="badge badge-todo">TODO/offen</span> Vollständige verifizierte ENV-Beispiele für diese
+    Adapter fehlen im Repo — vor produktiver Nutzung Auth/URLs prüfen.</div>
+  </section>
+
+  <!-- 08 -->
+  <section class="doc-section" id="s8">
+    <h2><span class="num">08</span> Erster Start / Verifikation</h2>
+    <p>Smoke-Tests aus <code>deploy/README.md</code> (Domain ersetzen):</p>
+<pre># 1) Health (App + DB)
+curl -k https://soc.example.com/api/v1/health      # {"status":"ok","db":"ok",...}
+
+# 2) HTTP→HTTPS-Redirect
+curl -I http://soc.example.com/                     # 301 → https://…
+
+# 3) Unauth-Zugriff blockt
+curl -k https://soc.example.com/api/v1/tickets      # 401 UNAUTHORIZED
+
+# 4) Login
+curl -k -X POST https://soc.example.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@firma.de","password":"&lt;ADMIN_PASSWORD&gt;"}'   # {"token":"eyJ...",...}</pre>
+    <p><strong>Komfort-Health über nginx:</strong> <code>curl -k https://soc.example.com/health</code> (= <code>soc.sh health</code>).</p>
+    <div class="ok-box"><strong>Persistenz-Restart-Test (P14):</strong> Login &rarr; Ticket anlegen &rarr; <code>restart api</code> &rarr;
+    erneut Login + Ticket noch da? Wenn ja, ist die Postgres-Persistenz scharf. (Vollständige Kette in <code>deploy/README.md</code>.)</div>
+    <div class="warn-box"><strong>Bekannte Ausnahme:</strong> Die JWT-Logout-Blocklist ist In-Memory — nach Neustart sind
+    ausgeloggte, noch nicht abgelaufene Tokens wieder gültig (verfallen nach <code>JWT_EXPIRES_IN</code>).</div>
+  </section>
+
+  <!-- 09 -->
+  <section class="doc-section" id="s9">
+    <h2><span class="num">09</span> Betrieb</h2>
+    <h3>Backups (<code>deploy/backup-db.sh</code>)</h3>
+    <ul class="doc-list">
+      <li><code>pg_dump</code> läuft <strong>im Container</strong> — DB-Creds verlassen ihn nie.</li>
+      <li>Pipeline <code>pg_dump | gzip | openssl enc -aes-256-cbc -pbkdf2</code> &rarr; nie Klartext (DSGVO Art. 32).</li>
+      <li>Passphrase aus <code>~/.soc_backup_pass</code> (0600). Integritätscheck + Rotation (Default: 14).</li>
+    </ul>
+    <div class="warn-box"><strong>Passphrase getrennt sichern</strong> (Passwortmanager/Tresor) — geht sie verloren, sind alle
+    Backups unwiederherstellbar.</div>
+<pre>./deploy/backup-db.sh
+# Variablen: SOC_BACKUP_DIR (~/backups/soc), SOC_BACKUP_KEEP (14), SOC_BACKUP_PASS_FILE
+
+# Restore:
+openssl enc -d -aes-256-cbc -pbkdf2 -pass file:$HOME/.soc_backup_pass \
+  -in soc-&lt;TS&gt;.sql.gz.enc | gunzip | \
+  docker exec -i soc_postgres_prod sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"'</pre>
+    <p>Cron (laut Memory 03:30 auf dem Prod-Host) <span class="badge badge-todo">TODO: Pfad anpassen</span>:</p>
+<pre>30 3 * * * cd &lt;repo-root&gt; &amp;&amp; ./deploy/backup-db.sh &gt;&gt; /var/log/soc-backup.log 2&gt;&amp;1</pre>
+    <p>Auf Proxmox zusätzlich: VM-Snapshot vor Updates (<code>qm snapshot &lt;vmid&gt; pre-update</code>) + <code>vzdump</code>. App-Backup &ne; VM-Backup.</p>
+    <h3>Audit-Log-Rotation</h3>
+    <p><code>deploy/prune-audit-log.sh</code> — kürzt das append-only Audit-Log nach Aufbewahrungsfrist.</p>
+    <h3>Logs &amp; Metrics</h3>
+<pre>./deploy/soc.sh logs api      # API (Winston, JSON)
+./deploy/soc.sh logs web      # nginx (json_combined)
+docker logs soc_api_prod</pre>
+    <p>Prometheus <code>/metrics</code> (über nginx nur interne IPs); Grafana im Lab <code>10.99.99.55</code>.</p>
+  </section>
+
+  <!-- 10 -->
+  <section class="doc-section" id="s10">
+    <h2><span class="num">10</span> Troubleshooting</h2>
+    <table class="doc-table">
+      <thead><tr><th>Symptom</th><th>Ursache</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Start bricht ab: „PRODUKTIONS-KONFIGURATION UNGÜLTIG"</td><td>Pflicht-Secret fehlt/Dev-Default; <code>CORS_ORIGINS</code> mit <code>*</code>/<code>localhost</code></td><td><code>validateEnv.js</code> nennt verletzte Regel; <code>.env.production</code> korrigieren</td></tr>
+        <tr><td>„JWT_SECRET muss in Produktion gesetzt sein"</td><td>Kein/zu kurzer <code>JWT_SECRET</code></td><td><code>openssl rand -hex 64</code> (kein Dev-Fallback in Prod)</td></tr>
+        <tr><td>Health <code>"db":"error"</code> / degraded</td><td>Postgres nicht erreichbar; Creds falsch; nicht healthy</td><td><code>soc.sh ps</code>, Creds, <code>soc.sh logs api</code> (<code>pg_pool_error</code>)</td></tr>
+        <tr><td>Nach Neustart keine Daten / Login weg</td><td><code>DB_ENABLED</code> nicht <code>true</code> &rarr; InMemory</td><td>In Prod fix gesetzt; bei nativ/Dev explizit setzen</td></tr>
+        <tr><td>Tabelle/Spalte fehlt</td><td>Migration nicht gelaufen / neue Migration nicht ausgeführt</td><td>Migration manuell (Abschnitt 5); Dateibenennung <code>NNN_…</code> prüfen</td></tr>
+        <tr><td>KI-Agent Timeout / 504</td><td>CPU-Ollama langsamer als Timeout; App/nginx-Timeout passen nicht</td><td><code>llama3.2:3b</code>, <code>OLLAMA_TIMEOUT_MS</code> erhöhen; nginx 600s</td></tr>
+        <tr><td>KI-Agent nur Stub-Antworten</td><td><code>AGENT_LLM_PROVIDER</code> nicht <code>ollama</code></td><td>Provider setzen + Neustart; <code>grep llm_provider_selected</code></td></tr>
+        <tr><td>Ollama „nicht erreichbar"</td><td>Firewall / <code>OLLAMA_HOST</code> / Modell nicht geladen</td><td><code>./deploy/ollama-setup.sh</code>; <code>ollama pull &lt;model&gt;</code></td></tr>
+        <tr><td>Webhook &rarr; 401/403</td><td>HMAC/Secret falsch, Timestamp abgelaufen (Replay)</td><td>Secret beidseitig identisch; Signatur <code>sha256=HMAC(timestamp.body)</code></td></tr>
+        <tr><td>Stage-4 FP-Apply &rarr; 403</td><td>Safety-Gate aus</td><td>Bewusst <code>WAZUH_FP_APPLY_ENABLED=true</code></td></tr>
+        <tr><td>TLS-Fehler beim Start von <code>web</code></td><td><code>TLS_CERT_PATH</code>/<code>TLS_KEY_PATH</code> leer/falsche Rechte</td><td>Certs nach <code>/etc/ssl/soc/</code>, <code>chmod 600</code> Key, Pfade setzen</td></tr>
+        <tr><td><code>soc.sh</code>: „.env.production fehlt"</td><td>ENV-Datei nicht angelegt</td><td><code>cp …example .env.production</code> + ausfüllen</td></tr>
+        <tr><td>Warnung <code>WAZUH_TLS_REJECT_UNAUTHORIZED nicht "true"</code></td><td>TLS-Validierung aus (Lab-Default)</td><td>In Prod <code>true</code> + gültiges Cert (nur Warnung)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="info-box" style="margin-top:36px;">
+    <strong>Referenzdateien:</strong> <code>docker-compose.dev.yml</code> · <code>deploy/docker-compose.prod.yml</code> ·
+    <code>deploy/.env.production.example</code> · <code>deploy/nginx/nginx.conf</code> · <code>deploy/release.sh</code> · <code>deploy/soc.sh</code> ·
+    <code>deploy/backup-db.sh</code> · <code>deploy/ollama-setup.sh</code> · <code>backend/src/db/migrations/</code> · <code>backend/src/config/validateEnv.js</code> · <code>ROADMAP.md</code>
+  </div>
+</main>
+
+<script>
+  // Sidebar ScrollSpy — aktiven Abschnitt hervorheben
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.sb-link[href^="#"]'));
+    var sections = links
+      .map(function (l) { return document.querySelector(l.getAttribute('href')); })
+      .filter(Boolean);
+
+    function onScroll() {
+      var pos = window.scrollY + 120;
+      var current = sections[0];
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].offsetTop <= pos) current = sections[i];
+      }
+      links.forEach(function (l) {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + (current && current.id));
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+</body>
+</html>
+</content>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora SOC — Produkterklärung</title>
+<style>
+  :root{
+    --bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;
+    --accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;
+    --text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;
+    --font-mono:'JetBrains Mono','Courier New',monospace;
+    --font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}
+  #sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:14px;font-weight:800;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .sb-badge{display:inline-block;margin:10px 18px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.3);color:var(--accent2);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:14px 18px 5px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:6px 18px;font-size:12px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .num{font-size:10px;color:var(--text-dim);font-family:var(--font-mono);min-width:20px;}
+  #content{margin-left:var(--sw);flex:1;max-width:920px;padding:44px 52px 90px;}
+  .cover{margin-bottom:40px;padding-bottom:26px;border-bottom:1px solid var(--border);}
+  .cover h1{font-size:34px;font-weight:800;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
+  .cover .sub{font-size:17px;color:var(--text);margin-top:10px;max-width:680px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:10px;font-family:var(--font-mono);}
+  .doc-section{margin-bottom:48px;scroll-margin-top:28px;}
+  h2{font-size:20px;font-weight:700;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+  h2 .num{font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.25);color:var(--accent);font-family:var(--font-mono);}
+  h3{font-size:14px;font-weight:700;color:var(--text-head);margin:22px 0 9px;}
+  p{margin-bottom:12px;color:var(--text);}
+  strong{color:var(--text-head);}
+  .info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-left:3px solid var(--accent);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .info-box strong{color:var(--accent);}
+  .warn-box{background:rgba(255,107,53,.07);border:1px solid rgba(255,107,53,.25);border-left:3px solid var(--warn);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .warn-box strong{color:var(--warn);}
+  .ok-box{background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);border-left:3px solid var(--accent2);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .ok-box strong{color:var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:14px 0 22px;font-size:13px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table tr:hover td{background:rgba(255,255,255,.02);}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:12px;white-space:nowrap;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:5px;padding:14px 18px;font-family:var(--font-mono);font-size:12px;line-height:1.65;color:#a8d8b0;overflow-x:auto;margin:10px 0 18px;}
+  code{font-family:var(--font-mono);font-size:12px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  ul.doc-list{list-style:none;margin:10px 0 16px;padding:0;}
+  ul.doc-list li{padding:4px 0 4px 18px;position:relative;color:var(--text);font-size:13px;}
+  ul.doc-list li::before{content:'›';position:absolute;left:4px;color:var(--accent);font-weight:700;}
+  ul.no-list{list-style:none;margin:10px 0 16px;padding:0;}
+  ul.no-list li{padding:5px 0 5px 26px;position:relative;color:var(--text);font-size:13px;}
+  ul.no-list li::before{content:'✕';position:absolute;left:4px;color:var(--crit);font-weight:700;}
+  ol.doc-steps{margin:10px 0 16px;padding-left:22px;}
+  ol.doc-steps li{padding:5px 0;color:var(--text);font-size:13px;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:26px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  .pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:11px;letter-spacing:.4px;text-transform:uppercase;}
+  .pill.live{background:rgba(0,255,136,.13);border:1px solid rgba(0,255,136,.35);color:var(--accent2);}
+  .pill.wip{background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.3);color:var(--warn);}
+  .lead{font-size:15px;color:var(--text-head);line-height:1.75;}
+  hr.sep{border:none;border-top:1px solid var(--border);margin:30px 0;}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>Nexora SOC</h1><p>Produkterklärung</p></div>
+  <span class="sb-badge">Produktiv &amp; live</span>
+  <div class="sb-section">Kapitel</div>
+  <a class="sb-link" href="#s01"><span class="num">01</span> Management Summary</a>
+  <a class="sb-link" href="#s02"><span class="num">02</span> Das Problem</a>
+  <a class="sb-link" href="#s03"><span class="num">03</span> Die Lösung</a>
+  <a class="sb-link" href="#s04"><span class="num">04</span> Abgrenzung</a>
+  <a class="sb-link" href="#s05"><span class="num">05</span> Nutzen je Rolle</a>
+  <a class="sb-link" href="#s06"><span class="num">06</span> Funktionsumfang</a>
+  <a class="sb-link" href="#s07"><span class="num">07</span> Zentraler Workflow</a>
+  <a class="sb-link" href="#s08"><span class="num">08</span> Architektur</a>
+  <a class="sb-link" href="#s09"><span class="num">09</span> Hardrules</a>
+  <a class="sb-link" href="#s10"><span class="num">10</span> Betrieb &amp; Datenhoheit</a>
+  <a class="sb-link" href="#s11"><span class="num">11</span> Reifegrad &amp; Roadmap</a>
+  <a class="sb-link" href="#s12"><span class="num">12</span> Glossar</a>
+  <div class="sb-section" style="margin-top:14px;">Quellen</div>
+  <a class="sb-link" href="feature-status.md"><span class="num">→</span> Feature-Status-Matrix</a>
+  <a class="sb-link" href="../../ROADMAP.md"><span class="num">→</span> Roadmap</a>
+</nav>
+
+<main id="content">
+  <a class="back-link" href="../index.html">← Zurück zur Doku</a>
+  <div class="cover">
+    <h1>Nexora SOC</h1>
+    <div class="sub">Self-hosted SOC-Orchestrierungsplattform für Tier 1–3 — Produkterklärung für Entscheider und technische Evaluatoren.</div>
+    <div class="meta">Stand: 2026-06-20 &nbsp;|&nbsp; Reifegrad: produktiv &amp; live (nexora.example) &nbsp;|&nbsp; Open Source</div>
+  </div>
+
+  <!-- 01 -->
+  <section class="doc-section" id="s01">
+    <h2><span class="num">01</span> Management Summary</h2>
+    <p class="lead"><strong>Nexora SOC</strong> ist eine Orchestrierungs- und Analyse-Plattform für Security Operations Centers. Sie sitzt <em>über</em> den vorhandenen Sicherheitswerkzeugen — Wazuh, QRadar, Splunk — und macht aus deren rohen Alerts nachvollziehbare, angereicherte, priorisierte Vorgänge („Tickets"), die ein Analyst effizient bearbeiten kann.</p>
+    <p>Der Kerngedanke: Ein SOC ertrinkt nicht in fehlenden Werkzeugen, sondern in <strong>Alert-Volumen, Kontextarbeit und Wiederholung</strong>. Tier-1/2-Analysten verbringen den Großteil ihrer Zeit damit, denselben Kontext immer wieder manuell zusammenzusuchen. Nexora automatisiert genau diese Vorarbeit, <strong>bereitet eine Entscheidung vor</strong> und legt sie dem Menschen zur <strong>Freigabe</strong> vor.</p>
+    <h3>Was Nexora messbar liefert</h3>
+    <ul class="doc-list">
+      <li><strong>Weniger manuelle Triage</strong> — Alerts werden automatisch zu Tickets normalisiert, dedupliziert, mit Threat-Intel angereichert und einem Host-Kontext zugeordnet.</li>
+      <li><strong>Schnellere Entscheidungen</strong> — ein KI-Copilot fasst die Beweislage zusammen, schlägt eine Einordnung vor (eskalieren, False Positive, korrelieren, eindämmen) und begründet sie <em>mit Belegen</em> — nie ohne.</li>
+      <li><strong>Nachweisbarkeit</strong> — jeder Vorgang trägt eine vollständige Beweiskette (Evidence, Chain of Custody, Audit-Trail), exportierbar als PDF/CSV.</li>
+      <li><strong>Datenhoheit</strong> — vollständig self-hosted. Daten verlassen das eigene Netz nur dann, wenn ein Analyst eine Cloud-Funktion bewusst aktiviert.</li>
+    </ul>
+    <div class="ok-box"><strong>Reifegrad:</strong> produktiv im Einsatz. Durchgängig testgetrieben entwickelt — ~2.700 Backend-Tests und ~900 Frontend-Tests, alle grün. Architektur auf Erweiterbarkeit und Auditierbarkeit ausgelegt.</div>
+    <div class="info-box"><strong>Positionierung in einem Satz:</strong> Nexora ist der Analyst-Copilot und die Orchestrierungsschicht für das SOC — kein Ersatz für SIEM oder EDR, sondern die intelligente Klammer darüber.</div>
+  </section>
+
+  <!-- 02 -->
+  <section class="doc-section" id="s02">
+    <h2><span class="num">02</span> Das Problem</h2>
+    <p>Ein modernes SOC betreibt meist bereits leistungsfähige Werkzeuge: ein <strong>SIEM</strong> (Wazuh, QRadar, Splunk) für Sammlung und Regel-Erkennung, ggf. <strong>EDR/AV</strong> auf den Endpunkten und <strong>Threat-Intel-Quellen</strong>. Der Engpass entsteht <strong>zwischen</strong> diesen Werkzeugen — in der menschlichen Triage.</p>
+    <table class="doc-table">
+      <thead><tr><th>Schmerzpunkt</th><th>Auswirkung</th></tr></thead>
+      <tbody>
+        <tr><td>Alert-Flut</td><td>Tier-1 wird von Volumen erschlagen; echte Vorfälle gehen im Rauschen unter.</td></tr>
+        <tr><td>Kontext-Suche von Hand</td><td>Für jeden Alert dieselben Fragen: Host? IP-Reputation? Zusammenhang? — manuell, wiederholt.</td></tr>
+        <tr><td>False-Positive-Müdigkeit</td><td>Bekanntes Rauschen wird immer neu bewertet, statt sauber und <em>scoped</em> ausgenommen.</td></tr>
+        <tr><td>Fehlende Nachvollziehbarkeit</td><td>Entscheidungen sind nicht durchgängig belegt → schwierig bei Audit, Übergabe, NIS2.</td></tr>
+        <tr><td>Tier-3-Zeit verbrennt in Tier-1</td><td>Die teuersten Analysten machen Routinetriage statt Threat Hunting / Detection Engineering.</td></tr>
+      </tbody>
+    </table>
+    <p>Nexora setzt <strong>nicht</strong> bei der Erkennung an (das macht das SIEM gut), sondern bei der <strong>Verarbeitung, Anreicherung und Entscheidung</strong> danach.</p>
+  </section>
+
+  <!-- 03 -->
+  <section class="doc-section" id="s03">
+    <h2><span class="num">03</span> Die Lösung — was Nexora tut</h2>
+    <p>Nexora bildet die Verarbeitungskette nach dem Alert als nachvollziehbaren Fluss ab:</p>
+    <pre>Rohdaten     →  Adapter        →  Ticket          →  Anreicherung    →  KI-Analyse        →  Entscheidung      →  Report
+(SIEM-Alert)    (Validierung +     (normalisiert,     (Threat-Intel,     (Zusammenfassung    (Mensch gibt frei,   (PDF/CSV,
+                 Normalisierung)    dedupliziert)      Host, MITRE)       + Vorschlag mit     Audit, rückrollbar)  Chain of
+                                                                          Belegen)                                 Custody)</pre>
+    <ul class="doc-list">
+      <li><strong>Multi-SIEM-Aufnahme über Adapter</strong> — jede Quelle (Wazuh, QRadar, Splunk, generische Webhooks) wird über einen eigenen Adapter validiert und in ein einheitliches Ticket-Format übersetzt. Kein externer Input wird ungeprüft übernommen.</li>
+      <li><strong>Automatische Anreicherung</strong> — IOCs (IP, Domain, Hash) werden extrahiert und gegen VirusTotal/AbuseIPDB bewertet; Host-Inventar, Schwachstellen und Compliance-Daten kommen aus Wazuh; Techniken werden auf <strong>MITRE ATT&amp;CK</strong> gemappt.</li>
+      <li><strong>KI-Copilot mit Human-in-the-loop</strong> — der Agent erzeugt <em>Vorschläge</em>, keine selbsttätigen Aktionen. Jeder Vorschlag ist mit Beweisen hinterlegt (Anti-Halluzinations-Guardrails) und durchläuft einen Freigabe-Workflow.</li>
+      <li><strong>Threat Hunting</strong> — ein Katalog MITRE-gemappter Hunts läuft per Knopfdruck gegen die Wazuh-Daten; Funde werden zu Tickets oder Evidence.</li>
+      <li><strong>Detection Engineering</strong> — aus echten Tickets entstehen Use-Case-Entwürfe; Regeln werden als Vorschau in mehreren Formaten exportiert — nie ohne Freigabe scharf geschaltet.</li>
+      <li><strong>Compliance-Unterstützung (NIS2)</strong> — ein Readiness-Werkzeug zur Nachweisführung (kein Konformitätsnachweis, siehe Abgrenzung).</li>
+    </ul>
+  </section>
+
+  <!-- 04 -->
+  <section class="doc-section" id="s04">
+    <h2><span class="num">04</span> Abgrenzung — was Nexora <em>nicht</em> ist</h2>
+    <p>Ehrliche Grenzen sind Teil des Produkts. Nexora ist <strong>kein</strong>:</p>
+    <ul class="no-list">
+      <li><strong>SIEM-Ersatz.</strong> Nexora erkennt nicht selbst, sondern konsumiert und korreliert die Erkennungen vorhandener SIEMs.</li>
+      <li><strong>EDR/Antivirus-Ersatz.</strong> Es entfernt keine Malware und greift nicht selbsttätig auf Endpunkten ein.</li>
+      <li><strong>Auto-Remediation-Engine.</strong> Kritische Aktionen werden vorbereitet, aber von einem Menschen freigegeben — nie automatisch ausgeführt.</li>
+      <li><strong>Konformitätsnachweis / Zertifizierung / Rechtsgutachten.</strong> Das NIS2-Modul ist ein Arbeits- und Nachweis-Werkzeug und erzeugt bewusst keinen Compliance-Claim (per Test erzwungen).</li>
+      <li><strong>Remote-Command-Kanal.</strong> Der optionale Endpoint-Companion sammelt nur read-only Inventar und Heartbeats. In der gesamten Provisioning-Kette gibt es keinen Apply-, Remote- oder Netzwerkänderungs-Kanal.</li>
+    </ul>
+    <div class="warn-box"><strong>Im Code abgesichert:</strong> Diese Grenzen sind nicht nur dokumentiert, sondern durch Tests erzwungen — z. B. ein Safety-Scanner, der den Linux-Installer gegen Netzwerk-/Apply-Befehle prüft und den Build rot färbt, falls jemand sie einführt.</div>
+  </section>
+
+  <!-- 05 -->
+  <section class="doc-section" id="s05">
+    <h2><span class="num">05</span> Nutzen je Rolle</h2>
+    <p>Nexora kennt vier Rollen mit klarer Hierarchie: <strong>admin &gt; engineer &gt; analyst &gt; viewer</strong>. Rechte sind serverseitig durchgesetzt, nicht nur in der UI ausgeblendet.</p>
+    <table class="doc-table">
+      <thead><tr><th>Rolle</th><th>Was sie tut</th><th>Konkreter Nutzen</th></tr></thead>
+      <tbody>
+        <tr><td>Viewer</td><td>Lesen</td><td>Read-only-Einblick (z. B. Audit, NIS2-Readiness) ohne Änderungsrisiko.</td></tr>
+        <tr><td>Analyst (Tier 1–2)</td><td>Tickets, Triage, Hunts, KI-Vorschläge</td><td>Der Kontext ist schon da — weniger Klicks, schnellere und belegte Entscheidung.</td></tr>
+        <tr><td>Engineer (Tier 3)</td><td>Detection Eng., Use-Case-Dev, Regel-Export</td><td>Aus echten Vorfällen werden neue Erkennungen — weniger Zeit in Tier-1-Routine.</td></tr>
+        <tr><td>Admin</td><td>Benutzer, Policies, Provisioning, FP-Apply, NIS2</td><td>Volle Kontrolle über Policies, Audit und kritische Schalter — alles default-AUS und auditiert.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 06 -->
+  <section class="doc-section" id="s06">
+    <h2><span class="num">06</span> Funktionsumfang im Detail</h2>
+
+    <h3>6.1 Incident-Ticketing &amp; Lebenszyklus</h3>
+    <ul class="doc-list">
+      <li>Erstellung manuell oder automatisch aus SIEM-Alerts (volle Feldvalidierung).</li>
+      <li>Deduplizierung über Quelle + Offense-ID + Hash; fortlaufende Nummerierung <code>INC000001</code> (PostgreSQL-Sequence).</li>
+      <li>Lebenszyklus: anlegen → bearbeiten (Status/Notizen/Zuweisung) → schließen mit Grund (resolved / FP / benign / dup).</li>
+      <li>Host-Case-Verknüpfung: Wazuh-Events desselben Hosts werden gebündelt; verwandte Tickets werden angezeigt.</li>
+      <li>Append-only Audit-Trail je Ticket; echter PDF-Export (Analysis-Deck + Evidence); Admin-Löschung mit Bestätigung.</li>
+    </ul>
+
+    <h3>6.2 SIEM-Integration (Adapter-Pflicht)</h3>
+    <table class="doc-table">
+      <thead><tr><th>Quelle</th><th>Funktion</th></tr></thead>
+      <tbody>
+        <tr><td>Wazuh (primär)</td><td>Webhook-Aufnahme (HMAC + Replay-Schutz), Alert→Ticket-Processor mit Dedup, Manager-API (Agents/Inventar/SCA), Indexer/OpenSearch, FP-Exception-Builder.</td></tr>
+        <tr><td>QRadar</td><td>Inbound-Adapter (Offense → Ticket) mit Feld-Mapping.</td></tr>
+        <tr><td>Splunk</td><td>Inbound-Adapter (Notable → Ticket) mit Feld-Mapping.</td></tr>
+        <tr><td>Generische Webhooks</td><td>HMAC-SHA256-Signatur + Nonce-basierter Replay-Schutz (5-Minuten-Fenster).</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.3 Evidence &amp; Threat Intelligence</h3>
+    <ul class="doc-list">
+      <li>Evidence-Modell (roh + geparst, JSONB) mit eigener Historie je Beleg.</li>
+      <li>IOC-Extraktion (IP, Domain, Hash) automatisch aus Text.</li>
+      <li>Anreicherung über VirusTotal (Hash/IP/Domain) und AbuseIPDB (IP-Abuse-Score).</li>
+      <li>Threat-Intel-Scoring mit Verdikt benign / suspicious / malicious; IOC-Dashboard.</li>
+      <li>Chain of Custody — Belege exportierbar und integritätsgesichert (Hash).</li>
+    </ul>
+
+    <h3>6.4 KI-Agent (Copilot)</h3>
+    <ul class="doc-list">
+      <li>Vorschlags-Generierung in vier Typen: <code>fp_rule</code>, <code>escalate</code>, <code>correlation</code>, <code>mitigation</code>.</li>
+      <li>Provider-Flexibilität: lokal über <strong>Ollama</strong> (<code>llama3.2:3b</code>) als Default; Cloud (Anthropic/OpenAI/Google) opt-in, Keys nur via ENV, zur Laufzeit umschaltbar.</li>
+      <li>Evidence-Bundling (Wazuh-Events + Threat-Intel + MITRE) und Entity-Extraktion (Host/User/Prozess/Datei/Registry/Netzwerk/DNS) als native Karten.</li>
+      <li>Anti-Halluzinations-Guardrails: <code>confirmed_facts</code> nur belegt; FP-Konsistenz-Guard; Evidence-Floor (VT) hebt an, Benign-Floor stuft Scanner-Eigenfehler herunter.</li>
+      <li>Freigabe-Workflow <code>pending → approved/rejected</code> → Audit; RAG-Wissensbasis (Qdrant: MITRE 697 Techniken + Hunt-Katalog), lernt aus geschlossenen High/Crit-Tickets, optional abschaltbar.</li>
+    </ul>
+    <div class="warn-box"><strong>Cloud-Hinweis:</strong> Bei Aktivierung eines Cloud-LLM-Providers verlassen die übergebenen Daten das eigene Netz. Default ist der lokale Provider.</div>
+
+    <h3>6.5 Threat Hunting</h3>
+    <ul class="doc-list">
+      <li>Hunt-Katalog mit 10 MITRE-gemappten Hunts (One-Click); Sessions mit Statusverlauf (RUNNING → COMPLETED), asynchroner Runner gegen Wazuh-API + YARA.</li>
+      <li>Live-Hunt-Konsole zeigt Funde in Echtzeit; Funde → neues/bestehendes Ticket oder Evidence; Metadaten je Hunt (MITRE-Technik, Laufzeit, Konfiguration).</li>
+    </ul>
+
+    <h3>6.6 Detection Engineering, Use-Case-Dev &amp; YARA</h3>
+    <ul class="doc-list">
+      <li>YARA-Engine: Regel-CRUD, Pattern-Validierung (ReDoS-Schutz, Input-Caps), Scan gegen Text, Aktiv/Inaktiv.</li>
+      <li>Wazuh-Erkennungsregeln read-only mit Suche/Filter; eigene Regeln über „Neue Regel"-Modal (<code>nexora-custom-detections.xml</code>, ID 100500–109999).</li>
+      <li>Use-Case-Drafts aus echten Tickets, reviewbar, Freigabe durch Engineer/Admin; Regel-Export nur als Vorschau (Wazuh-XML / Sigma / Splunk / QRadar / YARA).</li>
+    </ul>
+
+    <h3>6.7 Hosts &amp; Inventory</h3>
+    <ul class="doc-list">
+      <li>Wazuh-Agentenliste (Status/IP/OS) + Heartbeat; Syscollector-Inventar (OS, Hardware, Netzwerk, Pakete).</li>
+      <li>SCA (fehlgeschlagene Checks + Score); Schwachstellendaten aus dem Indexer (Soft-Fail); Host-Risk-Score (SCA + CVE) mit Detailseite, Timeline, Export.</li>
+    </ul>
+
+    <h3>6.8 Control-Plane / Provisioning <span class="pill live">Kern live</span></h3>
+    <p>Backend-administrierte Node-/Agent-Registry <strong>ohne</strong> Apply-/Remote-/Netz-Kanal.</p>
+    <ul class="doc-list">
+      <li>Enrollment-Profile (admin) mit Rolle + read-only-Capabilities; Enrollment-Token (<code>enr_</code>) wird einmalig angezeigt, gespeichert nur als SHA-256-Hash, Single-Use.</li>
+      <li>Node-Credential-Handoff (<code>ncr_</code>, einmalig); Heartbeats nur damit, an die Node gebunden; Heartbeat-Antwort enthält nie Befehle.</li>
+      <li>Linux-Bootstrap-Installer (<code>deploy/install/</code>), Safety-Scan-gesichert; Postgres-Persistenz mit append-only Audit-Trigger.</li>
+    </ul>
+    <div class="info-box">Credential-Revoke/Retire/Rate-Limits sind lokal fertig, noch nicht deployt.</div>
+
+    <h3>6.9 Compliance — NIS2 Readiness <span class="pill live">Basis live</span></h3>
+    <div class="warn-box"><strong>Ehrlich:</strong> kein Konformitätsnachweis, keine Zertifizierung, kein Rechtsgutachten (per Test erzwungen). Ein Arbeits- und Nachweis-Werkzeug.</div>
+    <ul class="doc-list">
+      <li>Control-Katalog (10 Maßnahmenbereiche, versioniert); Assessment je Control (<code>not_started … addressed / not_applicable</code>, „n/a" braucht Begründung).</li>
+      <li>Evidence-Links (8 Typen) mit hart validierter Referenz; Readiness-Signale (overdue / missingEvidence / needsReview).</li>
+      <li>Registry-UI <code>/compliance/nis2</code> (KPIs + Detail-Panel; Admin-Edit, Viewer read-only); Audit-Redaction (nur sichere Metadaten).</li>
+    </ul>
+
+    <h3>6.10 Enterprise-Security &amp; Identität</h3>
+    <ul class="doc-list">
+      <li>JWT-Login (24h TTL, bcrypt(12)); Logout invalidiert sofort (JTI-Blacklist); Session als httpOnly-Cookie <code>soc_token</code> (XSS-Härtung) + CSRF Double-Submit.</li>
+      <li>Account-Lockout (persistent), Passwort-Policy/-History/-Ablauf mit Zwangswechsel-Gate, Mehrfach-Sitzungen-Limit, Inaktivitäts-Timeout — serverseitig erzwungen, default AUS.</li>
+      <li>TLS-Erzwingung + IP-Allowlist (App-Guards); Helmet-Security-Header, Rate-Limiting, CORS, Joi-Input-Validierung auf allen Routen.</li>
+    </ul>
+
+    <h3>6.11 Monitoring, Audit &amp; Reporting</h3>
+    <ul class="doc-list">
+      <li><code>/health</code> (DB/Uptime) + Prometheus <code>/metrics</code>; append-only Audit-Logging, abfragbar, mit CSV-Export (RFC-4180 + Injection-Schutz).</li>
+      <li>Request-Tracing (Request-ID), strukturierte Fehlerbehandlung; PDF-Export von Analysis-Deck/Evidence (vollständiger Report-Generator in Arbeit).</li>
+    </ul>
+  </section>
+
+  <!-- 07 -->
+  <section class="doc-section" id="s07">
+    <h2><span class="num">07</span> Der zentrale Workflow</h2>
+    <p>Vom Alert zum geschlossenen Ticket — am Beispiel eines Wazuh-Alerts (Tier-1-Analyst):</p>
+    <ol class="doc-steps">
+      <li><strong>Aufnahme</strong> — Wazuh sendet einen signierten Webhook; der Adapter validiert HMAC + Nonce und normalisiert das Alert.</li>
+      <li><strong>Ticketisierung</strong> — der Processor legt ein Ticket an (oder dedupliziert) und ordnet es dem Host-Case zu.</li>
+      <li><strong>Anreicherung</strong> — IOCs werden gegen VirusTotal/AbuseIPDB bewertet; Host-Inventar/SCA/CVE und MITRE-Technik kommen dazu.</li>
+      <li><strong>KI-Analyse</strong> — der Copilot bündelt die Beweislage, erzeugt eine strukturierte Analyse (Entity-Karten) und einen Vorschlag mit Begründung <em>und Belegen</em>.</li>
+      <li><strong>Entscheidung (Mensch)</strong> — der Analyst prüft, gibt frei oder lehnt ab. Bei „False Positive" entsteht eine <strong>scoped</strong> Ausnahme (Rule-ID, Agent-ID, Grund, Approval) — kein globales Rule-Disable.</li>
+      <li><strong>Abschluss &amp; Nachweis</strong> — Ticket mit Grund geschlossen; Audit-Trail + Evidence bleiben; bei Bedarf PDF-Report. Geschlossene High/Crit-Tickets fließen in die RAG-Wissensbasis zurück.</li>
+    </ol>
+    <div class="ok-box">Jeder Schritt ist <strong>auditiert</strong> und — wo es kritisch wird — <strong>freigabepflichtig und rückrollbar</strong>.</div>
+  </section>
+
+  <!-- 08 -->
+  <section class="doc-section" id="s08">
+    <h2><span class="num">08</span> Architektur</h2>
+    <p><strong>Stack:</strong> React 18 + TypeScript + Vite (<code>frontend/</code>) · Node.js/Express + PostgreSQL (<code>backend/</code>) · Docker (Multi-Stage) · Wazuh-Integration · KI auf Ollama (Cloud opt-in) · Qdrant (RAG).</p>
+    <h3>Backend — geschichtet nach Typ</h3>
+    <pre>domain/         reine Domänenobjekte + Validierung (Joi-Schemas)
+services/       Geschäftslogik — hängt an Repository-Interfaces, nicht am Storage
+repositories/   Repository-Pattern: InMemory* UND Postgres* je Domäne,
+                gewählt über Factory (DB_ENABLED=true → Postgres)
+routes/         Express-Router; pro Route requireAuth + requireRole(...)
+integrations/   Adapter-Pflicht: SIEM-Quellen validieren + normalisieren externen Input
+agents/ · threatHunting/ · rag/ · middleware/ · db/migrations/ (laufen beim Boot)</pre>
+    <p>Das <strong>Repository-Pattern</strong> ist tragend: Business-Logik kennt nur das Interface. InMemory-Repos für Tests/Dev (schnell, flüchtig), Postgres-Repos für den Produktivbetrieb — gewählt über eine Factory pro Domäne. So bleibt die Logik vom Storage entkoppelt und testbar.</p>
+    <h3>Frontend — feature-organisiert</h3>
+    <pre>features/&lt;domäne&gt;/   Komponenten + *Api.ts + reine Logik-Module + *.test.ts(x)
+pages/              Routen-Screens (orchestrieren Features)
+app/                Router / Navigation
+components/ui/       geteiltes UI-Kit (Buttons, Cards, Badges, Modals)
+lib/ · hooks/        Auth / RBAC / Utils</pre>
+    <p>Logik liegt in puren Modulen (gut testbar). Sicherheitsdetails sind strukturell verankert: <code>element.textContent</code> statt <code>innerHTML</code> mit User-Input; Farben über CSS-Variablen, keine hartkodierten Hex-Werte.</p>
+    <h3>Deployment</h3>
+    <p>Docker Multi-Stage; Dev-Stack <code>docker-compose.dev.yml</code> (Hot-Reload), Prod-Stack <code>deploy/docker-compose.prod.yml</code> (nginx + TLS). Postgres-Migrationen laufen beim API-Boot automatisch.</p>
+  </section>
+
+  <!-- 09 -->
+  <section class="doc-section" id="s09">
+    <h2><span class="num">09</span> Hardrules — Sicherheits- &amp; Designprinzipien</h2>
+    <p>Diese Regeln sind nicht nur Konvention, sondern teils per Test/Build erzwungen:</p>
+    <ul class="doc-list">
+      <li><strong>Human-in-the-loop</strong> bei kritischen Aktionen — KI schlägt vor, der Mensch entscheidet.</li>
+      <li><strong>Neue Security-/KI-Kontrollen default-AUS und serverseitig erzwungen</strong> — kein Fake-Toggle; was gespeichert wird, wird durchgesetzt.</li>
+      <li><strong>Keine Integration ohne Adapter</strong> — externer Input wird immer validiert und normalisiert.</li>
+      <li><strong>Kein Ticket ohne Traceability</strong> — jeder Vorgang hat eine vollständige Beweiskette.</li>
+      <li><strong>Keine Funktion ohne Test</strong> — testgetriebene Entwicklung (TDD), ~2.700 Backend- + ~900 Frontend-Tests grün.</li>
+      <li><strong><code>element.textContent</code>, nie <code>innerHTML</code> mit User-Input</strong> — XSS-Härtung als Grundregel.</li>
+      <li><strong>Kein Remote-/Apply-/Netz-Kanal</strong> in der Provisioning-Kette — durch Safety-Scanner abgesichert.</li>
+    </ul>
+  </section>
+
+  <!-- 10 -->
+  <section class="doc-section" id="s10">
+    <h2><span class="num">10</span> Betrieb, Deployment &amp; Datenhoheit</h2>
+    <ul class="doc-list">
+      <li><strong>Self-hosted, vollständig im eigenen Netz.</strong> Produktiv-Deployment auf <code>nexora.example</code> (10.99.99.75) hinter nginx + TLS.</li>
+      <li><strong>Datenhoheit:</strong> Daten verlassen das Netz nur durch bewusst aktivierte Funktionen (VirusTotal/AbuseIPDB, optionale Cloud-LLM). Default-KI-Provider ist lokal (Ollama).</li>
+      <li><strong>Betriebsfähigkeit:</strong> Health-Checks (Docker/K8s-ready), Prometheus-Metriken, strukturiertes JSON-Logging, automatisiertes DB-Backup (Cron 03:30) mit dokumentiertem Restore.</li>
+      <li><strong>Konfiguration</strong> über umfassende <code>.env</code> (siehe <code>.env.example</code>); Migrationen automatisch beim Boot.</li>
+    </ul>
+  </section>
+
+  <!-- 11 -->
+  <section class="doc-section" id="s11">
+    <h2><span class="num">11</span> Reifegrad, Grenzen &amp; Roadmap</h2>
+    <h3>Heute live &amp; getestet <span class="pill live">live</span></h3>
+    <p>Auth/RBAC · Ticketing-Lebenszyklus · Wazuh/QRadar/Splunk-Aufnahme · Evidence + Threat Intel · KI-Copilot mit Guardrails + RAG · Threat Hunting · YARA + Detection-Regeln · Hosts/Inventory · Provisioning-Kern · NIS2-Readiness-Basis · Audit + CSV-Export · PDF-Export.</p>
+    <h3>In Arbeit / lokal fertig <span class="pill wip">in Arbeit</span></h3>
+    <p>Provisioning-Credential-Lifecycle (Revoke/Retire/Rate-Limits) · NIS2 Incident-Evidence + Management-Report · vollständiger Incident-/Kunden-Report-Generator · MFA/TOTP · SSO/SAML/OIDC + PAT live · SBOM/Dependency-Scans · E2E-Härtung (Playwright) · Wazuh Health Center.</p>
+    <h3>Bewusste Nicht-Ziele</h3>
+    <p>Remote-Command-Ausführung auf Endpunkten · automatische Bedrohungsentfernung · Konformitäts-/Zertifizierungs-Claims. Hosts-Enrollment „via Wazuh" (Wazuh-Agent-Registrierung) ist eine offene No-Touch-Entscheidung.</p>
+    <div class="info-box"><strong>Open Source zuerst.</strong> Nexora ist und bleibt Open Source. Eine spätere kommerzielle Verwertung ist offen und nicht Teil der Roadmap.</div>
+    <p style="margin-top:14px;">Kanonische Quellen für den aktuellen Stand: <a href="../../ROADMAP.md" style="color:var(--accent);">ROADMAP.md</a> · <a href="feature-status.md" style="color:var(--accent);">feature-status.md</a> · <a href="../../CHANGELOG.md" style="color:var(--accent);">CHANGELOG.md</a> · <a href="../adr/decisions.md" style="color:var(--accent);">ADRs</a>.</p>
+  </section>
+
+  <!-- 12 -->
+  <section class="doc-section" id="s12">
+    <h2><span class="num">12</span> Glossar</h2>
+    <table class="doc-table">
+      <thead><tr><th>Begriff</th><th>Bedeutung</th></tr></thead>
+      <tbody>
+        <tr><td>SOC</td><td>Security Operations Center — Team/Plattform für Sicherheitsüberwachung.</td></tr>
+        <tr><td>Tier 1–3</td><td>Eskalationsstufen: Tier 1 (Triage) → Tier 2 (Analyse) → Tier 3 (Hunting/Engineering/IR).</td></tr>
+        <tr><td>SIEM</td><td>Security Information and Event Management (hier Wazuh, QRadar, Splunk).</td></tr>
+        <tr><td>EDR</td><td>Endpoint Detection and Response — Endpunkt-Sicherheitsagent.</td></tr>
+        <tr><td>IOC</td><td>Indicator of Compromise (IP, Domain, Hash …).</td></tr>
+        <tr><td>Threat Intel</td><td>Reputations-/Bedrohungsdaten externer Dienste (VirusTotal, AbuseIPDB).</td></tr>
+        <tr><td>MITRE ATT&amp;CK</td><td>Wissensbasis für Angreifer-Taktiken und -Techniken.</td></tr>
+        <tr><td>False Positive</td><td>Fehlalarm — eine Erkennung ohne tatsächliche Bedrohung.</td></tr>
+        <tr><td>Chain of Custody</td><td>lückenlose, nachweisbare Beweiskette zu einem Vorfall.</td></tr>
+        <tr><td>RAG</td><td>Retrieval-Augmented Generation — KI mit angebundener Wissensbasis (Qdrant).</td></tr>
+        <tr><td>Host-Case</td><td>Bündel aus Tickets/Events desselben Hosts.</td></tr>
+        <tr><td>HITL</td><td>Human-in-the-loop — der Mensch entscheidet, die KI bereitet vor.</td></tr>
+        <tr><td>NIS2</td><td>EU-Richtlinie zur Cybersicherheit; Nexora unterstützt die Nachweisführung.</td></tr>
+      </tbody>
+    </table>
+    <hr class="sep">
+    <p style="font-size:12px;color:var(--text-dim);">Dieses Dokument beschreibt den Produktstand vom 2026-06-20 und richtet sich an Entscheider und technische Evaluatoren gleichermaßen. Maßgeblich für Detailfragen sind stets die im Repo versionierten Quellen (Feature-Status-Matrix, ROADMAP, ADRs, Code).</p>
+  </section>
+</main>
+
+<script>
+  // ScrollSpy: aktiver Sidebar-Link
+  const links = Array.from(document.querySelectorAll('.sb-link[href^="#"]'));
+  const sections = links.map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+  const byId = id => links.find(l => l.getAttribute('href') === '#' + id);
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const link = byId(e.target.id);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+import { useEffect, useState, useCallback, type CSSProperties } from 'react';
+import { RefreshCw, FlaskConical, Info } from 'lucide-react';
+import { SectionHeader, Card, CardBody, Badge, Button, Spinner, ErrorCard, EmptyState } from '../components/ui';
+import { ApiError } from '../lib/apiClient';
+import {
+  getMlEvalStatus,
+  previewEvalSnapshot,
+  type MlEvalStatus,
+  type MlEvalSnapshotMeta,
+} from '../features/mlEval/mlEvalApi';
+import { explainRoutingPolicy, explainSnapshot } from '../features/mlEval/mlEvalViewModel';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
+
+function roleHint(err: unknown): string {
+  return err instanceof ApiError && err.status === 403 ? ' ' + i18n.t('common.adminRoleRequired') : '';
+}
+
+const s: Record<string, CSSProperties> = {
+  page: { padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16 },
+  note: { display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, padding: '10px 12px', background: 'var(--bg-card-soft)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-sm)' },
+  cardTitle: { fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 12 },
+  row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '7px 0', borderBottom: '1px solid var(--border-soft)' },
+  key: { fontSize: 12, color: 'var(--text-dim)' },
+  val: { fontSize: 12.5, color: 'var(--text)', fontFamily: 'var(--font-mono)' },
+  counts: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  pill: { fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', padding: '4px 9px', background: 'var(--bg-card-soft)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-sm)' },
+  explain: { padding: '10px 12px', background: 'var(--bg-card-soft)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-sm)', marginBottom: 12 },
+  explainTitle: { fontSize: 12.5, fontWeight: 700, color: 'var(--text)', marginBottom: 4 },
+  explainBody: { fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.5 },
+};
+
+function CountPills({ label, map }: { label: string; map: Record<string, number> }) {
+  const entries = Object.entries(map || {});
+  if (entries.length === 0) return null;
+  return (
+    <div>
+      <div style={{ ...s.key, marginTop: 12 }}>{label}</div>
+      <div style={s.counts}>
+        {entries.map(([k, v]) => (
+          <span key={k} style={s.pill}>{k}: {v.toLocaleString('de-DE')}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function MlEvalPage() {
+  const { t: tr } = useTranslation();
+  const [status, setStatus] = useState<MlEvalStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const [snapshot, setSnapshot] = useState<MlEvalSnapshotMeta | null>(null);
+  const [snapLoading, setSnapLoading] = useState(false);
+  const [snapError, setSnapError] = useState('');
+
+  const loadStatus = useCallback(() => {
+    setLoading(true);
+    setError('');
+    getMlEvalStatus()
+      .then(setStatus)
+      .catch((err) => setError(i18n.t('mlEval.statusLoadFailed', { hint: roleHint(err) })))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { loadStatus(); }, [loadStatus]);
+
+  const runSnapshot = useCallback(() => {
+    setSnapLoading(true);
+    setSnapError('');
+    previewEvalSnapshot()
+      .then(setSnapshot)
+      .catch((err) => setSnapError(i18n.t('mlEval.snapshotFailed', { hint: roleHint(err) })))
+      .finally(() => setSnapLoading(false));
+  }, []);
+
+  const policy = status?.routingPolicy;
+  const policyCard = explainRoutingPolicy(policy);
+  const snapshotCard = explainSnapshot(snapshot);
+
+  return (
+    <div style={s.page}>
+      <SectionHeader
+        title="ML-Evaluation"
+        subtitle={tr('app.readOnlyRoutingPolicyEvaluation')}
+        help="ki-agent"
+        actions={(
+          <Button variant="ghost" size="sm" icon={<RefreshCw size={14} />} onClick={loadStatus} disabled={loading}>{tr('common.reload')}</Button>
+        )}
+      />
+
+      <div style={s.note}>
+        <Info size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+        <span>{tr('mlEval.layerNote')}</span>
+      </div>
+
+      {loading && <Spinner />}
+      {error && <ErrorCard message={error} />}
+
+      {!loading && !error && policy && (
+        <Card>
+          <CardBody>
+            <div style={s.cardTitle}>{tr('mlEval.activeRoutingPolicy')}</div>
+            <div style={s.explain}>
+              <div style={s.explainTitle}>{policyCard.title}</div>
+              <div style={s.explainBody}>{policyCard.body}</div>
+            </div>
+            {policy.active ? (
+              <>
+                <div style={s.row}>
+                  <span style={s.key}>Status</span>
+                  <Badge tone="success" dot>{tr('common.active')}</Badge>
+                </div>
+                <div style={s.row}>
+                  <span style={s.key}>Policy</span>
+                  <span style={s.val}>{policy.policyName}</span>
+                </div>
+                <div style={{ ...s.row, borderBottom: 'none' }}>
+                  <span style={s.key}>Accept-Threshold</span>
+                  <span style={s.val}>&ge;{policy.threshold}</span>
+                </div>
+              </>
+            ) : (
+              <div style={s.row}>
+                <span style={s.key}>Status</span>
+                <Badge tone="muted" dot>Inaktiv ({policy.reason})</Badge>
+              </div>
+            )}
+            {!policy.active && (
+              <div style={{ ...s.note, marginTop: 10 }}>
+                <Info size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+                <span>
+                  Keine Policy aktiv. Per <code>ML_ROUTING_POLICY_PATH</code> eine
+                  <code> recommended-routing-policy.json</code> mit <code>status=ready</code>{tr('mlEval.toEnableAdvisory')}</span>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      )}
+
+      <Card>
+        <CardBody>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={s.cardTitle}>{tr('mlEval.snapshotPreview')}</div>
+            <Button variant="ghost" size="sm" icon={<FlaskConical size={14} />} onClick={runSnapshot} disabled={snapLoading}>{tr('mlEval.createSnapshot')}</Button>
+          </div>
+
+          <div style={s.explain}>
+            <div style={s.explainTitle}>{snapshotCard.title}</div>
+            <div style={s.explainBody}>{snapshotCard.body}</div>
+          </div>
+
+          {snapLoading && <Spinner />}
+          {snapError && <ErrorCard message={snapError} />}
+
+          {!snapLoading && !snapError && snapshot && (
+            snapshot.returned === 0 ? (
+              <EmptyState
+                title={tr('app.noEvaluationDataYet')}
+                message={tr('app.thereNoReviewedAiSuggestions2')}
+              />
+            ) : (
+              <>
+                <div style={s.row}>
+                  <span style={s.key}>Records</span>
+                  <span style={s.val}>{snapshot.returned.toLocaleString('de-DE')} / {snapshot.exportLimit}</span>
+                </div>
+                <div style={s.row}>
+                  <span style={s.key}>Schema</span>
+                  <span style={s.val}>{snapshot.schemaVersion}</span>
+                </div>
+                <div style={{ ...s.row, borderBottom: 'none' }}>
+                  <span style={s.key}>Signatur (SHA-256)</span>
+                  <span style={s.val}>{snapshot.recordSha256.slice(0, 16)}...</span>
+                </div>
+                <CountPills label="Record-Typen" map={snapshot.counts} />
+                <CountPills label="Human-Labels" map={snapshot.humanLabelCounts} />
+              </>
+            )
+          )}
+        </CardBody>
+      </Card>
+    </div>
+  );
+}

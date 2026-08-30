@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOC Ticket Tool — HUNT-010: Initial Access / Phishing</title>
+<style>
+  :root{--bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;--accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;--purple:#9b59f5;--text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;--font-mono:'JetBrains Mono','Courier New',monospace;--font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:18px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .sb-badge{display:inline-block;margin:10px 16px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--crit);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:12px 16px 4px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:5px 16px;font-size:11px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .hid{font-size:9px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);min-width:36px;flex-shrink:0;}
+  #content{margin-left:var(--sw);flex:1;padding:40px 50px 80px;max-width:1000px;}
+  .cover{margin-bottom:36px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+  .hunt-id-cover{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.25);color:var(--crit);margin-bottom:8px;}
+  .cover h1{font-size:24px;font-weight:800;color:var(--text-head);letter-spacing:1px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:6px;}
+  .doc-section{margin-bottom:44px;}
+  h2{font-size:16px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  h3{font-size:12px;font-weight:700;color:var(--text-head);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px;}
+  p{margin-bottom:10px;color:var(--text);font-size:13px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-radius:5px;padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:6px 0 14px;white-space:pre;}
+  pre.qradar{border-left:3px solid var(--accent);}
+  pre.splunk{border-left:3px solid var(--warn);}
+  pre.sysmon{border-left:3px solid var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:12px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:11px;}
+  code{font-family:var(--font-mono);font-size:11px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:22px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  ul.dl{list-style:none;padding:0;margin:8px 0 14px;}
+  ul.dl li{padding:3px 0 3px 16px;position:relative;font-size:12px;color:var(--text);}
+  ul.dl li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;}
+  ul.dl li.tp::before{content:'+';color:var(--accent2);}
+  ul.dl li.fp::before{content:'✗';color:var(--crit);}
+  ul.dl li.var::before{content:'~';color:var(--purple);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>SOC Ticket Tool</h1><p>Hunt Reference</p></div>
+  <span class="sb-badge">🎯 Hunt Docs</span>
+  <div class="sb-section">Übersicht</div>
+  <a class="sb-link" href="index.html"><span class="hid">—</span> Alle Hunts</a>
+  <div class="sb-section">Initial Access</div>
+  <a class="sb-link active" href="hunt-010.html"><span class="hid">H-010</span> Initial Access</a>
+  <div class="sb-section">Weitere Hunts</div>
+  <a class="sb-link" href="hunt-001.html"><span class="hid">H-001</span> C2 / Beaconing</a>
+  <a class="sb-link" href="hunt-002.html"><span class="hid">H-002</span> Credential Theft</a>
+  <a class="sb-link" href="hunt-003.html"><span class="hid">H-003</span> Lateral Movement</a>
+  <a class="sb-link" href="hunt-004.html"><span class="hid">H-004</span> Persistence</a>
+  <a class="sb-link" href="hunt-005.html"><span class="hid">H-005</span> LOLBins / Evasion</a>
+  <a class="sb-link" href="hunt-006.html"><span class="hid">H-006</span> Exfiltration / DNS</a>
+  <a class="sb-link" href="hunt-007.html"><span class="hid">H-007</span> Ransomware</a>
+  <a class="sb-link" href="hunt-008.html"><span class="hid">H-008</span> Privilege Escalation</a>
+  <a class="sb-link" href="hunt-009.html"><span class="hid">H-009</span> AD Enumeration</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="index.html">← Hunt-Übersicht</a>
+  <div class="cover">
+    <div class="hunt-id-cover">HUNT-010</div>
+    <h1>Initial Access / Phishing</h1>
+    <div class="meta">MITRE: T1566.001 · T1204.002 · T1059 · T1553.005 &nbsp;|&nbsp; Taktik: Initial Access &nbsp;|&nbsp; Basis-Konfidenz: 65</div>
+  </div>
+
+  <section class="doc-section">
+    <h2>Beschreibung</h2>
+    <p>Erkennt den ersten Fuß in der Tür: Office-Dokumente die <code>cmd.exe</code> oder PowerShell spawnen (Makro-Ausführung), Browser die ungewöhnliche Kind-Prozesse erzeugen (Drive-by Download), <code>.lnk</code>-Dateien aus dem Downloads-Ordner die Prozesse starten, HTA-Dateien aus E-Mail-Anhängen und ISO/IMG-Mounts mit anschließender LNK-Ausführung (moderner Phishing-Bypass für Mark-of-the-Web).</p>
+    <p>Parent-Child-Prozessbeziehungen sind das Kernmerkmal dieses Hunts. Ein Office-Prozess der eine Shell erzeugt oder ein Browser der cmd.exe startet ist in legitimen Umgebungen nahezu nie erwartet. ISO-basiertes Phishing umgeht Mark-of-the-Web, da gemountete Volumes keine Zone-Identifier erben — dieser Vektor erfordert spezielle Aufmerksamkeit.</p>
+  </section>
+
+  <section class="doc-section">
+    <h2>QRadar AQL</h2>
+    <h3>Office-Anwendungen spawnen verdächtige Prozesse (Makro-Ausführung)</h3>
+    <pre class="qradar">-- Office-Anwendungen spawnen verdächtige Prozesse (Makro-Ausführung)
+SELECT sourceip, username, ProcessName, CommandLine, ParentProcessName
+FROM events
+WHERE EventID = 4688
+  AND ParentProcessName IN (
+    'WINWORD.EXE','EXCEL.EXE','POWERPNT.EXE',
+    'OUTLOOK.EXE','MSPUB.EXE','VISIO.EXE',
+    'winword.exe','excel.exe','powerpnt.exe'
+  )
+  AND ProcessName IN (
+    'cmd.exe','powershell.exe','wscript.exe',
+    'cscript.exe','mshta.exe','rundll32.exe',
+    'regsvr32.exe','certutil.exe'
+  )
+LAST 24 HOURS
+
+-- Browser spawnen ungewöhnliche Kind-Prozesse
+SELECT sourceip, username, ProcessName, CommandLine, ParentProcessName
+FROM events
+WHERE EventID = 4688
+  AND ParentProcessName IN (
+    'chrome.exe','msedge.exe','firefox.exe',
+    'iexplore.exe','brave.exe','opera.exe'
+  )
+  AND ProcessName IN (
+    'cmd.exe','powershell.exe','wscript.exe',
+    'cscript.exe','mshta.exe','explorer.exe'
+  )
+  AND CommandLine NOT ILIKE '%chrome%'
+  AND CommandLine NOT ILIKE '%update%'
+LAST 24 HOURS
+
+-- Ausführung aus Downloads/Temp (User hat Datei ausgeführt)
+SELECT sourceip, username, ProcessName, CommandLine, CurrentDirectory
+FROM events
+WHERE EventID = 4688
+  AND (CurrentDirectory ILIKE '%Downloads%'
+    OR CurrentDirectory ILIKE '%Temp%'
+    OR CurrentDirectory ILIKE '%AppData%Local%Temp%')
+  AND ProcessName IN (
+    'cmd.exe','powershell.exe','wscript.exe',
+    'cscript.exe','mshta.exe','regsvr32.exe'
+  )
+LAST 24 HOURS</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Splunk SPL</h2>
+    <pre class="splunk">-- Office-Makro Ausführung: Parent-Child Process Chain
+index=sysmon EventCode=1
+| eval office_spawn=if(
+    match(ParentImage,"(?i)(winword|excel|powerpnt|outlook|mspub)\\.exe")
+    AND match(Image,"(?i)(cmd|powershell|wscript|cscript|mshta|rundll32)\\.exe"),1,0)
+| where office_spawn=1
+| eval macro_score=case(
+    match(CommandLine,"(?i)-enc|-encodedcommand"), 95,
+    match(CommandLine,"(?i)DownloadString|DownloadFile|WebClient"), 90,
+    match(CommandLine,"(?i)http|ftp"), 80,
+    match(Image,"(?i)powershell\\.exe"), 70,
+    1==1, 60)
+| table _time, ComputerName, User, ParentImage, Image, CommandLine, macro_score
+
+-- LNK-Ausführung aus Downloads
+index=sysmon EventCode=1
+| where match(ParentImage,"(?i)explorer\\.exe")
+  AND (match(CommandLine,"(?i)(Downloads|Desktop|Temp|AppData)")
+       OR match(ParentCommandLine,"(?i)\\.lnk"))
+  AND match(Image,"(?i)(cmd|powershell|wscript|mshta)\\.exe")
+| table _time, ComputerName, User, Image, CommandLine, ParentCommandLine
+
+-- ISO/IMG Mount + Ausführung (moderner Phishing-Bypass)
+index=sysmon EventCode=1
+| where match(Image,"(?i)(cmd|powershell|wscript|rundll32)\\.exe")
+  AND match(CurrentDirectory,"[A-Z]:\\\\$")
+| stats count by ComputerName, User, Image, CommandLine, _time span=5m
+| eval iso_exec_likely=if(
+    match(CommandLine,"(?i)(Downloads|Desktop)"), 1, 0)</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Sysmon / Windows Security Events</h2>
+    <pre class="sysmon">-- Sysmon Event 1: Prozess-Erstellung
+-- Parent-Child-Beziehungen sind der Schlüssel:
+
+-- OFFICE → SHELL:
+--   winword.exe → cmd.exe     = Makro
+--   excel.exe   → powershell  = Makro
+--   outlook.exe → wscript.exe = E-Mail-Anhang-Ausführung
+
+-- BROWSER → SHELL:
+--   chrome.exe  → cmd.exe    = Drive-by
+--   msedge.exe  → powershell = Drive-by
+
+-- ISO/IMG Mount Pattern:
+--   Neues Laufwerk gemountet (kein echtes DVD-Laufwerk)
+--   explorer.exe spawnt Prozess aus Root des gemounteten Laufwerks
+--   Mark-of-the-Web wird NICHT vererbt!
+
+-- LNK aus E-Mail/Downloads:
+--   explorer.exe spawnt cmd.exe mit Working Dir = Downloads
+--   Commandline-Argument enthält .lnk Pfad
+
+-- HTML Smuggling:
+--   Browser erstellt .exe/.iso Datei in Downloads (Sysmon 11)
+--   Kurz danach: explorer.exe öffnet die Datei (Sysmon 1)</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>True Positives</h2>
+    <ul class="dl">
+      <li class="tp"><strong>winword.exe spawnt powershell.exe mit -enc Base64</strong> (Konfidenz: 95) — Makro lädt encoded PowerShell-Payload nach. Klassisches Muster für Phishing-Dokument mit Downloader-Makro</li>
+      <li class="tp"><strong>excel.exe spawnt cmd.exe mit DownloadString-URL</strong> (Konfidenz: 93) — Makro lädt Payload via WebClient direkt nach. Kein legitimes Excel-Verhalten</li>
+      <li class="tp"><strong>chrome.exe spawnt cmd.exe (kein Chrome-eigener Prozess)</strong> (Konfidenz: 85) — Drive-by Download oder Browser-Exploit. Browser-Kind-Prozesse sollten ausschließlich Chrome-eigene Prozesse sein</li>
+      <li class="tp"><strong>explorer.exe spawnt wscript.exe aus Downloads-Ordner .lnk</strong> (Konfidenz: 88) — User hat .lnk-Datei aus Downloads ausgeführt. Working Directory = Downloads ist starkes Indiz</li>
+      <li class="tp"><strong>mshta.exe von outlook.exe als Parent</strong> (Konfidenz: 92) — HTA-Datei direkt aus E-Mail-Anhang. mshta.exe als Outlook-Kind ist nahezu immer bösartig</li>
+      <li class="tp"><strong>ISO gemountet → LNK → cmd.exe (Mark-of-the-Web-Bypass)</strong> (Konfidenz: 85) — Prozess startet aus Root eines gemounteten ISO-Laufwerks. Kein Zone-Identifier vererbt</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>False Positives &amp; Whitelist</h2>
+    <ul class="dl">
+      <li class="fp"><strong>Legitime Office-Makros für Geschäftsprozesse</strong> — Whitelist: bekannte Makro-Hashes oder durch Gruppenrichtlinie signierte Makros aus vertrauenswürdigen Quellen</li>
+      <li class="fp"><strong>IT-Admin die legitime Scripts via PS starten</strong> — Admins starten gelegentlich PowerShell aus Office-Vorlagen oder Management-Skripten. Whitelist: Admin-Workstations</li>
+      <li class="fp"><strong>Software-Updates die Browser-Updates als Kind-Prozess haben</strong> — Einige Update-Mechanismen laufen als Browser-Kind. Whitelist: Update-Prozesse mit bekannten Commandlines und signierten Binaries</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Varianten &amp; Evasion-Techniken</h2>
+    <ul class="dl">
+      <li class="var"><strong>VAR-001: XLL Add-in Execution</strong> (Conf-Modifier: -10) — Excel lädt .xll Plugin das Code ausführt. Neuerer Angriffsvektor (2022+), kein klassisches Makro sondern nativer Code-Einstiegspunkt</li>
+      <li class="var"><strong>VAR-002: OneNote Embedded Script</strong> (Conf-Modifier: -15) — .one Datei mit eingebettetem .bat oder .exe, 2023 häufig genutzt als Makro-Ersatz nach Microsoft-Härtung. OneNote.exe als Parent</li>
+      <li class="var"><strong>VAR-003: HTML Smuggling</strong> (Conf-Modifier: -20) — JavaScript erstellt Datei im Browser-Speicher und lädt sie in Downloads. Kein direkter Parent-Prozess zwischen Payload und Browser sichtbar</li>
+      <li class="var"><strong>VAR-004: Template Injection</strong> (Conf-Modifier: -15) — Word lädt Remote-Template nach, kein lokales Makro. Netzwerkverbindung von winword.exe zu externem Host unmittelbar nach Öffnen des Dokuments</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Test Cases</h2>
+    <table class="doc-table">
+      <thead><tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th><th>Min. Conf.</th></tr></thead>
+      <tbody>
+        <tr><td>TP-001</td><td>TP</td><td>winword.exe spawnt powershell -enc</td><td>Erkannt</td><td>95</td></tr>
+        <tr><td>TP-002</td><td>TP</td><td>excel.exe spawnt cmd.exe DownloadString</td><td>Erkannt</td><td>93</td></tr>
+        <tr><td>TP-003</td><td>TP</td><td>chrome.exe spawnt cmd.exe (Drive-by)</td><td>Erkannt</td><td>85</td></tr>
+        <tr><td>TP-004</td><td>TP</td><td>LNK aus Downloads spawnt wscript.exe</td><td>Erkannt</td><td>88</td></tr>
+        <tr><td>TP-005</td><td>TP</td><td>ISO-Mount → LNK → cmd.exe ausgeführt</td><td>Erkannt</td><td>85</td></tr>
+        <tr><td>FP-001</td><td>FP</td><td>Legitimes Business-Makro (signiert, bekannter Hash)</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>FP-002</td><td>FP</td><td>Browser-eigener Update-Prozess</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>VAR-001</td><td>VAR</td><td>XLL Add-in Execution via Excel</td><td>Erkannt</td><td>80</td></tr>
+        <tr><td>VAR-002</td><td>VAR</td><td>OneNote eingebettetes Script (.bat)</td><td>Erkannt</td><td>85</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

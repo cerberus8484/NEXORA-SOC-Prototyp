@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC-LAT-001 PsExec Lateral Movement — Nexora SOC / QRadar</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Nexora <span>SOC</span></div>
+    <div class="sub">UC-LAT-001 · PsExec</div>
+    <h2>Auf dieser Seite</h2>
+    <a href="#szenario">1 · Szenario</a>
+    <a href="#ablauf">2 · Angriffsablauf</a>
+    <a href="#mitre">3 · MITRE-Einordnung</a>
+    <a href="#voraussetzungen">4 · Voraussetzungen</a>
+    <a href="#logik">5 · Erkennungslogik (2-stufig)</a>
+    <a href="#response">6 · Rule Response</a>
+    <a href="#fp">7 · False Positives</a>
+    <a href="#confidence">8 · Confidence Scoring</a>
+    <a href="#validierung">9 · Validierung</a>
+    <a href="#handlung">10 · Analyst-Handlung</a>
+    <h2>Bibliothek</h2>
+    <a href="../index.html">Übersicht</a>
+    <a href="../mitre-coverage-map.html">Coverage Map</a>
+    <a href="../../qradar-usecase-anlegen.html">Klick-Anleitung</a>
+  </nav>
+
+  <main>
+    <div class="breadcrumb"><a href="../index.html">Bibliothek</a> / <a href="../mitre-coverage-map.html">Lateral Movement</a> / UC-LAT-001</div>
+    <header class="hero">
+      <div class="kicker">Lateral Movement</div>
+      <h1>UC-LAT-001 — PsExec Lateral Movement</h1>
+      <p>PsExec (und Klone wie PAExec, RemCom) führen Befehle remote aus, indem sie über die <code>ADMIN$</code>-Freigabe ein Service-Binary ablegen und einen Dienst (<code>PSEXESVC</code>) installieren. Das erzeugt ein charakteristisches Paar: <strong>Service-Install (7045)</strong> + <strong>Remote-Logon (4624 Type 3)</strong> von derselben Quelle.</p>
+      <div class="meta">
+        <span><b>MITRE:</b> <span class="chip mitre">T1021.002</span></span>
+        <span><b>Taktik:</b> Lateral Movement</span>
+        <span><b>Confidence:</b> <span class="conf crit">85–97</span></span>
+        <span><b>Status:</b> DRAFT → zu validieren</span>
+        <span><b>Quelle:</b> <span class="chip src">System 7045</span> <span class="chip src">Security 4624</span></span>
+      </div>
+    </header>
+
+    <h2 class="section" id="szenario">1 · Szenario</h2>
+    <p>Nach Erlangen von Admin-Credentials bewegt sich der Angreifer seitlich: PsExec kopiert ein Binary auf das Ziel (<code>\\TARGET\ADMIN$</code>), registriert es als Dienst und startet es als SYSTEM. So führt er Befehle auf entfernten Hosts aus — ohne RDP, ohne interaktive Session.</p>
+
+    <h2 class="section" id="ablauf">2 · Angriffsablauf</h2>
+    <ol class="killchain">
+      <li><b>Admin-Credentials:</b> Angreifer besitzt lokale/Domänen-Admin-Rechte (z. B. nach LSASS-Dump).</li>
+      <li><b>Binary-Drop:</b> Service-Executable wird auf <code>ADMIN$</code> des Ziels geschrieben (Sysmon 11).</li>
+      <li><b>Service-Install:</b> Dienst <code>PSEXESVC</code> (o. ä.) wird registriert → <strong>EventID 7045</strong>.</li>
+      <li><b>Remote-Logon:</b> Authentifizierung am Ziel → <strong>4624 Logon Type 3</strong> von der Quell-IP.</li>
+      <li><b>Ausführung:</b> Befehle laufen als SYSTEM; bei mehreren Zielen entsteht eine Hop-Kette.</li>
+    </ol>
+
+    <h2 class="section" id="mitre">3 · MITRE-Einordnung</h2>
+    <table style="max-width:720px">
+      <tr><th>Feld</th><th>Wert</th></tr>
+      <tr><td>Technik</td><td><span class="chip mitre">T1021.002</span> Remote Services: SMB/Windows Admin Shares</td></tr>
+      <tr><td>Verwandt</td><td>T1570 (Lateral Tool Transfer), T1569.002 (Service Execution)</td></tr>
+      <tr><td>Tools</td><td>Sysinternals PsExec, PAExec, RemCom, Impacket psexec.py/smbexec.py</td></tr>
+    </table>
+
+    <h2 class="section" id="voraussetzungen">4 · Voraussetzungen</h2>
+    <ul class="steps">
+      <li><b>Windows</b> liefert <code>7045</code> (Service Installed) und <code>4624</code> (Logon) mit <code>Logon Type</code>.</li>
+      <li><b>Custom Property:</b> <span class="chip src">Service Name</span> <span class="chip src">Logon Type</span></li>
+      <li><b>Reference Sets:</b> <span class="chip refset">RS:SCCM-Servers</span> <span class="chip refset">RS:Jump-Hosts</span> <span class="chip refset">RS:ServiceAccounts</span></li>
+    </ul>
+
+    <h2 class="section" id="logik">5 · Erkennungslogik (zweistufig)</h2>
+    <p class="lead">Stärkstes Signal = beide Ereignisse korreliert. In QRadar sauber als <b>zwei Building Blocks</b> + eine <b>Korrelations-Regel</b> (nur diese erzeugt die Offense).</p>
+<pre class="code"><span class="cmt">-- Building Block A: PsExec-Dienst-Installation (KEINE Offense)</span>
+<span class="kw">Apply</span> BB:PsExecServiceInstall <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Service Installed / 7045)</span>
+<span class="kw">and when</span> <span class="lnk">Service Name</span> (custom) matches the regex <span class="lnk">(?i)(psexesvc|paexec|remcom|execsvc)</span>
+
+<span class="cmt">-- Building Block B: Remote-Logon Type 3 (KEINE Offense)</span>
+<span class="kw">Apply</span> BB:RemoteType3Logon <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event QID is one of the following <span class="lnk">(Successful Logon / 4624)</span>
+<span class="kw">and when</span> <span class="lnk">Logon Type</span> (custom) is one of the following <span class="lnk">3</span>
+<span class="kw">and when</span> the username is <span class="lnk">NOT</span> contained in <span class="lnk">RS:ServiceAccounts</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:SCCM-Servers</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Jump-Hosts</span>
+
+<span class="cmt">-- Korrelations-Regel (erzeugt die Offense)</span>
+<span class="kw">Apply</span> UC-LAT-001 PsExec
+<span class="kw">and when</span> <span class="lnk">BB:PsExecServiceInstall</span> matches
+        and <span class="lnk">BB:RemoteType3Logon</span> matches
+        with the same <span class="lnk">Source IP</span> within <span class="lnk">2 minutes</span></pre>
+    <div class="callout warn"><strong>Building Blocks bekommen keine „Ensure offense"-Response.</strong> Nur die finale Korrelations-Regel erzeugt die Offense — sonst zwei Fehlalarme statt eines echten.</div>
+
+    <h2 class="section" id="response">6 · Rule Response</h2>
+    <table style="max-width:760px">
+      <tr><th>Einstellung</th><th>Wert</th></tr>
+      <tr><td>Offense (nur Korrelations-Regel)</td><td>✓ — <b>Index by:</b> Source IP</td></tr>
+      <tr><td>Severity</td><td>9</td></tr>
+      <tr><td>Response Limiter</td><td>1× pro 10 min pro Source IP</td></tr>
+    </table>
+
+    <h2 class="section" id="fp">7 · False Positives / Whitelist</h2>
+    <table>
+      <tr><th>FP-Quelle</th><th>Merkmal</th><th>Whitelist</th></tr>
+      <tr><td>SCCM / Intune (nutzt PSEXESVC-artige Dienste)</td><td>Quelle = Deployment-Server</td><td><span class="chip refset">RS:SCCM-Servers</span> + sccm-Account</td></tr>
+      <tr><td>Admin via Jump-Host</td><td>Quelle = Bastion</td><td><span class="chip refset">RS:Jump-Hosts</span></td></tr>
+      <tr><td>Machine-Account (endet auf $)</td><td>Username $</td><td>Regex schließt <code>$</code> aus</td></tr>
+      <tr><td>Legitime IT-Admin-PsExec-Nutzung</td><td>bekannter Admin-Host</td><td>Admin-Hosts ergänzen, dokumentieren</td></tr>
+    </table>
+
+    <h2 class="section" id="confidence">8 · Confidence Scoring</h2>
+    <table style="max-width:640px">
+      <tr><th>Bedingung</th><th>Score</th></tr>
+      <tr><td>PSEXESVC + 7045 + 4624 Type 3, Hop-Kette ≥ 3 Ziele</td><td><span class="conf crit">97</span></td></tr>
+      <tr><td>PSEXESVC + Type 3, 1 Ziel</td><td><span class="conf crit">85</span></td></tr>
+      <tr><td>nur Service-Install ohne Logon-Korrelation</td><td><span class="conf med">60</span></td></tr>
+      <tr><td>Quelle SCCM / Jump-Host</td><td>ausschließen</td></tr>
+    </table>
+
+    <h2 class="section" id="validierung">9 · Validierung</h2>
+    <table>
+      <tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th></tr>
+      <tr><td>TP-001</td><td>TP</td><td>PsExec auf 3 Hosts in 10 min von Workstation</td><td>Offense, Conf ≥ 90</td></tr>
+      <tr><td>TP-002</td><td>TP</td><td>Impacket psexec.py (RemCom-Dienst)</td><td>Offense, Conf ≥ 85</td></tr>
+      <tr><td>FP-001</td><td>FP</td><td>PSEXESVC von SCCM-Server + sccm-Account</td><td>NICHT erkannt</td></tr>
+      <tr><td>VAR-001</td><td>Variante</td><td>PsExec <code>-r</code> mit zufälligem Dienstnamen</td><td>Ergänzende Regel auf Binary-Drop nach %TEMP% (Sysmon 11)</td></tr>
+    </table>
+
+    <h2 class="section" id="handlung">10 · Analyst-Handlung</h2>
+    <ul class="steps">
+      <li>Quelle (Source IP) + verwendetes Admin-Konto → Ausgangspunkt der Bewegung.</li>
+      <li>Ziel-Hosts (alle 4624 Type 3 derselben Quelle) → Umfang der Ausbreitung.</li>
+      <li>Auf Zielen: welche Befehle lief der Dienst? Folge-Persistenz?</li>
+      <li>Admin-Konto sperren/zurücksetzen, betroffene Hosts isolieren.</li>
+    </ul>
+
+    <footer>
+      <p>UC-LAT-001 · SOC-Hunt-Framework (HUNT-003) · <code>…/szenarien/uc-lat-001-psexec.html</code> · 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

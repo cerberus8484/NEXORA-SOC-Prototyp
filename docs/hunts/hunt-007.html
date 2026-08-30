@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SOC Ticket Tool — HUNT-007: Ransomware Precursors</title>
+<style>
+  :root{--bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;--accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;--purple:#9b59f5;--text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;--font-mono:'JetBrains Mono','Courier New',monospace;--font-ui:'Segoe UI',system-ui,sans-serif;--sw:280px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:18px 16px 12px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .sb-badge{display:inline-block;margin:10px 16px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.3);color:var(--crit);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:12px 16px 4px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:5px 16px;font-size:11px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .hid{font-size:9px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);min-width:36px;flex-shrink:0;}
+  #content{margin-left:var(--sw);flex:1;padding:40px 50px 80px;max-width:1000px;}
+  .cover{margin-bottom:36px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+  .hunt-id-cover{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;background:rgba(255,45,85,.12);border:1px solid rgba(255,45,85,.25);color:var(--crit);margin-bottom:8px;}
+  .cover h1{font-size:24px;font-weight:800;color:var(--text-head);letter-spacing:1px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:6px;}
+  .doc-section{margin-bottom:44px;}
+  h2{font-size:16px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  h3{font-size:12px;font-weight:700;color:var(--text-head);margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px;}
+  p{margin-bottom:10px;color:var(--text);font-size:13px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-radius:5px;padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:6px 0 14px;white-space:pre;}
+  pre.qradar{border-left:3px solid var(--accent);}
+  pre.splunk{border-left:3px solid var(--warn);}
+  pre.sysmon{border-left:3px solid var(--accent2);}
+  .doc-table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:12px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:11px;}
+  code{font-family:var(--font-mono);font-size:11px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:22px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+  ul.dl{list-style:none;padding:0;margin:8px 0 14px;}
+  ul.dl li{padding:3px 0 3px 16px;position:relative;font-size:12px;color:var(--text);}
+  ul.dl li::before{content:'›';position:absolute;left:0;color:var(--accent);font-weight:700;}
+  ul.dl li.tp::before{content:'+';color:var(--accent2);}
+  ul.dl li.fp::before{content:'✗';color:var(--crit);}
+  ul.dl li.var::before{content:'~';color:var(--purple);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>SOC Ticket Tool</h1><p>Hunt Reference</p></div>
+  <span class="sb-badge">🎯 Hunt Docs</span>
+  <div class="sb-section">Übersicht</div>
+  <a class="sb-link" href="index.html"><span class="hid">—</span> Alle Hunts</a>
+  <div class="sb-section">Impact</div>
+  <a class="sb-link active" href="hunt-007.html"><span class="hid">H-007</span> Ransomware</a>
+  <div class="sb-section">Weitere Hunts</div>
+  <a class="sb-link" href="hunt-001.html"><span class="hid">H-001</span> C2 / Beaconing</a>
+  <a class="sb-link" href="hunt-002.html"><span class="hid">H-002</span> Credential Theft</a>
+  <a class="sb-link" href="hunt-003.html"><span class="hid">H-003</span> Lateral Movement</a>
+  <a class="sb-link" href="hunt-004.html"><span class="hid">H-004</span> Persistence</a>
+  <a class="sb-link" href="hunt-005.html"><span class="hid">H-005</span> LOLBins / Evasion</a>
+  <a class="sb-link" href="hunt-006.html"><span class="hid">H-006</span> Exfiltration / DNS</a>
+  <a class="sb-link" href="hunt-008.html"><span class="hid">H-008</span> Privilege Escalation</a>
+  <a class="sb-link" href="hunt-009.html"><span class="hid">H-009</span> AD Enumeration</a>
+  <a class="sb-link" href="hunt-010.html"><span class="hid">H-010</span> Initial Access</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="index.html">← Hunt-Übersicht</a>
+  <div class="cover">
+    <div class="hunt-id-cover">HUNT-007</div>
+    <h1>Ransomware Precursors</h1>
+    <div class="meta">MITRE: T1490 · T1486 · T1489 · T1562.001 &nbsp;|&nbsp; Taktik: Impact &nbsp;|&nbsp; Basis-Konfidenz: 70</div>
+  </div>
+
+  <section class="doc-section">
+    <h2>Beschreibung</h2>
+    <p>Ransomware-Angreifer bereiten die Verschlüsselung systematisch vor: Volume Shadow Copies werden gelöscht (kein Recovery möglich), Backup-Prozesse gestoppt, Recovery-Optionen deaktiviert, AV/EDR deaktiviert. Diese Vorbereitungsschritte laufen typischerweise 15–60 Minuten vor der eigentlichen Verschlüsselung ab.</p>
+    <p>Früherkennung in dieser Phase kann die Verschlüsselung verhindern. Sobald 3 oder mehr Indikatoren gleichzeitig auftreten, ist ein sofortiger Alarm erforderlich.</p>
+  </section>
+
+  <section class="doc-section">
+    <h2>QRadar AQL</h2>
+    <h3>Volume Shadow Copy Deletion</h3>
+    <pre class="qradar">-- Volume Shadow Copy Deletion
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND (
+    (ProcessName ILIKE '%vssadmin%' AND CommandLine ILIKE '%delete shadows%')
+    OR (ProcessName ILIKE '%wmic%' AND CommandLine ILIKE '%shadowcopy delete%')
+    OR (ProcessName ILIKE '%wbadmin%' AND CommandLine ILIKE '%delete catalog%')
+    OR (ProcessName ILIKE '%bcdedit%' AND
+        (CommandLine ILIKE '%recoveryenabled no%'
+          OR CommandLine ILIKE '%bootstatuspolicy ignoreallfailures%'))
+  )
+LAST 24 HOURS
+
+-- Backup-Prozesse stoppen
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND ProcessName ILIKE '%net%'
+  AND CommandLine ILIKE '%stop%'
+  AND (
+    CommandLine ILIKE '%veeam%'
+    OR CommandLine ILIKE '%backup%'
+    OR CommandLine ILIKE '%sql%'
+    OR CommandLine ILIKE '%exchange%'
+    OR CommandLine ILIKE '%acronis%'
+  )
+LAST 1 HOURS
+
+-- AV/Defender deaktivieren
+SELECT sourceip, username, ProcessName, CommandLine
+FROM events
+WHERE EventID = 4688
+  AND (
+    CommandLine ILIKE '%Set-MpPreference -DisableRealtimeMonitoring%'
+    OR CommandLine ILIKE '%sc stop WinDefend%'
+    OR CommandLine ILIKE '%taskkill%MsMpEng%'
+    OR CommandLine ILIKE '%taskkill%avp%'
+    OR CommandLine ILIKE '%taskkill%kavlauncher%'
+  )
+LAST 1 HOURS</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Splunk SPL</h2>
+    <pre class="splunk">-- Kombinierter Ransomware-Precursor Score
+index=sysmon EventCode=1
+| eval indicator=case(
+    match(Image,"(?i)vssadmin\\.exe") AND match(CommandLine,"(?i)delete shadows"),"VSS_DELETE",
+    match(Image,"(?i)wmic\\.exe") AND match(CommandLine,"(?i)shadowcopy.*delete"),"WMI_VSS_DELETE",
+    match(Image,"(?i)bcdedit\\.exe") AND match(CommandLine,"(?i)recoveryenabled.*no"),"RECOVERY_DISABLE",
+    match(Image,"(?i)wbadmin\\.exe") AND match(CommandLine,"(?i)delete.*catalog"),"BACKUP_DELETE",
+    match(Image,"(?i)net\\.exe|net1\\.exe") AND match(CommandLine,"(?i)stop.*(veeam|backup|sql)"),"BACKUP_STOP",
+    match(Image,"(?i)taskkill\\.exe") AND match(CommandLine,"(?i)(MsMpEng|avp|kavlauncher)"),"AV_KILL",
+    1==1,null())
+| where isnotnull(indicator)
+| stats count as indicator_count, values(indicator) as indicators
+  by ComputerName, User, _time span=30m
+| where indicator_count >= 2
+| eval ransomware_score=case(
+    indicator_count >= 4, 95,
+    indicator_count >= 3, 85,
+    indicator_count >= 2, 70,
+    1==1, 50)
+| sort -ransomware_score
+
+-- Massen-Dateioperationen (Verschlüsselung läuft)
+index=sysmon EventCode=11
+| stats count as file_ops, dc(TargetFilename) as unique_files
+  by ComputerName, Image, _time span=1m
+| where file_ops > 100
+| eval ext_changes=if(match(TargetFilename,"\\.(encrypted|locked|crypted|pays|ransom)$"),1,0)</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>Sysmon / Windows Security Events</h2>
+    <pre class="sysmon">-- Kritische Indikatoren für Ransomware-Vorbereitung:
+
+-- 1. VSS-Deletion (meistens erstes Zeichen):
+--    vssadmin.exe delete shadows /all /quiet
+--    wmic shadowcopy delete
+
+-- 2. Recovery deaktivieren:
+--    bcdedit /set {default} recoveryenabled No
+--    bcdedit /set {default} bootstatuspolicy ignoreallfailures
+
+-- 3. Backup-Stop:
+--    net stop "Veeam Backup Service"
+--    net stop SQLWriter
+--    taskkill /im veeam.backup.manager.exe /f
+
+-- 4. Firewall/AV deaktivieren:
+--    netsh advfirewall set allprofiles state off
+--    Set-MpPreference -DisableRealtimeMonitoring $true
+
+-- 5. Massen-Umbenennung (Verschlüsselung aktiv):
+--    Sysmon Event 11: viele .txt/.docx etc. → .encrypted
+--    > 100 Dateioperationen pro Minute von einem Prozess
+
+-- WARNUNG: Wenn 3+ Indikatoren gleichzeitig → SOFORTIGER ALARM</pre>
+  </section>
+
+  <section class="doc-section">
+    <h2>True Positives</h2>
+    <ul class="dl">
+      <li class="tp"><strong>vssadmin delete shadows /all /quiet</strong> (Konfidenz: 95) — Direkter VSS-Löschbefehl, kein legitimer Anwendungsfall außerhalb von Backup-Software mit bekanntem Prozesskontext</li>
+      <li class="tp"><strong>bcdedit /set recoveryenabled no + wbadmin delete catalog</strong> (Konfidenz: 98) — Kombination aus Recovery-Deaktivierung und Backup-Katalog-Löschung innerhalb kurzer Zeit</li>
+      <li class="tp"><strong>net stop "Veeam" + taskkill MsMpEng + vssadmin (3 Indikatoren)</strong> (Konfidenz: 99) — Drei Indikatoren gleichzeitig, klassisches Ransomware-Playbook</li>
+      <li class="tp"><strong>&gt;100 Datei-Renames pro Minute von unbekanntem Prozess</strong> (Konfidenz: 90) — Sysmon Event 11, Massendateioperation auf Dateifreigaben oder lokalen Laufwerken</li>
+      <li class="tp"><strong>AV deaktiviert + Backup gestoppt im selben 5-Minuten-Fenster</strong> (Konfidenz: 95) — Zeitliche Korrelation zweier Vorbereitungsschritte erhöht Konfidenz deutlich</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>False Positives &amp; Whitelist</h2>
+    <ul class="dl">
+      <li class="fp"><strong>Legitime Backup-Software die VSS Snapshots verwaltet</strong> — Veeam und Acronis verwalten VSS-Snapshots im Rahmen normaler Backup-Jobs. Whitelist: Backup-Prozesse mit bekannten Hashes und geplanten Ausführungszeiten</li>
+      <li class="fp"><strong>IT-Admin deaktiviert Recovery-Optionen für Tests</strong> — Vorkommen bei Disaster-Recovery-Tests. Whitelist: Admin-Host + Ticket-Nachweis als Korrelationsbedingung</li>
+      <li class="fp"><strong>AV-Update startet eigenen Service neu</strong> — Vendor-eigene Prozesse können kurzzeitig den Schutzstatus unterbrechen. Whitelist: Vendor-Prozesse mit gültiger digitaler Signatur</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Varianten &amp; Evasion-Techniken</h2>
+    <ul class="dl">
+      <li class="var"><strong>VAR-001: WMI-basierte VSS-Deletion</strong> (Conf-Modifier: 0) — <code>Get-WmiObject Win32_ShadowCopy | Remove-WmiObject</code> — kein vssadmin.exe Prozess sichtbar, Erkennung nur über WMI-Aktivitätslogs möglich</li>
+      <li class="var"><strong>VAR-002: PowerShell für alle Schritte</strong> (Conf-Modifier: -5) — Scriptblock-basiert, kein eigenständiger Prozess pro Aktion. ScriptBlock-Logging (Event 4104) erforderlich für Erkennung</li>
+      <li class="var"><strong>VAR-003: Löschen über Volume Mount</strong> (Conf-Modifier: -20) — Shadow Copies via Volume-Mount-Point-Manipulierung gelöscht, kein klassischer Löschbefehl erkennbar</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>Test Cases</h2>
+    <table class="doc-table">
+      <thead><tr><th>ID</th><th>Typ</th><th>Beschreibung</th><th>Erwartet</th><th>Min. Conf.</th></tr></thead>
+      <tbody>
+        <tr><td>TP-001</td><td>TP</td><td>vssadmin delete shadows /all /quiet</td><td>Erkannt</td><td>95</td></tr>
+        <tr><td>TP-002</td><td>TP</td><td>bcdedit + wbadmin + vssadmin (3 Indikatoren)</td><td>Erkannt</td><td>99</td></tr>
+        <tr><td>TP-003</td><td>TP</td><td>net stop Veeam + taskkill MsMpEng</td><td>Erkannt</td><td>88</td></tr>
+        <tr><td>TP-004</td><td>TP</td><td>100+ Datei-Renames/min von unbekanntem Prozess</td><td>Erkannt</td><td>90</td></tr>
+        <tr><td>FP-001</td><td>FP</td><td>Veeam eigener Backup-Prozess verwaltet VSS</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>FP-002</td><td>FP</td><td>Admin deaktiviert Recovery für Test (mit Ticket)</td><td>NICHT erkannt</td><td>—</td></tr>
+        <tr><td>VAR-001</td><td>VAR</td><td>WMI-basierte VSS-Deletion (kein vssadmin)</td><td>Erkannt</td><td>85</td></tr>
+        <tr><td>VAR-002</td><td>VAR</td><td>PowerShell alle Schritte scriptbasiert</td><td>Erkannt</td><td>80</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

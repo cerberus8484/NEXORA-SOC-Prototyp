@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installations-Anleitung — VMware ESXi | SOC Ticket Tool</title>
+<style>
+  :root {
+    --bg:#0b0f1a;--bg-card:#131929;--bg-input:#0f1521;--border:#1e2d45;
+    --accent:#00d4ff;--accent2:#00ff88;--warn:#ff6b35;--crit:#ff2d55;
+    --text:#c9d6e3;--text-dim:#5a6a80;--text-head:#e8f0f8;
+    --font-mono:'JetBrains Mono','Courier New',monospace;
+    --font-ui:'Segoe UI',system-ui,sans-serif;--sw:270px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:14px;line-height:1.7;display:flex;min-height:100vh;}
+  #sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-card);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:0 0 40px;}
+  #sidebar::-webkit-scrollbar{width:4px;}
+  #sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+  .sb-logo{padding:20px 18px 14px;border-bottom:1px solid var(--border);}
+  .sb-logo h1{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
+  .sb-logo p{font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .sb-badge{display:inline-block;margin:10px 18px 0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--accent);letter-spacing:.5px;text-transform:uppercase;}
+  .sb-section{padding:14px 18px 5px;font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+  .sb-link{display:flex;align-items:center;gap:8px;padding:6px 18px;font-size:12px;color:var(--text);text-decoration:none;border-left:3px solid transparent;transition:all .15s;}
+  .sb-link:hover{background:rgba(0,212,255,.06);color:var(--text-head);}
+  .sb-link.active{border-left-color:var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:600;}
+  .sb-link .num{font-size:10px;color:var(--text-dim);font-family:var(--font-mono);min-width:24px;}
+  #content{margin-left:var(--sw);flex:1;max-width:900px;padding:44px 52px 80px;}
+  .cover{margin-bottom:44px;padding-bottom:28px;border-bottom:1px solid var(--border);}
+  .cover h1{font-size:32px;font-weight:800;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
+  .cover .sub{font-size:17px;color:var(--text);margin-top:8px;}
+  .cover .meta{font-size:12px;color:var(--text-dim);margin-top:5px;}
+  .doc-section{margin-bottom:52px;scroll-margin-top:28px;}
+  h2{font-size:20px;font-weight:700;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+  h2 .num{font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.25);color:var(--accent);font-family:var(--font-mono);}
+  h3{font-size:14px;font-weight:700;color:var(--text-head);margin:24px 0 10px;}
+  p{margin-bottom:12px;color:var(--text);}
+  .info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-left:3px solid var(--accent);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .info-box strong{color:var(--accent);}
+  .warn-box{background:rgba(255,107,53,.07);border:1px solid rgba(255,107,53,.25);border-left:3px solid var(--warn);border-radius:5px;padding:12px 16px;margin:14px 0;font-size:13px;}
+  .warn-box strong{color:var(--warn);}
+  .doc-table{width:100%;border-collapse:collapse;margin:14px 0 22px;font-size:13px;}
+  .doc-table th{background:rgba(0,212,255,.08);color:var(--accent);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+  .doc-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;}
+  .doc-table tr:last-child td{border-bottom:none;}
+  .doc-table tr:hover td{background:rgba(255,255,255,.02);}
+  .doc-table td:first-child{color:#8ec5d6;font-weight:600;font-size:12px;}
+  pre{background:var(--bg-input);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:5px;padding:14px 18px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:#a8d8b0;overflow-x:auto;margin:10px 0 18px;}
+  code{font-family:var(--font-mono);font-size:12px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);border-radius:3px;padding:1px 5px;color:var(--accent);}
+  ul.doc-list{list-style:none;margin:10px 0 16px;padding:0;}
+  ul.doc-list li{padding:4px 0 4px 18px;position:relative;color:var(--text);font-size:13px;}
+  ul.doc-list li::before{content:'›';position:absolute;left:4px;color:var(--accent);font-weight:700;}
+  ol.doc-list{margin:10px 0 16px;padding:0 0 0 20px;}
+  ol.doc-list li{padding:4px 0;color:var(--text);font-size:13px;}
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);text-decoration:none;font-size:12px;margin-bottom:28px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;transition:all .15s;}
+  .back-link:hover{color:var(--accent);border-color:var(--accent);}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="sb-logo"><h1>SOC Ticket Tool</h1><p>Installations-Anleitung</p></div>
+  <span class="sb-badge">VMware ESXi</span>
+  <div class="sb-section">Abschnitte</div>
+  <a class="sb-link" href="#voraussetzungen"><span class="num">01</span> Voraussetzungen</a>
+  <a class="sb-link" href="#vm-erstellen"><span class="num">02</span> VM erstellen</a>
+  <a class="sb-link" href="#ubuntu-install"><span class="num">03</span> Ubuntu installieren</a>
+  <a class="sb-link" href="#vmware-tools"><span class="num">04</span> VMware Tools</a>
+  <a class="sb-link" href="#system"><span class="num">05</span> System vorbereiten</a>
+  <a class="sb-link" href="#docker"><span class="num">06</span> Docker installieren</a>
+  <a class="sb-link" href="#repository"><span class="num">07</span> Repository klonen</a>
+  <a class="sb-link" href="#konfiguration"><span class="num">08</span> Konfiguration</a>
+  <a class="sb-link" href="#deployment"><span class="num">09</span> Deployment starten</a>
+  <a class="sb-link" href="#smoke-tests"><span class="num">10</span> Smoke Tests</a>
+  <a class="sb-link" href="#wartung"><span class="num">11</span> Wartung &amp; Updates</a>
+  <div class="sb-section" style="margin-top:14px;">Weitere Docs</div>
+  <a class="sb-link" href="install-proxmox.html"><span class="num">→</span> Proxmox Guide</a>
+  <a class="sb-link" href="../deploy/README.md"><span class="num">→</span> deploy/README.md</a>
+  <a class="sb-link" href="arc42.html"><span class="num">→</span> Arc42</a>
+  <a class="sb-link" href="developer-guide.html"><span class="num">→</span> Developer Guide</a>
+</nav>
+<main id="content">
+  <a class="back-link" href="../index.html">← Zurück zur App</a>
+  <div class="cover">
+    <h1>Installations-Anleitung</h1>
+    <div class="sub">VMware ESXi — SOC Ticket Tool auf VMware ESXi / vSphere VM deployen</div>
+    <div class="meta">Version 1.0 &nbsp;|&nbsp; Stand: Juni 2026 &nbsp;|&nbsp; Zielplattform: VMware ESXi 7.0+ / 8.0+</div>
+  </div>
+
+  <!-- 01 -->
+  <section class="doc-section" id="voraussetzungen">
+    <h2><span class="num">01</span> Voraussetzungen</h2>
+    <p>Vor der Installation sicherstellen, dass die folgende Infrastruktur bereitsteht:</p>
+    <table class="doc-table">
+      <thead><tr><th>Komponente</th><th>Minimum</th><th>Empfohlen</th></tr></thead>
+      <tbody>
+        <tr><td>VMware ESXi</td><td>7.0+</td><td>8.0+</td></tr>
+        <tr><td>vSphere Client</td><td>Web-Client 7+</td><td>vSphere 8</td></tr>
+        <tr><td>VM RAM</td><td>4 GB</td><td>8 GB</td></tr>
+        <tr><td>VM CPU</td><td>2 vCPU</td><td>4 vCPU</td></tr>
+        <tr><td>VM Disk</td><td>50 GB SSD</td><td>100 GB SSD</td></tr>
+        <tr><td>Betriebssystem</td><td>Ubuntu 22.04 LTS</td><td>Ubuntu 22.04 LTS</td></tr>
+        <tr><td>Netzwerk</td><td>Internes VLAN</td><td>SOC-VLAN dediziert (dediziertes Portgroup)</td></tr>
+        <tr><td>DNS</td><td colspan="2">Interner DNS-Eintrag für <code>soc.example.com</code></td></tr>
+        <tr><td>TLS</td><td>Selbstsigniertes Zertifikat (Dev)</td><td>Internes CA-Zertifikat</td></tr>
+      </tbody>
+    </table>
+    <div class="warn-box"><strong>Wichtig — ISO im Datastore:</strong> Das Ubuntu 22.04 LTS ISO muss vor der VM-Erstellung in einem ESXi-Datastore hochgeladen sein. vSphere Client → Storage → Datastore → Upload → ISO-Datei hochladen. Erst danach kann die VM erstellt werden.</div>
+  </section>
+
+  <!-- 02 -->
+  <section class="doc-section" id="vm-erstellen">
+    <h2><span class="num">02</span> VM erstellen (vSphere Client)</h2>
+    <p>Die VM kann entweder über den vSphere Web Client oder per PowerCLI erstellt werden.</p>
+
+    <h3>Via vSphere Web Client</h3>
+    <ol class="doc-list">
+      <li>vSphere Web Client öffnen → Rechtsklick auf Host/Cluster → <strong>New Virtual Machine</strong></li>
+      <li><strong>Select creation type:</strong> Create a new virtual machine</li>
+      <li><strong>Name &amp; Location:</strong> Name: <code>soc-ticket-tool</code>, gewünschten Ordner wählen</li>
+      <li><strong>Compute Resource:</strong> ESXi-Host oder Cluster wählen</li>
+      <li><strong>Storage:</strong> Datastore mit mindestens 100 GB freiem Speicher wählen</li>
+      <li><strong>Compatibility:</strong> ESXi 7.0+ oder aktuell</li>
+      <li><strong>Guest OS:</strong> Linux → Ubuntu Linux (64-bit)</li>
+      <li><strong>Customize Hardware:</strong>
+        <ul class="doc-list" style="margin-top:6px;">
+          <li>CPU: 4 vCPUs, Hardware Virtualization aktivieren</li>
+          <li>Memory: 8192 MB, Reserve all guest memory (für Produktion)</li>
+          <li>New Hard Disk: 100 GB, Thin Provision, SCSI-Controller</li>
+          <li>Network: VM Network oder dediziertes SOC-Portgroup, VMXNET3</li>
+          <li>CD/DVD Drive: Datastore ISO → Ubuntu 22.04 auswählen, Connect at Power On aktivieren</li>
+        </ul>
+      </li>
+      <li><strong>Finish</strong> → VM einschalten → Console öffnen → Ubuntu installieren</li>
+    </ol>
+
+    <h3>Via PowerCLI (Alternative)</h3>
+    <pre># PowerCLI (optional - für Automation)
+Connect-VIServer -Server esxi.example.com
+$vm = New-VM -Name "soc-ticket-tool" `
+  -ResourcePool (Get-ResourcePool "Resources") `
+  -Datastore (Get-Datastore "datastore1") `
+  -NumCpu 4 -MemoryGB 8 `
+  -GuestId ubuntu64Guest `
+  -DiskGB 100 -DiskStorageFormat Thin</pre>
+    <div class="info-box"><strong>Netzwerk-Portgroup:</strong> Für SOC-Umgebungen empfiehlt sich ein dediziertes vSphere-Portgroup mit VLAN-Tagging, das ausschließlich SOC-relevante Hosts enthält. Das Portgroup unter vSphere → Networking → New Distributed Port Group anlegen.</div>
+  </section>
+
+  <!-- 03 -->
+  <section class="doc-section" id="ubuntu-install">
+    <h2><span class="num">03</span> Ubuntu 22.04 installieren</h2>
+    <p>Die folgenden Schritte beziehen sich auf den Ubuntu Server Installer in der vSphere-Konsole:</p>
+    <ol class="doc-list">
+      <li><strong>Language:</strong> English (empfohlen für konsistente Fehlermeldungen und Log-Auswertung)</li>
+      <li><strong>Network:</strong> DHCP oder statische IP konfigurieren — statische IP für Produktion empfohlen</li>
+      <li><strong>Storage:</strong> Gesamte Disk verwenden (guided), LVM-Gruppe bestätigen</li>
+      <li><strong>Profile:</strong> Username=<code>socadmin</code>, Hostname=<code>soc-ticket</code>, starkes Passwort vergeben</li>
+      <li><strong>OpenSSH Server:</strong> Aktivieren (Install OpenSSH server ankreuzen)</li>
+      <li>Keine zusätzlichen Snaps installieren</li>
+      <li>Nach Installation: Konsole → Login → IP-Adresse notieren (<code>ip a</code>)</li>
+    </ol>
+    <div class="warn-box"><strong>Sicherheit:</strong> Nach der Installation sofort SSH-Zugang mit einem dedizierten SSH-Key absichern und Passwort-Login per SSH deaktivieren (<code>PasswordAuthentication no</code> in <code>/etc/ssh/sshd_config</code>).</div>
+  </section>
+
+  <!-- 04 -->
+  <section class="doc-section" id="vmware-tools">
+    <h2><span class="num">04</span> VMware Tools installieren</h2>
+    <p>Für optimale ESXi-Integration werden open-vm-tools installiert — der Open-Source-Ersatz für die proprietären VMware Tools:</p>
+    <pre># open-vm-tools für bessere ESXi-Integration
+sudo apt install -y open-vm-tools
+sudo systemctl enable --now open-vm-tools
+
+# Prüfen
+vmware-checkvm &amp;&amp; echo "VMware Tools aktiv"
+
+# Optional: für Desktop-VMs (nicht nötig für Server)
+# sudo apt install -y open-vm-tools-desktop</pre>
+    <div class="info-box"><strong>Funktionen mit open-vm-tools:</strong>
+      <ul class="doc-list" style="margin-top:8px;">
+        <li>VM-Snapshot aus ESXi ohne Datenverlust (konsistenter Snapshot)</li>
+        <li>Graceful Shutdown aus vSphere-Konsole</li>
+        <li>IP-Adresse in vSphere-Übersicht sichtbar</li>
+        <li>Memory Balloon Driver für dynamische Speicherverwaltung</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section class="doc-section" id="system">
+    <h2><span class="num">05</span> System vorbereiten</h2>
+    <p>Nach dem ersten Login als <code>socadmin</code> das System auf den aktuellen Stand bringen und Grundpakete installieren:</p>
+    <pre># System aktualisieren
+sudo apt update &amp;&amp; sudo apt upgrade -y
+
+# Grundpakete
+sudo apt install -y curl git wget htop ufw \
+  ca-certificates gnupg lsb-release openssl
+
+# Firewall konfigurieren
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP (Redirect)
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw enable</pre>
+    <div class="info-box"><strong>Hinweis:</strong> Im Gegensatz zur Proxmox-Installation entfällt hier der Qemu Guest Agent — stattdessen wurden in Abschnitt 04 die open-vm-tools installiert, die dieselbe Rolle für ESXi übernehmen.</div>
+  </section>
+
+  <!-- 06 -->
+  <section class="doc-section" id="docker">
+    <h2><span class="num">06</span> Docker installieren</h2>
+    <p>Docker wird über das offizielle Docker-Repository installiert — nicht über den Ubuntu-Standard-APT, da dieser veraltete Versionen liefert:</p>
+    <pre># Docker GPG Key
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Repository hinzufügen
+echo "deb [arch=$(dpkg --print-architecture) \
+  signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release &amp;&amp; echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+
+# Docker installieren
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+
+# User zur Docker-Gruppe hinzufügen
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Test
+docker --version
+docker compose version</pre>
+    <div class="warn-box"><strong>Sicherheit:</strong> Der <code>docker</code>-Gruppe angehörende User hat effektiv Root-Äquivalenz auf dem Host. In Produktionsumgebungen sollte der API-Prozess über einen dedizierten Service-Account ohne Shell-Login laufen.</div>
+  </section>
+
+  <!-- 07 -->
+  <section class="doc-section" id="repository">
+    <h2><span class="num">07</span> Repository klonen</h2>
+    <pre>cd /opt
+sudo mkdir soc-ticket &amp;&amp; sudo chown $USER:$USER soc-ticket
+cd soc-ticket
+git clone https://github.com/cerberus8484/SOC-Orchestrator.git .</pre>
+    <div class="info-box"><strong>Deploy-Keys:</strong> Für automatische Updates (CI/CD) empfiehlt sich ein read-only Deploy-Key statt eines Personal Access Tokens. Diesen im GitHub-Repository unter Settings → Deploy Keys hinterlegen.</div>
+  </section>
+
+  <!-- 08 -->
+  <section class="doc-section" id="konfiguration">
+    <h2><span class="num">08</span> Konfiguration</h2>
+    <p>TLS-Zertifikate ablegen und die Produktions-Umgebungsvariablen konfigurieren:</p>
+    <pre># TLS-Zertifikate ablegen
+sudo mkdir -p /etc/ssl/soc
+
+# Zertifikat von interner CA oder selbstsigniert (nur Dev):
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/soc/server.key \
+  -out /etc/ssl/soc/server.crt \
+  -subj "/CN=soc.example.com"
+sudo chmod 600 /etc/ssl/soc/server.key
+
+# Produktions-ENV erstellen
+cp deploy/.env.production.example deploy/.env.production
+
+# Secrets generieren:
+echo "JWT_SECRET=$(openssl rand -hex 64)"
+echo "DB_PASSWORD=$(openssl rand -hex 20)"
+echo "WEBHOOK_SECRET_GENERIC=$(openssl rand -hex 32)"
+
+# Werte in deploy/.env.production eintragen:
+nano deploy/.env.production</pre>
+    <div class="info-box"><strong>Wichtig:</strong> <code>TLS_CERT_PATH</code> und <code>TLS_KEY_PATH</code> in <code>deploy/.env.production</code> auf <code>/etc/ssl/soc/server.crt</code> und <code>/etc/ssl/soc/server.key</code> setzen.</div>
+    <div class="warn-box"><strong>Secrets:</strong> Die generierten Werte niemals in Git einchecken. Die Datei <code>deploy/.env.production</code> ist in <code>.gitignore</code> ausgeschlossen — trotzdem vor jedem Commit prüfen (<code>git status</code>).</div>
+  </section>
+
+  <!-- 09 -->
+  <section class="doc-section" id="deployment">
+    <h2><span class="num">09</span> Deployment starten</h2>
+    <pre># Image bauen und starten
+docker compose -f deploy/docker-compose.prod.yml \
+  --env-file deploy/.env.production \
+  up -d --build
+
+# Status prüfen
+docker compose -f deploy/docker-compose.prod.yml ps
+
+# Migrationen ausführen
+docker compose -f deploy/docker-compose.prod.yml \
+  --env-file deploy/.env.production \
+  exec api node -e "require('./src/db/pool').migrate().then(() => { console.log('Migration done'); process.exit(0); })"
+
+# Logs verfolgen
+docker compose -f deploy/docker-compose.prod.yml logs -f api</pre>
+    <div class="info-box"><strong>Erster Start:</strong> Beim ersten <code>up --build</code> werden alle Images gebaut und die Datenbank initialisiert. Dies kann 2–5 Minuten dauern. Die Migrationen erst ausführen, wenn alle Container den Status <code>running</code> zeigen.</div>
+  </section>
+
+  <!-- 10 -->
+  <section class="doc-section" id="smoke-tests">
+    <h2><span class="num">10</span> Smoke Tests</h2>
+    <p>Nach dem Start alle fünf Checks der Reihe nach ausführen. Alle Tests müssen erfolgreich sein, bevor die Installation als produktionsbereit gilt.</p>
+
+    <h3>1. Healthcheck</h3>
+    <pre>curl -k https://soc.example.com/api/v1/health
+# Erwartetes Ergebnis:
+# {"status":"ok","db":"ok",...}</pre>
+
+    <h3>2. HTTPS-Redirect</h3>
+    <pre>curl -I http://soc.example.com/
+# Erwartetes Ergebnis:
+# HTTP/1.1 301 Moved Permanently
+# Location: https://soc.example.com/</pre>
+
+    <h3>3. Unauthentifizierter Zugriff</h3>
+    <pre>curl -k https://soc.example.com/api/v1/tickets
+# Erwartetes Ergebnis:
+# HTTP 401 + {"error":"UNAUTHORIZED",...}</pre>
+
+    <h3>4. Login</h3>
+    <pre>curl -k -X POST https://soc.example.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@firma.de","password":"IhrPasswort"}'
+# Erwartetes Ergebnis:
+# {"token":"eyJ...","user":{...}}</pre>
+
+    <h3>5. Webhook-Test (mit korrektem HMAC)</h3>
+    <pre>TIMESTAMP=$(date +%s)
+BODY='{"title":"Smoke Test Webhook","priority":"low"}'
+SECRET="IhrWebhookSecret"
+SIG="sha256=$(echo -n "${TIMESTAMP}.${BODY}" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)"
+
+curl -k -X POST https://soc.example.com/api/v1/integrations/generic/webhook \
+  -H "Content-Type: application/json" \
+  -H "X-Webhook-Signature: $SIG" \
+  -H "X-Webhook-Timestamp: $TIMESTAMP" \
+  -d "$BODY"
+# Erwartetes Ergebnis:
+# HTTP 202 + {"status":"accepted","eventId":"..."}</pre>
+
+    <div class="warn-box"><strong>Checkliste vor Go-Live:</strong> JWT_SECRET gesetzt (min. 64 Zeichen) · DB_PASSWORD gesetzt (min. 20 Zeichen) · WEBHOOK_SECRET gesetzt für alle aktiven Quellen · CORS_ORIGINS nur interne Domain (kein <code>*</code> oder <code>localhost</code>) · TLS-Zertifikat gültig, Private Key nur root lesbar (<code>chmod 600</code>) · Kein externer Zugriff auf Port 3000 (Firewall)</div>
+  </section>
+
+  <!-- 11 -->
+  <section class="doc-section" id="wartung">
+    <h2><span class="num">11</span> Wartung &amp; Updates</h2>
+
+    <h3>Update einspielen</h3>
+    <pre>cd &lt;repo-root&gt;
+git pull --ff-only origin "$(git branch --show-current)"
+docker compose -f deploy/docker-compose.prod.yml \
+  --env-file deploy/.env.production \
+  up -d --build api</pre>
+
+    <h3>Datenbank-Backup</h3>
+    <pre>docker compose -f deploy/docker-compose.prod.yml \
+  --env-file deploy/.env.production \
+  exec postgres pg_dump -U soc_api soc_tickets_prod &gt; backup_$(date +%Y%m%d_%H%M%S).sql</pre>
+
+    <h3>vSphere-spezifische Hinweise</h3>
+    <div class="info-box">
+      <strong>vSphere-Features für Produktionsbetrieb:</strong>
+      <ul class="doc-list" style="margin-top:8px;">
+        <li><strong>Snapshots:</strong> VM vor Updates snapshotten → bei Problemen innerhalb von Sekunden zurückrollen (vSphere → VM → Snapshots → Take Snapshot)</li>
+        <li><strong>vSphere HA:</strong> Wenn HA aktiviert ist, startet die VM automatisch auf einem anderen Host neu bei Host-Ausfall — kein manueller Eingriff nötig</li>
+        <li><strong>DRS:</strong> VM-Ressourcen werden automatisch auf Cluster-Hosts balanciert — sinnvoll bei schwankender Last</li>
+        <li><strong>vSAN:</strong> Wenn verfügbar, für bessere I/O-Performance und Storage-Redundanz nutzen</li>
+        <li><strong>Backup:</strong> VM-Level Backup via Veeam oder VMware Backup empfohlen — zusätzlich zu <code>pg_dump</code>, nicht als Ersatz</li>
+      </ul>
+    </div>
+
+    <h3>Logs rotieren</h3>
+    <pre># Docker-Logs sind standardmäßig unbegrenzt — Limit in docker-compose setzen
+# In deploy/docker-compose.prod.yml unter services.api hinzufügen:
+# logging:
+#   driver: "json-file"
+#   options:
+#     max-size: "50m"
+#     max-file: "5"</pre>
+  </section>
+
+</main>
+<script>
+  // ScrollSpy
+  const links = document.querySelectorAll('.sb-link[href^="#"]');
+  const sections = Array.from(links).map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+  function onScroll() {
+    let current = sections[0];
+    sections.forEach(s => { if (window.scrollY + 80 >= s.offsetTop) current = s; });
+    links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + current.id));
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+</script>
+</body>
+</html>

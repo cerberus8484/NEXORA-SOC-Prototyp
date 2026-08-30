@@ -1,0 +1,25 @@
+# P_CORR_ADMIN_2 — End-to-End Apply-Smoke-Test (ISOLIERT, lokal).
+#
+# Eigener Postgres-Container + eigenes Volume + eigener Port (5544), damit der Lauf
+# weder die Dev- (5432) noch die Jest-Test-DB (5433) berührt. Nach dem Lauf wird das
+# Volume mit `docker compose ... down -v` entfernt (siehe run-apply-smoke.sh).
+#
+# Kein Production-Bezug, keine echten Wazuh-/OPNsense-Daten, keine Netz-/Service-Apply.
+
+services:
+  postgres-apply-smoke:
+    image: postgres:16-alpine
+    container_name: soc_postgres_apply_smoke
+    environment:
+      POSTGRES_DB:       soc_apply_smoke
+      POSTGRES_USER:     soc_smoke
+      POSTGRES_PASSWORD: smokepassword
+    ports:
+      - "5544:5432"
+    tmpfs:
+      - /var/lib/postgresql/data   # flüchtig: nichts überlebt den Container (zusätzlicher Cleanup-Backstop)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soc_smoke -d soc_apply_smoke"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

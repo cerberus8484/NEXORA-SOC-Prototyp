@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC-PRIV-001 Privilege Execution (uc_010) — Nexora SOC / QRadar</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <div class="brand">Nexora <span>SOC</span></div>
+    <div class="sub">UC-PRIV-001 · uc_010</div>
+    <h2>Auf dieser Seite</h2>
+    <a href="#hintergrund">1 · Hintergrund (T1548)</a>
+    <a href="#verdacht">2 · Wann verdächtig?</a>
+    <a href="#mitre">3 · MITRE-Einordnung</a>
+    <a href="#voraussetzungen">4 · Voraussetzungen</a>
+    <a href="#regeln">5 · Regeln A–E</a>
+    <a href="#regel-a">· A — Sudo Brute Force</a>
+    <a href="#regel-b">· B — Unerwartete Sudo-Nutzer</a>
+    <a href="#regel-c">· C — SUID-Manipulation</a>
+    <a href="#regel-d">· D — pkexec / Polkit</a>
+    <a href="#regel-e">· E — Sudo ohne Terminal</a>
+    <a href="#aufwand">6 · Aufwand &amp; Empfehlung</a>
+    <a href="#validierung">7 · Validierung</a>
+    <a href="#handlung">8 · Analyst-Handlung</a>
+    <h2>Bibliothek</h2>
+    <a href="../index.html">Übersicht</a>
+    <a href="../mitre-coverage-map.html">Coverage Map</a>
+    <a href="../../qradar-usecase-anlegen.html">Klick-Anleitung</a>
+  </nav>
+
+  <main>
+    <div class="breadcrumb"><a href="../index.html">Bibliothek</a> / <a href="../mitre-coverage-map.html">Privilege Escalation</a> / UC-PRIV-001 (uc_010)</div>
+    <header class="hero">
+      <div class="kicker">Privilege Escalation · Linux (SLES)</div>
+      <h1>UC-PRIV-001 — Privilege / User Execution</h1>
+      <p>Überwachung der Ausführung von Befehlen zur Umgehung von Berechtigungen auf Linux-Systemen: missbräuchliche <code>sudo</code>-Nutzung, Manipulation von SUID-Binaries und Ausbeutung von <code>pkexec</code> (PolicyKit). Zielumgebung: SLES-Server im vCenter. Quelle: GMK <code>uc_010_priv_user_execution</code>.</p>
+      <div class="meta">
+        <span><b>MITRE:</b> <span class="chip mitre">T1548</span> Abuse Elevation Control Mechanism</span>
+        <span><b>Taktik:</b> Privilege Escalation</span>
+        <span><b>GMK-ID:</b> uc_010</span>
+        <span><b>Quelle:</b> <span class="chip src">Linux auditd / Wazuh / syslog</span></span>
+      </div>
+    </header>
+
+    <h2 class="section" id="hintergrund">1 · Hintergrund der Technik (T1548)</h2>
+    <p>Angreifer starten fast immer als „Niemand" — z. B. über einen gehackten Webserver-User wie <code>www-data</code>. In diesem Zustand können sie keine Passwörter auslesen, keine Sicherheitssoftware stoppen und keine Daten anderer User einsehen. T1548 beschreibt den Versuch, diese Barriere zu durchbrechen und an Root-Rechte zu gelangen.</p>
+    <div class="callout crit"><strong>Hoch-kritisch:</strong> Erfolgreiche Rechteausweitung auf Root = vollständige Kontrolle über das System; Ausgangspunkt für Persistenz, Datenzerstörung (<a href="uc-imp-001-data-destruction.html">uc_013</a>) und Verschlüsselung (<a href="uc-imp-002-data-encrypted.html">uc_014</a>).</div>
+
+    <h2 class="section" id="verdacht">2 · Ist jedes sudo verdächtig?</h2>
+    <p class="lead">Nein. Admins führen täglich dutzende sudo-Befehle aus (Updates, Konfigurationen). Verdächtig wird es durch den <strong>Kontext</strong>:</p>
+    <table>
+      <tr><th>Merkmal</th><th>Harmlos (legitim)</th><th>Verdächtig (Angriff)</th></tr>
+      <tr><td>Benutzer</td><td>bekannter Admin-User</td><td>Dienst-Account (apache, tomcat, www-data)</td></tr>
+      <tr><td>Befehl</td><td><code>zypper update</code>, <code>systemctl restart</code></td><td><code>whoami</code>, <code>cat /etc/shadow</code>, <code>chmod +s /usr/bin/python</code></td></tr>
+      <tr><td>Häufigkeit</td><td>gelegentlich während der Arbeitszeit</td><td>massenhafte Versuche in Sekunden (Brute Force)</td></tr>
+    </table>
+
+    <h2 class="section" id="mitre">3 · MITRE-Einordnung</h2>
+    <table style="max-width:760px">
+      <tr><th>Feld</th><th>Wert</th></tr>
+      <tr><td>Technik</td><td><span class="chip mitre">T1548</span> Abuse Elevation Control Mechanism</td></tr>
+      <tr><td>Sub-Techniken</td><td>T1548.001 (Setuid/Setgid), T1548.003 (Sudo &amp; Sudo Caching), T1548.004 (Elevated Execution Prompt / Polkit)</td></tr>
+      <tr><td>Taktik</td><td>Privilege Escalation (TA0004)</td></tr>
+      <tr><td>Tools / Exploits</td><td>PwnKit (CVE-2021-4034), GTFOBins, Brute-Force-Skripte, manuelle <code>chmod u+s</code></td></tr>
+    </table>
+
+    <h2 class="section" id="voraussetzungen">4 · Voraussetzungen</h2>
+    <ul class="steps">
+      <li><b>Log-Quelle:</b> SLES-Hosts senden auditd + Auth-Logs (<code>/var/log/messages</code> bzw. <code>secure</code>, sudo, PAM) an QRadar — direkt via Syslog-DSM oder über Wazuh.</li>
+      <li><b>Auditd-Regeln deployt</b> (sonst keine Events für C/D): SUID-Bit-Setzen und pkexec-execve.</li>
+      <li><b>Custom Event Properties:</b> <span class="chip src">Command / exe</span> <span class="chip src">Audit User (auid)</span> <span class="chip src">TTY</span> <span class="chip src">syscall</span> <span class="chip src">File Path</span> <span class="chip src">audit key</span></li>
+      <li><b>Reference Sets:</b> <span class="chip refset">RS:Sudo-Admins</span> (AlphaNumeric) <span class="chip refset">RS:Service-Accounts-Linux</span> (AlphaNumeric) <span class="chip refset">RS:SUID-Maintenance-Hosts</span> (IP)</li>
+    </ul>
+
+    <h2 class="section" id="regeln">5 · Regeln A–E</h2>
+    <p class="lead">Jede Regel = eine eigene Event Rule (Rule Group <b>Privilege Escalation</b>). <span class="lnk" style="color:var(--qr-link)">Blau</span> = anklickbarer Wizard-Parameter.</p>
+
+    <h3 class="section" id="regel-a">Regel A — Sudo Brute Force Detection</h3>
+    <div class="meta"><span><b>Aufwand:</b> 15–20 h</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span></span><span><b>Voraussetzung:</b> direkt umsetzbar (analog SSH-Login-Failure-UC)</span></div>
+    <p><b>Beobachtung:</b> mehrfache <code>authentication failure</code> bei sudo (auth.log/secure). <b>Warum:</b> erkennt Passwort-Raten.</p>
+<pre class="code"><span class="kw">Apply</span> UC-PRIV-001-A Sudo Brute Force <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">Command/exe</span> (custom) is one of the following <span class="lnk">/usr/bin/sudo</span>
+<span class="kw">and when</span> the event message matches the regex <span class="lnk">(?i)authentication failure|incorrect password</span>
+<span class="kw">and when</span> at least <span class="lnk">5</span> events are seen with the same <span class="lnk">Username</span> and same <span class="lnk">Source Host</span> in <span class="lnk">5 minutes</span></pre>
+    <div class="callout tip"><strong>Response:</strong> Offense, Index by Username · Severity 6 · Limiter 1×/10 min. <strong>FP:</strong> User vertippt sich — Schwelle 5/5 min puffert das.</div>
+
+    <h3 class="section" id="regel-b">Regel B — Unerwartete Sudo-Nutzer („Service-Account"-Regel)</h3>
+    <div class="meta"><span><b>Aufwand:</b> 25–30 h</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span></span><span><b>Voraussetzung:</b> vollständige Liste aller Admin- + berechtigten Service-Accounts</span></div>
+    <p><b>Beobachtung:</b> jeder erfolgreiche sudo-Aufruf durch Nicht-Admins. <b>Warum:</b> <code>www-data</code> oder ein DB-User sollte niemals sudo nutzen.</p>
+<pre class="code"><span class="kw">Apply</span> UC-PRIV-001-B Unexpected Sudo User <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event message matches the regex <span class="lnk">(?i)sudo:.*COMMAND=</span>  <span class="cmt">(erfolgreiche sudo-Ausführung)</span>
+<span class="kw">and when</span> the username is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Sudo-Admins</span>
+<span class="kw">and when</span> the username is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Service-Accounts-Linux</span></pre>
+    <div class="callout warn"><strong>Steht und fällt mit der Whitelist.</strong> Bereitstellung einer gepflegten Liste personalisierter Admin-Accounts + berechtigter Service-Accounts (Monitoring/Backup) ist Pflicht. Onboarding-Prozess für <code>RS:Sudo-Admins</code> definieren, sonst FP bei neuen Admins.</div>
+
+    <h3 class="section" id="regel-c">Regel C — SUID-Binary Manipulation</h3>
+    <div class="meta"><span><b>Aufwand:</b> 25–30 h</span><span><b>Empfehlung:</b> <span class="conf med">Basis</span></span><span><b>Voraussetzung:</b> Anpassung auditd-Rules → direkt umsetzbar</span></div>
+    <p><b>Beobachtung:</b> <code>chmod +s</code> / <code>chown root</code> auf ausführbare Dateien (auditd-Syscalls, die das SUID-Bit setzen). <b>Warum:</b> SUID lässt ein Programm immer mit Root-Rechten laufen — Angreifer bauen sich so eine Root-Bash als Hintertür.</p>
+<pre class="code"><span class="cmt"># auditd-Regel (auf den Hosts): SUID-Setzen protokollieren</span>
+-a always,exit -F arch=b64 -S chmod,fchmod,fchmodat -F a1&amp;04000 -k suid_change
+
+<span class="kw">Apply</span> UC-PRIV-001-C SUID Manipulation <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">audit key</span> (custom) is one of the following <span class="lnk">suid_change</span>
+<span class="kw">and when</span> <span class="lnk">syscall</span> (custom) is one of the following <span class="lnk">chmod, fchmod, fchmodat</span>
+<span class="kw">and when</span> the <span class="lnk">Audit User (auid)</span> is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Service-Accounts-Linux</span>
+<span class="kw">and when</span> the source IP is <span class="lnk">NOT</span> contained in <span class="lnk">RS:SUID-Maintenance-Hosts</span></pre>
+    <div class="callout warn"><strong>FP:</strong> Paket-Updates (<code>zypper</code>/RPM-Postinstall) setzen SUID-Bits — Paketmanager-Kontext (auid = Service-Account / Wartungsfenster) whitelisten.</div>
+
+    <h3 class="section" id="regel-d">Regel D — PolicyKit / Polkit (pkexec) Ausbeutung <span style="font-size:13px;color:var(--text-faint)">(T1548.004)</span></h3>
+    <div class="meta"><span><b>Aufwand:</b> ca. 30–40 h</span><span><b>Empfehlung:</b> <span class="conf low">Erweitert</span></span><span><b>Voraussetzung:</b> Anpassung auditd-Rules → direkt umsetzbar</span></div>
+    <p><b>Beobachtung:</b> Ausführung von <code>/usr/bin/pkexec</code> durch Nicht-Admins. <b>Warum:</b> pkexec ist das grafische Gegenstück zu sudo; bekannte Lücken (PwnKit) erlangen darüber ohne Passwort Root. Auf SLES-Servern im vCenter bedienen normale User selten grafische Oberflächen → pkexec durch Nicht-Admins ist extrem verdächtig.</p>
+<pre class="code"><span class="kw">Apply</span> UC-PRIV-001-D pkexec Exploitation <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> <span class="lnk">Command/exe</span> (custom) is one of the following <span class="lnk">/usr/bin/pkexec</span>
+<span class="kw">and when</span> the username is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Sudo-Admins</span></pre>
+    <div class="callout tip"><strong>Verhalten statt Signatur:</strong> Die Regel zielt nicht auf eine spezifische CVE, sondern darauf, dass ein normaler User <em>überhaupt</em> pkexec nutzt. Auch eine künftige, noch unbekannte Polkit-Lücke schlägt damit an. Quelle: <a href="https://support.scc.suse.com/s/kb/Security-vulnerability-CVE-2021-4034-local-root-exploit-in-polkit-aka-pwnkit?language=en_US" target="_blank" rel="noopener">SUSE KB CVE-2021-4034</a>. <strong>Response:</strong> Offense, Severity 8.</div>
+
+    <h3 class="section" id="regel-e">Regel E — Sudo-Aufruf ohne Terminal (TTY) <span style="font-size:13px;color:var(--text-faint)">(T1548.003)</span></h3>
+    <div class="meta"><span><b>Aufwand:</b> ca. 30–40 h</span><span><b>Empfehlung:</b> <span class="conf low">Erweitert</span></span><span><b>Voraussetzung:</b> Cron-/Ansible-Whitelist + erweiterte Linux-DSM-Anpassung</span></div>
+    <p><b>Beobachtung:</b> sudo-Befehle ohne zugeordnetes Terminal (<code>TTY=none</code> / <code>?</code>). <b>Warum:</b> Menschen haben beim sudo immer ein Terminal. Automatisierte Exploit-Skripte und Reverse-Shells haben keines — ein sudo ohne TTY deutet stark auf eingeschleuste Hintergrund-Rechteausweitung hin.</p>
+<pre class="code"><span class="kw">Apply</span> UC-PRIV-001-E Sudo Without TTY <span class="cmt">on events detected by the Local system</span>
+<span class="kw">and when</span> the event message matches the regex <span class="lnk">(?i)sudo:.*COMMAND=</span>
+<span class="kw">and when</span> <span class="lnk">TTY</span> (custom) is one of the following <span class="lnk">unknown, none</span>
+<span class="kw">and when</span> the username is <span class="lnk">NOT</span> contained in <span class="lnk">RS:Service-Accounts-Linux</span></pre>
+    <div class="callout warn"><strong>FP-Achtung:</strong> Cron-Jobs, Ansible, CI/CD nutzen sudo ohne TTY völlig legitim. Darum „Erweitert" — die berechtigten Automatisierungskonten müssen sauber in <code>RS:Service-Accounts-Linux</code> stehen (in der Testphase im SIEM auslesbar), sonst hohe FP-Rate.</div>
+
+    <h2 class="section" id="aufwand">6 · Aufwand &amp; Empfehlung (GMK-Fazit)</h2>
+    <div class="callout tip"><strong>Basis-Absicherung (A, B, C):</strong> deckt die kritischsten Vektoren ab (Brute Force, unbefugtes Sudo, SUID-Hintertüren) — ~80 % der gängigen Privilege-Escalation-Szenarien. <strong>Aufwand ca. 60–80 h.</strong></div>
+    <div class="callout warn"><strong>Erweiterte Detektion (D, E):</strong> Schutz gegen Polkit-Exploits &amp; automatisierte Reverse-Shells, inkl. moderner Zero-Days. <strong>Aufwand je Regel ca. 30–40 h.</strong></div>
+    <table>
+      <tr><th>Regel</th><th>Aufwand</th><th>Empfehlung</th></tr>
+      <tr><td>A — Sudo Brute Force</td><td>15–20 h</td><td>Basis</td></tr>
+      <tr><td>B — Unerwartete Sudo-Nutzer</td><td>25–30 h</td><td>Basis</td></tr>
+      <tr><td>C — SUID-Manipulation</td><td>25–30 h</td><td>Basis</td></tr>
+      <tr><td>D — pkexec-Ausbeutung</td><td>30–40 h</td><td>Erweitert</td></tr>
+      <tr><td>E — Sudo ohne Terminal</td><td>30–40 h</td><td>Erweitert</td></tr>
+      <tr><td><b>Basis-Paket (A–C)</b></td><td><b>≈ 60–80 h</b></td><td>empfohlen</td></tr>
+    </table>
+
+    <h2 class="section" id="validierung">7 · Validierung</h2>
+    <table>
+      <tr><th>ID</th><th>Typ</th><th>Regel</th><th>Beschreibung</th><th>Erwartet</th></tr>
+      <tr><td>TP-A1</td><td>TP</td><td>A</td><td>8 fehlgeschlagene sudo-Auth eines Users in 2 min</td><td>Offense</td></tr>
+      <tr><td>TP-B1</td><td>TP</td><td>B</td><td>sudo durch <code>www-data</code> (nicht in Whitelist)</td><td>Offense</td></tr>
+      <tr><td>TP-C1</td><td>TP</td><td>C</td><td><code>chmod u+s /tmp/rootshell</code> durch normalen User</td><td>Offense</td></tr>
+      <tr><td>TP-D1</td><td>TP</td><td>D</td><td>pkexec durch Nicht-Admin (PwnKit-Muster)</td><td>Offense</td></tr>
+      <tr><td>FP-C1</td><td>FP</td><td>C</td><td>zypper-Update setzt SUID (auid = Service-Account)</td><td>NICHT erkannt</td></tr>
+      <tr><td>FP-E1</td><td>FP</td><td>E</td><td>Ansible sudo ohne TTY (Service-Account)</td><td>NICHT erkannt</td></tr>
+    </table>
+
+    <h2 class="section" id="handlung">8 · Analyst-Handlung</h2>
+    <ul class="steps">
+      <li>Betroffener Host + Konto (auid) + ausgeführter Befehl (COMMAND=) sichern.</li>
+      <li>Bei SUID: welches Binary wurde manipuliert? (GTFOBins-Kandidat?) → entfernen, Integrität prüfen.</li>
+      <li>Bei pkexec/PwnKit: Polkit-Patchstand prüfen, Host als kompromittiert behandeln.</li>
+      <li>Folge-Aktivität korrelieren (neue Konten, Cron-Persistenz, ausgehende Verbindungen, Übergang zu uc_013 / uc_014).</li>
+    </ul>
+
+    <footer>
+      <p>UC-PRIV-001 (GMK uc_010) · Detection-Logik aus SOC-Hunt-Framework (HUNT-008, Linux-adaptiert) · <code>…/szenarien/uc-priv-001-privilege-execution.html</code> · 2026-06-26</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

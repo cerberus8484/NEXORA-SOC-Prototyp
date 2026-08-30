@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ╔══════════════════════════════════════════════════════════════════════════╗
+  ║  NEXORA SOC — WEF-Subscription "NexoraDC" (source-initiated)             ║
+  ║  Collector: WEC01.nexora.example (10.99.99.11)                              ║
+  ║  Quellen:   Domain Controllers (DC01, 10.99.99.10)                        ║
+  ╚══════════════════════════════════════════════════════════════════════════╝
+
+  Setup auf WEC01 (PowerShell als Admin):
+    wecutil qc /q                                      # WinRM + Wecsvc aktivieren
+    wecutil cs C:\path\wef-subscription-dc.xml         # Subscription anlegen
+    wecutil gr NexoraDC                                # Runtime-Status prüfen
+
+  Setup auf DC01 (GPO oder lokal):
+    1. GPO: Computer > Policies > Admin Templates > Windows Components >
+       Event Forwarding > Configure target Subscription Manager:
+         Server=http://WEC01.nexora.example:5985/wsman/SubscriptionManager/WEC,Refresh=60
+    2. "NETWORK SERVICE" in die lokale Gruppe "Event Log Readers" auf DC01
+       (für Security-Log-Zugriff): net localgroup "Event Log Readers" "NETWORK SERVICE" /add
+    3. gpupdate /force — Events erscheinen in ForwardedEvents auf WEC01.
+
+  Gefiltert wird HIER (nicht im Wazuh-Agent) — die Event-Auswahl spiegelt
+  die Security-Query aus agent.conf plus DC-spezifische IDs:
+    Account Management:  4720 4722 4724 4726 4728 4732 4740 4756 4767
+    Logon/Kerberos:      4624 4625 4648 4662 4672 4768 4769 4771 4776
+    Policy/Log-Tamper:   1102 4719 5136
+-->
+<Subscription xmlns="http://schemas.microsoft.com/2006/03/windows/events/subscription">
+  <SubscriptionId>NexoraDC</SubscriptionId>
+  <SubscriptionType>SourceInitiated</SubscriptionType>
+  <Description>Nexora SOC — Domain Controller Security Events nach WEC01/ForwardedEvents</Description>
+  <Enabled>true</Enabled>
+  <Uri>http://schemas.microsoft.com/wbem/wsman/1/windows/EventLog</Uri>
+  <ConfigurationMode>MinLatency</ConfigurationMode>
+  <ReadExistingEvents>false</ReadExistingEvents>
+  <TransportName>HTTP</TransportName>
+  <ContentFormat>RenderedText</ContentFormat>
+  <Locale Language="en-US"/>
+  <LogFile>ForwardedEvents</LogFile>
+  <AllowedSourceNonDomainComputers/>
+  <AllowedSourceDomainComputers>O:NSG:BAD:P(A;;GA;;;DC)(A;;GA;;;DD)S:</AllowedSourceDomainComputers>
+  <Query><![CDATA[
+    <QueryList>
+      <Query Id="0" Path="Security">
+        <Select Path="Security">
+          *[System[(EventID=1102) or
+            (EventID=4624) or (EventID=4625) or (EventID=4648) or (EventID=4662) or
+            (EventID=4672) or (EventID=4719) or (EventID=4720) or (EventID=4722) or
+            (EventID=4724) or (EventID=4726) or (EventID=4728) or (EventID=4732) or
+            (EventID=4740) or (EventID=4756) or (EventID=4767) or (EventID=4768) or
+            (EventID=4769) or (EventID=4771) or (EventID=4776) or (EventID=5136)]]
+        </Select>
+      </Query>
+    </QueryList>
+  ]]></Query>
+</Subscription>

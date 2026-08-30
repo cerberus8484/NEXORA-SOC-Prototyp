@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Wazuh Custom Integration — SOC Ticket Tool Webhook
+
+Wazuh ruft dieses Script pro Alert auf:
+  custom-soc-webhook <alert_file> <api_key(unused)> <hook_url>
+
+Installation:
+  cp custom-soc-webhook /var/ossec/integrations/
+  chown root:wazuh /var/ossec/integrations/custom-soc-webhook
+  chmod 750 /var/ossec/integrations/custom-soc-webhook
+
+Konfiguration in /var/ossec/etc/ossec.conf:
+  Siehe ossec-integration.conf.xml in diesem Verzeichnis.
+"""
+
+import sys
+import os
+import json
+import hashlib
+import hmac
+import time
+import urllib.request
+import urllib.error
+
+
+def sign_webhook(secret: str, timestamp: str, body: str) -> str:
+    """HMAC-SHA256 Signatur — muss exakt mit backend/src/integrations/hmac.js übereinstimmen."""
+    payload = f"{timestamp}.{body}".encode("utf-8")
+    sig = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+    return f"sha256={sig}"
+
+
+def send_alert(hook_url: str, secret: str, alert: dict) -> None:
+    body      = json.dumps(alert, separators=(",", ":"))
+    timestamp = str(int(time.time()))
+    signature = sign_webhook(secret, timestamp, body)
+
+    req = urllib.request.Request(
+        hook_url,
+        data=body.encode("utf-8"),
+        headers={
+            "Content-Type":       "application/json",
+            "X-Webhook-Signature": signature,
+            "X-Webhook-Timestamp": timestamp,
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            status = resp.status
+            if status not in (200, 202):
+                sys.exit(f"[wazuh-soc] Unexpected HTTP {status}")
+    except urllib.error.HTTPError as e:
+        body_err = e.read().decode("utf-8", errors="replace")[:500]
+        sys.exit(f"[wazuh-soc] HTTP {e.code}: {body_err}")
+    except urllib.error.URLError as e:
+        sys.exit(f"[wazuh-soc] Connection error: {e.reason}")
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit("[wazuh-soc] Usage: custom-soc-webhook <alert_file> [api_key] [hook_url]")
+
+    alert_file = sys.argv[1]
+    hook_url   = sys.argv[3] if len(sys.argv) > 3 else os.environ.get("SOC_WEBHOOK_URL", "")
+    secret     = os.environ.get("SOC_WEBHOOK_SECRET", "")
+
+    if not hook_url:
+        sys.exit("[wazuh-soc] SOC_WEBHOOK_URL nicht gesetzt")
+    if not secret:
+        sys.exit("[wazuh-soc] SOC_WEBHOOK_SECRET nicht gesetzt")
+
+    try:
+        with open(alert_file, "r", encoding="utf-8") as f:
+            alert = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        sys.exit(f"[wazuh-soc] Alert-Datei nicht lesbar: {e}")
+
+    # Mindest-Level-Filter — nur Alerts >= Level 3 weiterleiten
+    level = alert.get("rule", {}).get("level", 0)
+    if level < 3:
+        sys.exit(0)  # kein Fehler — Wazuh erwartet Exit 0 bei Filterung
+
+    send_alert(hook_url, secret, alert)
+
+
+if __name__ == "__main__":
+    main()

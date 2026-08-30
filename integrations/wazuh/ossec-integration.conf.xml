@@ -1,0 +1,22 @@
+<!--
+  Wazuh Integration — SOC Ticket Tool
+  Einfügen in /var/ossec/etc/ossec.conf, innerhalb von <ossec_config>
+
+  Wazuh 4.x Custom Integration:
+    - hook_url: wird als 3. Argument an das Script übergeben
+    - api_key:  wird als 2. Argument übergeben (hier ungenutzt, Pflichtfeld)
+    - alert_format: json = Wazuh schreibt das Alert als JSON-Datei
+
+  Env-Variablen SOC_WEBHOOK_SECRET + SOC_WEBHOOK_URL werden in
+  /var/ossec/etc/local_internal_options.conf ODER als systemd-Override gesetzt.
+  Siehe setup-instructions.md für Details.
+-->
+
+<integration>
+  <name>custom-soc-webhook</name>
+  <hook_url>https://10.99.99.75/api/v1/integrations/wazuh/webhook</hook_url>
+  <api_key>unused</api_key>
+  <alert_format>json</alert_format>
+  <!-- Nur Alerts ab Level 5 senden (Level 3–4 filtert das Script zusätzlich) -->
+  <level>5</level>
+</integration>
