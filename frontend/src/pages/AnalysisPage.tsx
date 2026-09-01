@@ -40,6 +40,7 @@ import { myTickets } from '../features/analysis/assignedTickets';
 import { apiErrorText } from '../lib/apiErrorText';
 import { ApiError } from '../lib/apiClient';
 import { ImportDataModal, type ImportMode } from '../features/analysis/components/ImportDataModal';
+import { buildSampleIncidents } from '../features/analysis/sampleIncidents';
 import { WazuhExceptionBuilderModal } from '../features/analysis/components/WazuhExceptionBuilderModal';
 import {
   EMPTY_EVIDENCE,
@@ -125,6 +126,7 @@ export function AnalysisPage() {
     setParams((current) => writeInvestigationEvent(current, eventId), { replace: true });
   }, [setParams]);
   const [importOpen, setImportOpen] = useState(false);
+  const [sampleImportBusy, setSampleImportBusy] = useState(false);
   const [exceptionOpen, setExceptionOpen] = useState(false);
   const [fpReason, setFpReason] = useState('');
   const [fpQuickBusy, setFpQuickBusy] = useState(false);
@@ -277,6 +279,31 @@ export function AnalysisPage() {
     if (!active) return;
     setBusy(true);
     try { await ticketApi.update(active.id, body); load(); } catch (e) { setError(e instanceof Error ? e.message : tr('tickets.errors.action')); } finally { setBusy(false); }
+  }
+
+  async function importSampleIncidents() {
+    if (!canAct || sampleImportBusy) return;
+    if (!(await confirm({
+      title: 'Load 10 sample incidents?',
+      message: 'This creates ten clearly marked synthetic training tickets through the regular Nexora ticket workflow.',
+      confirmLabel: 'Load examples',
+    }))) return;
+    setSampleImportBusy(true);
+    setError('');
+    try {
+      const created = [] as Ticket[];
+      for (const sample of buildSampleIncidents()) {
+        const result = await ticketApi.create(sample);
+        created.push(result.data);
+      }
+      await load();
+      setSelId(created[0]?.id ?? null);
+      setSection('overview');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Sample incidents could not be created.');
+    } finally {
+      setSampleImportBusy(false);
+    }
   }
 
   // Follow-up: verknüpftes Kind-Ticket aus dem aktiven Fall anlegen (parentId) und öffnen.
@@ -524,9 +551,14 @@ export function AnalysisPage() {
       {confirmDialog}
       {/* Horizontale Analysis-Navigation (volle Breite). Ticket-Auswahl + Suche
           liegen jetzt im globalen Header-Ticket-Switcher — keine linke Ticketliste. */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14, borderBottom: '1px solid var(--border-soft)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, borderBottom: '1px solid var(--border-soft)' }}>
         <AnalysisTopNav active={section} onSelect={setSection} />
         <HelpTip topic="ki-agent" />
+        <div style={{ marginLeft: 'auto', paddingBottom: 8 }}>
+          <Button variant="ghost" size="sm" icon={<Plus size={14} />} disabled={!canAct || sampleImportBusy} onClick={() => void importSampleIncidents()}>
+            {sampleImportBusy ? 'Loading examples …' : 'Load 10 sample incidents'}
+          </Button>
+        </div>
       </div>
 
       {error && <div style={{ marginBottom: 14 }}><ErrorCard message={error} /></div>}

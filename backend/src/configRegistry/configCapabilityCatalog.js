@@ -80,8 +80,8 @@ const CATALOG = [
     id: 'collector.firewall.maxLineBytes', scope: 'collector', risk: 'low',
     schema: Joi.object({ maxLineBytes: Joi.number().integer().min(256).max(1048576).default(8192) }),
     allowedTargets: ['firewall-collector'],
-    description: 'Maximale Zeilenlänge im Firewall-Collector-Reader.',
-    effect: 'Schutz vor übergroßen/bösartigen Eingabezeilen (bounded Speicher).',
+    description: 'Maximum line length in the firewall collector reader.',
+    effect: 'Protects against oversized or malicious input lines (bounded memory).',
     applyImpact: 'restart', sensitiveFields: [], editable: true,
   },
   {
@@ -96,8 +96,8 @@ const CATALOG = [
     id: 'integration.virustotal.pollIntervalSeconds', scope: 'integration', risk: 'low',
     schema: Joi.object({ intervalSeconds: Joi.number().integer().min(30).max(3600).default(300) }),
     allowedTargets: ['virustotal'],
-    description: 'Abfrageintervall für VirusTotal-Enrichment.',
-    effect: 'Steuert Anfragehäufigkeit (Quota-/Rate-Schonung).',
+    description: 'Query interval for VirusTotal enrichment.',
+    effect: 'Controls request frequency to preserve quota and rate limits.',
     applyImpact: 'none', sensitiveFields: [], editable: true,
   },
   {

@@ -11,9 +11,9 @@ const numOr = (v, def) => { const n = Number(v); return Number.isFinite(n) ? n :
 
 const VERDICT_LABEL = {
   false_positive:     'False Positive',
-  suspicious:         'Verdächtig — Beobachtung nötig',
-  confirmed_incident: 'Bestätigter Incident',
-  needs_more_info:    'Mehr Kontext nötig',
+  suspicious:         'Suspicious — observation required',
+  confirmed_incident: 'Confirmed incident',
+  needs_more_info:    'More context required',
 };
 
 // Verdict-Schweregrad — für den Evidence-Floor (höher = ernster).
@@ -243,18 +243,18 @@ function isOperationalToolError(alert) {
 }
 
 const KIND_FOCUS = {
-  triage:     'Triagiere das Offense: False Positive, verdächtig oder bestätigter Incident? Begründe die Einstufung fachlich.',
-  action:     'Empfiehl eine konkrete, umkehrbare Sofortmaßnahme zur Eindämmung — mit Begründung.',
+  triage:     'Triage the offense: false positive, suspicious, or confirmed incident? Justify the classification professionally.',
+  action:     'Recommend one concrete, reversible immediate containment measure and justify it.',
   enrichment: 'Nenne, welche IOCs angereichert werden sollten und warum sie relevant sind.',
-  false_positive_review:   'Prüfe gezielt auf erwartetes/harmloses Verhalten: Ist das ein False Positive? Begründe mit der Regel/dem Kontext.',
-  incident_recommendation: 'Empfiehl die nächsten Schritte/Maßnahmen für diesen Fall (Eindämmung, Untersuchung) — priorisiert und begründet.',
-  customer_response:       'Formuliere im Feld "summary" einen kurzen, sachlichen Antwort-Entwurf an den Kunden; "why" enthält die interne Begründung.',
-  report_draft:            'Erstelle im Feld "summary" einen kurzen Incident-Report-Entwurf (Was/Impact/Status); "why" enthält die technische Begründung.',
+  false_positive_review:   'Specifically assess expected or harmless behaviour: is this a false positive? Justify the answer with the rule and context.',
+  incident_recommendation: 'Recommend the next prioritized and justified steps for this case (containment and investigation).',
+  customer_response:       'Write a concise, factual draft response to the customer in the "summary" field; "why" contains the internal justification.',
+  report_draft:            'Write a concise incident-report draft in the "summary" field (what, impact, and status); "why" contains the technical justification.',
   hunt_suggestion:         'Schlage konkrete Follow-up-Hunts/Analysen vor (Was suchen, wo, welche Datenquelle) — in "recommendation".',
   // KI-Analyse-Tab — neue Kinds (kein Verdict, nur Analyse/Erklärung):
-  evidence_explanation:    'Erkläre die vorliegenden Evidenzen und IOCs in klarem Klartext für den Analysten: Was bedeuten die Befunde, welche Relevanz haben sie, gibt es widersprüchliche Signale? Kein Verdict, keine Einstufung — nur Erklärung. Antworte im Feld "summary".',
-  mitre_mapping:           'Ordne die Aktivität MITRE ATT&CK-Taktiken und -Techniken zu. Nutze vorhandene MITRE-Felder aus dem Ticket/Alert. Begründe jede Zuordnung mit konkreten Beobachtungen aus der Evidence. Keine Spekulation. Antworte im Feld "recommendation" als strukturierte Liste.',
-  next_steps:              'Leite priorisierte, konkrete nächste Analyse-Schritte ab — was soll der Analyst ALS NÄCHSTES prüfen, wo, mit welchem Werkzeug? Jeder Schritt: Verb + Ziel + Methode. Kein Verdict, keine Einstufung. Antworte im Feld "recommendation" als nummerierte Liste.',
+  evidence_explanation:    'Explain the available evidence and IOCs clearly for the analyst: what do the findings mean, how relevant are they, and are there conflicting signals? No verdict or classification — explanation only. Answer in the "summary" field.',
+  mitre_mapping:           'Map the activity to MITRE ATT&CK tactics and techniques. Use existing MITRE fields from the ticket or alert. Justify every mapping with concrete observations from the evidence. Do not speculate. Answer in the "recommendation" field as a structured list.',
+  next_steps:              'Derive prioritized, concrete next analysis steps: what should the analyst check NEXT, where, and with which tool? Each step must contain a verb, target, and method. No verdict or classification. Answer in the "recommendation" field as a numbered list.',
 };
 
 /**

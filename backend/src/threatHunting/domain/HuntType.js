@@ -199,7 +199,7 @@ const HUNT_TYPES = {
         severity: 'medium',
         confidence: pctToConfidence(72),
         mitreAttack: 'T1547.001',
-        recommendation: ['Run-Key & Task prüfen', 'Binary-Hash gegen Threat Intel', 'Bei Bestätigung Host isolieren (Genehmigung)'].join('\n'),
+        recommendation: ['Inspect the run key and task', 'Check the binary hash against threat intelligence', 'Isolate the host when confirmed (approval required)'].join('\n'),
         context: {
           host, process: 'svc.exe', commandLine: 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater = %APPDATA%\\svc.exe',
           mitreTactic: 'Persistence', mitreTechnique: 'T1547.001', source: 'Sysmon', verdict: 'suspicious', status: 'new', confidencePct: 72,
@@ -239,7 +239,7 @@ const HUNT_TYPES = {
         severity: 'medium',
         confidence: pctToConfidence(70),
         mitreAttack: 'T1110',
-        recommendation: ['Quell-IP gegen Threat Intel prüfen', 'Account-Lockout/Lockdown erwägen', 'Bei Erfolg eskalieren'].join('\n'),
+        recommendation: ['Check the source IP against threat intelligence', 'Consider account lockout or lockdown', 'Escalate if successful'].join('\n'),
         context: {
           host, user: 'root', sourceIp: '203.0.113.55',
           mitreTactic: 'Credential Access', mitreTechnique: 'T1110', source: 'Wazuh', verdict: 'suspicious', status: 'new', confidencePct: 70,
@@ -280,7 +280,7 @@ const HUNT_TYPES = {
         severity: 'medium',
         confidence: pctToConfidence(68),
         mitreAttack: 'T1071.004',
-        recommendation: ['Domain gegen Threat Intel prüfen', 'Client-Prozess identifizieren', 'DNS-Sinkhole erwägen'].join('\n'),
+        recommendation: ['Check the domain against threat intelligence', 'Identify the client process', 'Consider DNS sinkholing'].join('\n'),
         context: {
           host, sourceIp: '192.168.240.55', destinationIp: '', protocol: 'UDP',
           mitreTactic: 'Command and Control', mitreTechnique: 'T1071.004', source: 'Zeek', verdict: 'suspicious', status: 'new', confidencePct: 68,
@@ -321,7 +321,7 @@ const HUNT_TYPES = {
         title: 'Suspicious scheduled task',
         description: 'A scheduled task starts hidden PowerShell, a typical persistence or execution mechanism.',
         severity: 'medium', confidence: pctToConfidence(74), mitreAttack: 'T1053.005',
-        recommendation: ['Task-Definition + Trigger prüfen', 'Aktion/Binary gegen Threat Intel', 'Bei Bestätigung Task deaktivieren (Genehmigung)'].join('\n'),
+        recommendation: ['Inspect the task definition and trigger', 'Check the action or binary against threat intelligence', 'Disable the task when confirmed (approval required)'].join('\n'),
         context: { host, process: 'powershell.exe', commandLine: 'schtasks: \\Microsoft\\Windows\\Updater → powershell -w hidden -enc ...', mitreTactic: 'Persistence', mitreTechnique: 'T1053.005', source: 'Windows Agent', verdict: 'suspicious', status: 'new', confidencePct: 74 },
       }];
       return { logs, findings };
@@ -360,7 +360,7 @@ const HUNT_TYPES = {
         title: 'Suspicious service binary',
         description: 'A service points to an unsigned binary outside System32, indicating a possible persistence service.',
         severity: 'medium', confidence: pctToConfidence(71), mitreAttack: 'T1543.003',
-        recommendation: ['Service-Binary-Hash prüfen', 'Signatur/Pfad bewerten', 'Bei Bestätigung Service stoppen (Genehmigung)'].join('\n'),
+        recommendation: ['Check the service binary hash', 'Assess the signature and path', 'Stop the service when confirmed (approval required)'].join('\n'),
         context: { host, process: 'whelp.exe', commandLine: 'WinHelpSvc → C:\\ProgramData\\whelp.exe', mitreTactic: 'Persistence', mitreTechnique: 'T1543.003', source: 'Windows Agent', verdict: 'suspicious', status: 'new', confidencePct: 71 },
       }];
       return { logs, findings };
@@ -397,7 +397,7 @@ const HUNT_TYPES = {
         title: 'Suspicious autorun entry',
         description: 'An unsigned autorun entry in the Startup folder is a widely used persistence technique.',
         severity: 'medium', confidence: pctToConfidence(69), mitreAttack: 'T1547.001',
-        recommendation: ['Autostart-Eintrag prüfen', 'Binary-Hash gegen Threat Intel', 'Bei Bestätigung entfernen (Genehmigung)'].join('\n'),
+        recommendation: ['Inspect the autorun entry', 'Check the binary hash against threat intelligence', 'Remove it when confirmed (approval required)'].join('\n'),
         context: { host, process: 'updater.lnk', commandLine: 'Startup\\updater.lnk → %APPDATA%\\u.exe', mitreTactic: 'Persistence', mitreTechnique: 'T1547.001', source: 'Sysmon', verdict: 'suspicious', status: 'new', confidencePct: 69 },
       }];
       return { logs, findings };
@@ -433,7 +433,7 @@ const HUNT_TYPES = {
         title: 'Remote access tool present',
         description: 'An RMM or remote-access tool was detected. It can be legitimate, but unexpected use can indicate a hands-on-keyboard attack.',
         severity: 'medium', confidence: pctToConfidence(73), mitreAttack: 'T1219',
-        recommendation: ['Geschäftliche Berechtigung verifizieren', 'Ausgehende Verbindungen prüfen', 'Bei unautorisiert: Host isolieren (Genehmigung)'].join('\n'),
+        recommendation: ['Verify the business authorization', 'Inspect outbound connections', 'Isolate the host if unauthorized (approval required)'].join('\n'),
         context: { host, process: 'AnyDesk.exe', mitreTactic: 'Command and Control', mitreTechnique: 'T1219', source: 'Sysmon', verdict: 'suspicious', status: 'new', confidencePct: 73 },
       }];
       return { logs, findings };
