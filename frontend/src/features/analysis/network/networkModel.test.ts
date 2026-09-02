@@ -228,6 +228,16 @@ describe('deriveNatTranslation', () => {
   it('ist leer ohne NAT-Evidence', () => {
     expect(deriveNatTranslation(ticket({ srcIp: '10.0.0.1', dstIp: '8.8.8.8' }), EMPTY_EVIDENCE)).toHaveLength(0);
   });
+
+  it('zeigt keine Translation für identische Pre- und Post-NAT-Werte', () => {
+    const rows = deriveNatTranslation(ticket(), ev({
+      source: { ...EMPTY_EVIDENCE.source, ip: '10.10.20.48', port: 22 },
+      destination: { ...EMPTY_EVIDENCE.destination, ip: '10.10.20.91', port: 22 },
+      nat: { ...EMPTY_EVIDENCE.nat, postNatSourceIp: '10.10.20.48', postNatDestinationIp: '10.10.20.91' },
+      network: { ...EMPTY_EVIDENCE.network, protocol: 'ssh' },
+    }));
+    expect(rows).toEqual([]);
+  });
 });
 
 describe('deriveGeo', () => {

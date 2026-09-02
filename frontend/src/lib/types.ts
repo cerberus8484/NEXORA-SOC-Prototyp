@@ -26,6 +26,14 @@ export interface TicketPayloadFields {
   kind?: 'command' | 'login' | 'download' | 'tunnel' | string;
   user?: string;
   at?: string;
+  /** Herkunft der beobachteten Aktivität, z. B. Sysmon, Zeek oder Firewall. */
+  source?: string;
+  host?: string;
+  role?: string;
+  bytes?: string;
+  bytes_sent?: string;
+  bytes_received?: string;
+  probes?: string;
 }
 export interface TicketPayload {
   type: 'Command' | 'URL' | 'Andere' | string;

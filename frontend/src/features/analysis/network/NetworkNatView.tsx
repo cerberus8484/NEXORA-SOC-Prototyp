@@ -199,7 +199,13 @@ function NatTranslation({ t, ev, network }: { t: Ticket; ev: ParsedEvidence; net
   return (
     <Section title="NAT Translation" icon={<ArrowLeftRight size={15} style={{ color: 'var(--warning)' }} />}>
       {rows.length === 0 ? (
-        <div style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.5 }}>{tr('analysis.notAvailableSourceTicketProvides')}</div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card-soft)' }}>
+          <ArrowLeftRight size={17} style={{ color: 'var(--text-dim)', marginTop: 1, flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)' }}>No confirmed NAT translation</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-dim)', lineHeight: 1.5, marginTop: 3 }}>The observed source and destination values pass through unchanged. No address or port mapping is shown for this case.</div>
+          </div>
+        </div>
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '0 10px', alignItems: 'center' }}>

@@ -264,7 +264,17 @@ export function deriveNatTranslation(t: Ticket, ev: ParsedEvidence, network?: Ne
   const postDstPort = ev.nat.postNatDestinationPort ?? flow?.postNatDestinationPort ?? undefined;
   const proto = blank(ev.network.protocol) ?? blank(ev.network.transport) ?? blank(flow?.protocol) ?? blank(flow?.transport);
 
-  const hasNat = Boolean(postSrcIp || postDstIp || blank(ev.nat.natType) || blank(ev.nat.firewallRule) || blank(flow?.natType) || blank(flow?.natRule));
+  // Ein gleiches Pre-/Post-Paar ist eine Durchleitung, keine NAT-Translation.
+  // Das verhindert doppelte Werte und eine irreführende NAT-Ansicht im UI.
+  const differs = (pre?: string | number, post?: string | number) => {
+    const before = pre == null || pre === '' ? undefined : String(pre);
+    const after = post == null || post === '' ? undefined : String(post);
+    return before !== undefined && after !== undefined && before !== after;
+  };
+  const hasNat = differs(preSrcIp, postSrcIp)
+    || differs(preSrcPort, postSrcPort)
+    || differs(preDstIp, postDstIp)
+    || differs(preDstPort, postDstPort);
   if (!hasNat) return [];
 
   const str = (v?: string | number) => (v == null || v === '' ? undefined : String(v));

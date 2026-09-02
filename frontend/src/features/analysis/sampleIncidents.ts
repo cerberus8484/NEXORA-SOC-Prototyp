@@ -22,7 +22,7 @@ const demo = (data: SampleTicket): SampleTicket => ({
   pktsRecv: data.pktsRecv ?? '31',
   firewallAction: data.firewallAction ?? 'permitted',
   eventCount: data.eventCount ?? '6',
-  description: `Synthetic training case mapped to ${data.mitre}. ${data.description ?? ''}`.trim(),
+  description: `[Correlated sources: Wazuh, Windows Security/Sysmon, Zeek, Firewall, internal ICMP] Synthetic training case mapped to ${data.mitre}. ${data.description ?? ''}`.trim(),
   logs: [
     '[Wazuh] Normalized alert correlated with ATT&CK technique.',
     `[Windows Security/Sysmon] ${data.logs ?? 'Process and logon telemetry available.'}`,
@@ -30,9 +30,11 @@ const demo = (data: SampleTicket): SampleTicket => ({
     `[Internal ICMP] Echo request/reply between ${data.srcIp ?? '10.10.20.41'} and ${data.dstIp ?? '10.10.20.52'}; 3 probes, RTT 1.2–1.8 ms.`,
   ].join('\n'),
   payloads: [
-    { type: 'Command', raw: data.commandLine ?? `${data.process ?? 'unknown.exe'} observed by Sysmon`, fields: { source: 'Sysmon Event ID 1', host: data.hostname ?? 'target' } },
-    { type: 'IP', raw: data.srcIp ?? '10.10.20.41', fields: { source: 'Zeek conn.log', role: 'source' } },
-    { type: 'Andere', raw: `ICMP echo ${data.srcIp ?? '10.10.20.41'} -> ${data.dstIp ?? '10.10.20.52'}`, fields: { source: 'Firewall + Zeek', probes: '3' } },
+    { type: 'Andere', raw: `Successful network login on ${data.hostname ?? 'target'}`, fields: { kind: 'login', user: data.user ?? 'DEMO\\unknown', at: at(5), source: 'Windows Security 4624' } },
+    { type: 'Command', raw: data.commandLine ?? `${data.process ?? 'unknown.exe'} observed by Sysmon`, fields: { kind: 'command', at: at(4), source: 'Sysmon Event ID 1', host: data.hostname ?? 'target' } },
+    { type: 'URL', raw: `https://198.51.100.200/training/${data.mitre?.replace('.', '-') ?? 'artifact'}.bin`, fields: { kind: 'download', at: at(3), source: 'Zeek http.log', bytes: '14336' } },
+    { type: 'IP', raw: `${data.srcIp ?? '10.10.20.41'} -> ${data.dstIp ?? '10.10.20.52'} ${data.protocol ?? 'TCP'}:${data.port ?? '445'}`, fields: { kind: 'tunnel', at: at(2), source: 'Firewall + Zeek conn.log', bytes_sent: '18432', bytes_received: '9321' } },
+    { type: 'Andere', raw: `ICMP echo ${data.srcIp ?? '10.10.20.41'} -> ${data.dstIp ?? '10.10.20.52'} (3 probes, RTT 1.2–1.8 ms)`, fields: { kind: 'command', at: at(1), source: 'Internal ICMP telemetry' } },
   ],
 });
 

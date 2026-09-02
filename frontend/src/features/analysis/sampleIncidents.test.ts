@@ -12,7 +12,8 @@ describe('buildSampleIncidents', () => {
       expect(sample.logs).toContain('[Wazuh]');
       expect(sample.logs).toContain('[Zeek/Firewall]');
       expect(sample.logs).toContain('[Internal ICMP]');
-      expect(sample.payloads).toHaveLength(3);
+      expect(sample.payloads).toHaveLength(5);
+      expect(sample.payloads?.map((payload) => payload.fields?.kind)).toEqual(['login', 'command', 'download', 'tunnel', 'command']);
       expect(sample.firstSeen).toBeTruthy();
       expect(sample.lastSeen).toBeTruthy();
       expect(sample.priority).toMatch(/medium|high|critical/);
