@@ -112,7 +112,10 @@ SettingsDesign/
 qradar-analyst-deck/
 
 # ── Legacy Single-File-App (durch React-Frontend ersetzt) ─────
-index.html
+# The root-level legacy file remains ignored. The React/Vite entry file is
+# required for local and Docker production builds and must be versioned.
+/index.html
+!frontend/index.html
 
 # ── Lokale Tooling-/Agent-Konfiguration (Claude Code etc.) ────
 .claude/
