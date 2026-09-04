@@ -26,7 +26,10 @@ echo "==> Starting local Nexora Prototype for WSL"
 echo "==> Waiting for API and web application"
 for _ in $(seq 1 90); do
   if curl -fsS http://127.0.0.1:3000/api/v1/health >/dev/null 2>&1 \
-    && curl -fsS http://127.0.0.1:5173/login >/dev/null 2>&1; then
+    && curl -fsS http://127.0.0.1:5173/login >/dev/null 2>&1 \
+    && curl -fsS -X POST http://127.0.0.1:3000/api/v1/auth/login \
+      -H 'Content-Type: application/json' \
+      --data '{"email":"admin@nexora.example","password":"DevAdmin123!"}' >/dev/null 2>&1; then
     echo ""
     echo "=============================================="
     echo "  NEXORA PROTOTYPE IS READY"
@@ -40,5 +43,6 @@ for _ in $(seq 1 90); do
 done
 
 echo "ERROR: Nexora did not become ready within three minutes." >&2
+echo "The local database may already contain an administrator with a different password." >&2
 echo "Run: docker compose -f docker-compose.dev.yml logs --tail=100 api web" >&2
 exit 1
