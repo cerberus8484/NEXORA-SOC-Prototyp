@@ -37,6 +37,19 @@ application, and then prints the local URL and development login credentials.
 It does not create production secrets, TLS certificates, or public network
 exposure.
 
+### Local WSL installation without Docker
+
+For a local WSL evaluation without Docker, run:
+
+```bash
+bash ./deploy/install-wsl-no-docker.sh
+```
+
+The installer installs Linux Node.js 20 for the current WSL user, starts the
+backend and Vite frontend on `127.0.0.1`, and prints the login credentials
+after it verifies the login. This mode uses in-memory storage; all local data
+is lost when the backend is stopped.
+
 > **Persistenz (P14):** Bei `DB_ENABLED=true` sind **Tickets, User, Audit und
 > Threat Hunts** vollständig in Postgres persistiert und überleben Container-/
 > API-Neustarts. Der Login funktioniert nach Restart unverändert weiter.
