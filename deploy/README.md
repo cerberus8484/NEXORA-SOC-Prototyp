@@ -23,6 +23,20 @@
 Drei Container: **web** (nginx + gebautes Frontend), **api** (Node-Backend),
 **postgres**. Nur `web` ist von außen erreichbar (80/443).
 
+## Local WSL installation
+
+For a local WSL and Docker Desktop test installation, run this command from
+the repository root:
+
+```bash
+bash ./deploy/install-wsl.sh
+```
+
+The installer starts the local development stack, waits for the API and web
+application, and then prints the local URL and development login credentials.
+It does not create production secrets, TLS certificates, or public network
+exposure.
+
 > **Persistenz (P14):** Bei `DB_ENABLED=true` sind **Tickets, User, Audit und
 > Threat Hunts** vollständig in Postgres persistiert und überleben Container-/
 > API-Neustarts. Der Login funktioniert nach Restart unverändert weiter.
